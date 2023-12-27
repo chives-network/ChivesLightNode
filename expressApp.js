@@ -1,9 +1,6 @@
 // expressApp.js
-const express = require('express');
-const path = require('path');
-const axios = require('axios');
-const db = require('./db'); 
-const syncing = require('./syncing'); 
+import express from 'express'
+import syncing from './syncing.js'
 
 const expressApp = express();
 const PORT = process.env.PORT || 3030;
@@ -105,7 +102,7 @@ expressApp.get('/wallet/:id/reserved_rewards_total', async (req, res) => {
 
 
 
-expressApp.use(express.static(path.join(__dirname, 'html')));
+//expressApp.use(express.static(path.join(__dirname, 'html')));
 
 //expressApp.get('*', (req, res) => {
 //  res.sendFile(path.join(__dirname, 'html', 'index.html'));
@@ -117,8 +114,10 @@ const startServer = (port) => {
   });
 };
 
-if (require.main === module) {
-  startServer(PORT);
-}
+//if (require.main === module) {
+//  startServer(PORT);
+//}
 
-module.exports = { expressApp, startServer, PORT };
+startServer(PORT);
+
+//export default { expressApp, startServer, PORT };

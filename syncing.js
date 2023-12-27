@@ -1,17 +1,20 @@
   const NodeApi = "http://112.170.68.77:1987";
-  const db = require('./db');
-  const axios = require('axios');
-  const fs = require('fs');
-  const base64url = require('base64url');
-  const sharp = require('sharp');
+  import db from './db.js'
+  import axios from 'axios'
+  import fs from 'fs'
+  import base64url from 'base64url'
+  import sharp from 'sharp'
+  import { unbundleData } from 'arbundles'
+  import Arweave from 'arweave'
+
+  import imagemin from 'imagemin';
+  import imageminPngquant from 'imagemin-pngquant';
+  import { join, extname } from 'path';
   //const imagemin = require('imagemin');
   //const optipng = require('imagemin-optipng');
 
   const DataDir = "D:/GitHub/ChivesweaveDataDir";
 
-  const Arbundles = require('arbundles');
-
-  const Arweave = require('arweave');
   const arweave = Arweave.init({
     host: '112.170.68.77',
     port: 1987,
@@ -241,11 +244,12 @@
     return TxInfor;
   }
 
-  function fileExists(filePath) {
+  function isFile(filePath) {
     try {
       fs.accessSync(filePath, fs.constants.F_OK);
       return true;
-    } catch (err) {
+    } 
+    catch (err) {
       return false;
     }
   }
@@ -257,17 +261,17 @@
     const TxId = TxInfor.id;
     const BundlePath = DataDir + '/files/' + TxId;
     console.log("syncingTxParseBundleById unBundleItem id",BundlePath)
-    if( fileExists(BundlePath) ) {
+    if( isFile(BundlePath) ) {
         console.log("syncingTxParseBundleById Exist", BundlePath)  
         try {
             //const TxInfor = await getTxInforByIdFromDb(TxId);
             //console.log("TxInfor TxInfor",TxInfor)
             const FileContent = fs.readFileSync(BundlePath);
             try {
-                const unbundleData = Arbundles.unbundleData(FileContent);
-                unbundleData.items.map(async (Item) => {
-                    //console.log("unbundleData",Item)
-                    console.log("unbundleData id", Item.id, Item.tags)
+                const unbundleItems = unbundleData(FileContent);
+                unbundleItems.items.map(async (Item) => {
+                    //console.log("unbundleItems",Item)
+                    console.log("unbundleItems id", Item.id, Item.tags)
                     //console.log("unBundleItem tags",Item.tags)
                     //console.log("unBundleItem owner",Item.owner)
                     //console.log("unBundleItem anchor",Item.anchor)
@@ -729,7 +733,6 @@
     return addressBalance;
   }
   
-
   function readFile(Dir, FileName, Mark, OpenFormat) {
     const filePath = DataDir + '/' + Dir + '/' + FileName;
     try {
@@ -757,15 +760,23 @@
     });
   }
 
+  function mkdirForData() {
+    fs.mkdir(DataDir + '/blocks', { recursive: true }, (err) => {});
+    fs.mkdir(DataDir + '/txs', { recursive: true }, (err) => {});
+    fs.mkdir(DataDir + '/files', { recursive: true }, (err) => {});
+    fs.mkdir(DataDir + '/thumbnail', { recursive: true }, (err) => {});
+  }
+
   function filterString(input) {
     const sanitizedInput = input?.replace(/[^a-zA-Z0-9_\-@. ]/g, '');
     return sanitizedInput;
   }
 
   async function getTxDataThumbnail(TxId) {
+    mkdirForData();
     const TxContent = readFile("txs", TxId + '.json', "getTxDataThumbnail", 'utf-8');
     const TxInfor = JSON.parse(TxContent);
-    console.log("TxInfor", TxInfor);
+    //console.log("TxInfor", TxInfor);
     const TagsMap = {}
     TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
       TagsMap[Tag.name] = Tag.value;
@@ -773,21 +784,49 @@
     const FileName = TagsMap['File-Name']
     const ContentType = TagsMap['Content-Type']
 
+    //Thumbnail Exist
+    const compressFilePath = DataDir + "/thumbnail/" + TxId
+    if(isFile(compressFilePath)) {
+      console.log("compressFilePath", compressFilePath)
+      const FileContent = readFile("thumbnail", TxId, "getTxDataThumbnail", null);
+      return {FileName, ContentType, FileContent};
+    }
+
+    //Compress File
     const inputFilePath = DataDir + '/files/' + TxId;
-    const outputFilePath = DataDir + '/thumbnail/' + TxId;
+    const outputFilePath = DataDir + '/thumbnail/';
     const fileType = getContentTypeAbbreviation(ContentType);
-    const fileTypeSuffix = String(fileType).toLowerCase;
+    const fileTypeSuffix = String(fileType).toLowerCase();
+    console.log("fileTypeSuffix", fileTypeSuffix)
     if(fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") {
         sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath, (err, info) => {
             console.log("getTxDataThumbnail sharp:", err, info)
         });
     }
     else if(fileTypeSuffix == "png") {
-
+      const files = await imagemin([inputFilePath], {
+          destination: outputFilePath,
+          plugins: [
+              imageminPngquant()
+          ]
+      });
+      console.log("getTxDataThumbnail compressedImage:", files)
+    }    
+    else if(fileTypeSuffix == "gif") {
     }
 
+    //Thumbnail Exist
+    const compressFilePath2 = DataDir + "/thumbnail/" + TxId
+    if(isFile(compressFilePath2)) {
+      console.log("compressFilePath", compressFilePath)
+      const FileContent2 = readFile("thumbnail", TxId, "getTxDataThumbnail", null);
+      return {FileName, ContentType, FileContent2};
+    }
+
+    //Out Original File Content
     const FileContent = readFile("files", TxId, "getTxDataThumbnail", null);
     return {FileName, ContentType, FileContent};
+
   }
 
   async function compressImage(TxId, ContentType) {
@@ -797,7 +836,7 @@
     
   }
 
-module.exports = {
+export default {
     syncingBlock,
     syncingBlockPromiseAll,
     syncingBlockByHeight,
@@ -821,8 +860,10 @@ module.exports = {
     getTxDataThumbnail,
     getAddressBalance,
     getAddressBalanceMining,
+    isFile,
     readFile,
     writeFile,
     filterString,
-    compressImage
+    compressImage,
+    mkdirForData
 };
