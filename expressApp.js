@@ -1,15 +1,20 @@
 // expressApp.js
 import express from 'express'
 import syncing from './syncing.js'
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const expressApp = express();
 const PORT = process.env.PORT || 3030;
 
 expressApp.get('/syncing', async (req, res) => {
-  //const result = await syncing.syncingBlock(100);
+  const result = await syncing.syncingBlock(10);
   //const result = await syncing.syncingTx(6);
-  await syncing.syncingChunks(300);
-  const result = await syncing.syncingTxParseBundle(50);
+  //await syncing.syncingChunks(300);
+  //const result = await syncing.syncingTxParseBundle(50);
   res.json(result);
 });
 
@@ -84,7 +89,6 @@ expressApp.get('/wallet/:id/balance', async (req, res) => {
   res.status(200).send(String(AddressBalance));  
 });
 
-
 expressApp.get('/wallet/:id/reserved_rewards_total', async (req, res) => {
   const { id } = req.params;
   const AddressBalance = await syncing.getAddressBalanceMining(id);
@@ -92,21 +96,41 @@ expressApp.get('/wallet/:id/reserved_rewards_total', async (req, res) => {
   res.status(200).send(String(AddressBalance));  
 });
 
+expressApp.get('/blockpage/:pageid/:pagesize', async (req, res) => {
+  const { pageid, pagesize } = req.params;
+  const getBlockPageJson = await syncing.getBlockPageJson(pageid, pagesize);
+  console.log("getBlockPageJson", getBlockPageJson)
+  res.status(200).json(getBlockPageJson);  
+});
+
+expressApp.get('/block/txsrecord/:height/:pageid/:pagesize', async (req, res) => {
+  const { height, pageid, pagesize } = req.params;
+  const getTxPageJson = await syncing.getTxPageJson(height, pageid, pagesize);
+  console.log("getTxPageJson", getTxPageJson.txs)
+  res.status(200).json(getTxPageJson);  
+});
+
+expressApp.get('/transaction/:pageid/:pagesize', async (req, res) => {
+  const { pageid, pagesize } = req.params;
+  const getAllTxPageJson = await syncing.getAllTxPageJson(pageid, pagesize);
+  console.log("getAllTxPageJson", getAllTxPageJson)
+  res.status(200).json(getAllTxPageJson);  
+});
+
+expressApp.get('/address/:pageid/:pagesize', async (req, res) => {
+  const { pageid, pagesize } = req.params;
+  const getAllAddressPageJson = await syncing.getAllAddressPageJson(pageid, pagesize);
+  console.log("getAllAddressPageJson", getAllAddressPageJson)
+  res.status(200).json(getAllAddressPageJson);  
+});
 
 
 
+expressApp.use(express.static(join(__dirname, 'html')));
 
-
-
-
-
-
-
-//expressApp.use(express.static(path.join(__dirname, 'html')));
-
-//expressApp.get('*', (req, res) => {
-//  res.sendFile(path.join(__dirname, 'html', 'index.html'));
-//});
+expressApp.get('*', (req, res) => {
+  res.sendFile(join(__dirname, 'html', 'index.html'));
+});
 
 const startServer = (port) => {
   return expressApp.listen(port, () => {
@@ -114,10 +138,10 @@ const startServer = (port) => {
   });
 };
 
-//if (require.main === module) {
-//  startServer(PORT);
-//}
+const getPort = () => {
+  return PORT;
+};
 
-startServer(PORT);
+const server = startServer(PORT);
 
-//export default { expressApp, startServer, PORT };
+export { expressApp, server, getPort };

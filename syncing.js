@@ -45,7 +45,7 @@
       return result;
     } 
     catch (error) {
-      console.error("syncingTx error fetching block data:", error.message);
+      console.error("syncingTxParseBundle error fetching block data:", error.message);
       return { error: "Internal Server Error" };
     }
   }
@@ -80,7 +80,7 @@
             console.log("syncingTxPromiseAll TxInfor: ", TxList.id, TxInfor.reward);
             return TxInfor;
           } catch (error) {
-            console.error("syncingTx error fetching block data:", error.message);
+            console.error("syncingTxPromiseAll error fetching block data:", error.message);
             return { error: "Internal Server Error" };
           }
         })
@@ -191,16 +191,18 @@
     })
   
     //Tags Data
+    const newTags = []
     const TagsMap = {}
     TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
       const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
       const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
       TagsMap[TagName] = TagValue;
+      newTags.push({'name':TagName, 'value':TagValue})
     })
     //console.log("TxInfor TagsMap",TagsMap)
     
     //Update Tx
-    const updateAddress = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, signature = ?, reward = ?, data_size = ?, data_root = ?, bundleid = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ? where id = ?');
+    const updateAddress = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, signature = ?, reward = ?, data_size = ?, data_root = ?, bundleid = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
     const from_address = await ownerToAddress(TxInfor.owner);
     const bundleid = "";
     const item_name = TagsMap['File-Name'] || "";
@@ -229,7 +231,7 @@
     else {
         entity_type = "Tx";
     }    
-    updateAddress.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.signature, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, bundleid, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, TxId);
+    updateAddress.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.signature, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, bundleid, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
     updateAddress.finalize();
 
     console.log("TxInfor from_address: ______________________________________________________________", from_address)
@@ -573,15 +575,10 @@
     });
     const BlockInfor = result.data
     console.log("syncingBlockByHeight",BlockInfor.reward_addr, currentHeight)
-  
-    //Insert Block
-    const insertStatement = db.prepare('INSERT OR REPLACE INTO block (indep_hash, previous_block, height, timestamp, syncing_status ) VALUES (?, ?, ?, ?, ?)');
-    insertStatement.run(BlockInfor.indep_hash, BlockInfor.previous_block, BlockInfor.height, BlockInfor.timestamp, 0);
-    insertStatement.finalize();
-  
+
     //Insert Address
-    const insertAddress = db.prepare('INSERT OR IGNORE INTO address (address, lastblock, timestamp, balance, txs) VALUES (?, ?, ?, ?, ?)');
-    insertAddress.run(BlockInfor.reward_addr, BlockInfor.height, BlockInfor.timestamp, 0, 0);
+    const insertAddress = db.prepare('INSERT OR IGNORE INTO address (address, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    insertAddress.run(BlockInfor.reward_addr, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
     insertAddress.finalize();
   
     //Update Address
@@ -607,6 +604,11 @@
 
     //Write Block File
     writeFile('blocks', BlockInfor.height + ".json", JSON.stringify(BlockInfor), "syncingBlockByHeight")
+
+    //Insert Block
+    const insertStatement = db.prepare('INSERT OR REPLACE INTO block (id, height, indep_hash, block_size, mining_time, reward, reward_addr, txs_length, weave_size, timestamp, syncing_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    insertStatement.run(BlockInfor.height, BlockInfor.height, BlockInfor.indep_hash, BlockInfor.block_size, 0, BlockInfor.reward, BlockInfor.reward_addr, BlockInfor.txs.length, BlockInfor.weave_size, BlockInfor.timestamp, 0);
+    insertStatement.finalize();
   
     return BlockInfor;
   }
@@ -646,7 +648,211 @@
       });
     });
   }
+
+  async function getBlockCount() {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM block", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+
+  async function getBlockPage(pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM block order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+
+  async function getBlockPageJson(pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const getBlockCountValue = await getBlockCount();
+    const getBlockPageValue = await getBlockPage(pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getBlockCountValue/pagesizeFiler);
+    RS['data'] = getBlockPageValue;
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getBlockCountValue;
+    return RS;
+  }
+
+  async function getTxCount(Height) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where block_height ='"+ Number(Height) +"'", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+
+  async function getTxPage(height, pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where block_height ='"+ Number(height) +"' order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+
+  async function getTxPageJson(height, pageid, pagesize) {
+    const heightFiler = Number(height) < 0 ? 1 : Number(height);
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const getTxCountValue = await getTxCount(heightFiler);
+    const getTxPageValue = await getTxPage(heightFiler, pageidFiler, pagesizeFiler);
+    const BlockInfor = await getBlockInforByHeightFromDb(heightFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getTxCountValue/pagesizeFiler);
+    RS['txs'] = TxRowToJsonFormat(getTxPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getTxCountValue;
+    RS['block'] = BlockInfor;
+    return RS;
+  }
+
+  async function getAllTxCount() {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+
+  async function getAllTxPage(pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+
+  async function getAllTxPageJson(pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const getTxCountValue = await getAllTxCount();
+    const getTxPageValue = await getAllTxPage(pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getTxCountValue/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(getTxPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getTxCountValue;
+    return RS;
+  }
+
+  async function getAllAddressCount() {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM address", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+
+  async function getAllAddressPage(pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM address order by address desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+
+  async function getAllAddressPageJson(pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const getAddressCountValue = await getAllAddressCount();
+    const getAddressPageValue = await getAllAddressPage(pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getAddressCountValue/pagesizeFiler);
+    RS['data'] = getAddressPageValue;
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getAddressCountValue;
+    return RS;
+  }
+
+  function TxRowToJsonFormat(getTxPageValue) {
+    const RS = []
+    getTxPageValue.map((Item) =>{
+      const ItemJson = {}
+      ItemJson.id = Item.id
+      ItemJson.owner = {}
+      ItemJson.owner.address = Item.from_address
+      //ItemJson.owner.key = Item.owner
+      ItemJson.anchor = Item.anchor
+      ItemJson.tags = JSON.parse(Item.tags)
+      ItemJson.block = {}
+      ItemJson.block.height = Item.block_height
+      ItemJson.block.indep_hash = Item.block_indep_hash
+      ItemJson.block.timestamp = Item.timestamp
+      ItemJson.data = {}
+      ItemJson.data.size = Item.data_size
+      ItemJson.data.type = Item.content_type
+      ItemJson.fee = {}
+      ItemJson.fee.winston = Item.reward
+      ItemJson.fee.xwe = String(Item.reward/1000000000000)
+      ItemJson.quantity = {}
+      ItemJson.quantity.winston = Item.quantity
+      ItemJson.quantity.xwe = String(Item.quantity/1000000000000)
+      ItemJson.recipient = Item.target
+      //ItemJson.signature = Item.signature
+      //ItemJson.signatureType = Item.signatureType
+      ItemJson.bundleid = Item.bundleid
+      RS.push(ItemJson)
+
+    })
+    return RS;
+  }
+
+
+
   
+
   async function getWalletAddressBalanceFromDb(Address) {
     return new Promise((resolve, reject) => {
       db.get("SELECT balance FROM address where address = '"+ Address +"'", (err, result) => {
@@ -715,8 +921,8 @@
             FileContent = '';
         }
     }
-    const FileName = getTxInforByIdFromDbValue['item_name'];
-    const ContentType = getTxInforByIdFromDbValue['content_type'];
+    const FileName = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['item_name'] ? getTxInforByIdFromDbValue['item_name'] : TxId;
+    const ContentType = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['content_type'] ? getTxInforByIdFromDbValue['content_type'] : "";
     console.log("ContentType", ContentType)
     return {FileName, ContentType, FileContent};
   }
@@ -855,11 +1061,17 @@ export default {
     getLightNodeStatus,
     getBlockInforByHeight,
     getBlockInforByHashFromDb,
+    getBlockPage,
+    getBlockPageJson,
+    getTxPage,
+    getTxPageJson,
+    getAllTxPageJson,
     getTxInforById,
     getTxData,
     getTxDataThumbnail,
     getAddressBalance,
     getAddressBalanceMining,
+    getAllAddressPageJson,
     isFile,
     readFile,
     writeFile,

@@ -1,11 +1,10 @@
-const { app, BrowserWindow, Menu } = require('electron');
-const path = require('path');
-const isDev = require('electron-is-dev');
-const { startServer, PORT } = require('./expressApp');
-const syncing = require('./syncing');
+import { app, BrowserWindow, Menu } from 'electron';
+import isDev from 'electron-is-dev'
+import { server, getPort } from './expressApp.js';
+import syncing from './syncing.js';
 
 // 启动 Express 服务器
-const server = startServer(PORT);
+const PORT = getPort();
 
 let mainWindow;
 
@@ -83,8 +82,8 @@ async function intervalTask() {
     const startTime = Date.now();
     await Promise.all([
       syncing.syncingBlockPromiseAll(30),
-      syncing.syncingTxPromiseAll(200),
-      syncing.syncingChunksPromiseAll(200),
+      syncing.syncingTxPromiseAll(100),
+      syncing.syncingChunksPromiseAll(100),
       syncing.syncingTxParseBundle(50)
     ]);
     const executionTime = Date.now() - startTime;

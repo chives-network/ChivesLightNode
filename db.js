@@ -9,31 +9,34 @@ db.serialize(() => {
         CREATE TABLE IF NOT EXISTS address (
             address TEXT PRIMARY KEY,
             balance INTEGER,
-            txs INTEGER,
-            sent INTEGER,
-            received INTEGER,
-        
+            txs INTEGER DEFAULT 0,
+            sent INTEGER DEFAULT 0,
+            received INTEGER DEFAULT 0,        
             lastblock INTEGER,
             timestamp INTEGER,
-            profile TEXT,
+            profile TEXT not null,
             chivesDrive INTEGER DEFAULT 0,
-            chivesEmail INTEGER DEFAULT 0,
-            
+            chivesEmail INTEGER DEFAULT 0,            
             chivesBlog INTEGER DEFAULT 0,
             chivesMessage INTEGER DEFAULT 0,
             chivesForum INTEGER DEFAULT 0,
             chivesDb INTEGER DEFAULT 0,
-            agent INTEGER DEFAULT 0,
-        
-            referee TEXT,
-            last_tx_action TEXT
+            agent INTEGER DEFAULT 0,        
+            referee TEXT not null,
+            last_tx_action TEXT not null
         );
     `);
     db.run(`
         CREATE TABLE IF NOT EXISTS block (
-            indep_hash TEXT PRIMARY KEY,
-            previous_block TEXT,
+            id INTEGER PRIMARY KEY,
             height INTEGER,
+            indep_hash TEXT,
+            block_size INTEGER default 0,
+            mining_time INTEGER default 0,
+            reward INTEGER default 0,
+            reward_addr TEXT,
+            txs_length INTEGER default 0,
+            weave_size INTEGER default 0,
             timestamp INTEGER,
             syncing_status INTEGER default 0
         );
@@ -78,7 +81,8 @@ db.serialize(() => {
             item_node_hot TEXT,
             item_node_delete TEXT,
             last_tx_action TEXT,
-            bundleTxParse INTEGER
+            bundleTxParse INTEGER,
+            tags TEXT
         );
     `);
     db.run(`
@@ -89,9 +93,13 @@ db.serialize(() => {
             value TEXT
         );
     `);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_block_id ON block (id);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_height ON block (height);`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_block_indep_hash ON block (indep_hash);`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_block_reward_addr ON block (reward_addr);`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_block_syncing_status ON block (syncing_status);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_timestamp ON block (timestamp);`);
-        
+
     db.run(`CREATE INDEX IF NOT EXISTS idx_tx_block_indep_hash ON tx (block_indep_hash);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_tx_from_address ON tx (from_address);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_tx_target ON tx (target);`);
