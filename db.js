@@ -1,7 +1,9 @@
 import sqlite3 from 'sqlite3';
 const sqlite3Verbose = sqlite3.verbose();
 
-const db = new sqlite3Verbose.Database('D:/chiveslightnode.db'); // or provide a file path for persistent storage
+const DataDir = "D:/GitHub/ChivesweaveDataDir";
+
+const db = new sqlite3Verbose.Database(DataDir + '/chiveslightnode.db'); // or provide a file path for persistent storage
 
 
 db.serialize(() => {

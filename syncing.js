@@ -554,7 +554,7 @@
             const BlockInfor = await syncingBlockByHeight(Height);
             return BlockInfor.height;
           } catch (error) {
-            console.error("syncingBlock error fetching block data:", error.message);
+            console.error("syncingBlockPromiseAll error fetching block data:", error.message);
             return { error: "Internal Server Error" };
           }
         })
@@ -569,12 +569,22 @@
   
   async function syncingBlockByHeight(currentHeight) {
     // @ts-ignore
-    const result = await axios.get(NodeApi + '/block/height/' + currentHeight, {
-      headers: {},
-      params: {}
-    });
-    const BlockInfor = result.data
-    console.log("syncingBlockByHeight",BlockInfor.reward_addr, currentHeight)
+    let BlockInfor = null;
+    const BlockJsonFilePath = DataDir + "/blocks/" + currentHeight + ".json";
+    if(isFile(BlockJsonFilePath)) {
+      //Nothing to do
+      BlockInfor = getBlockInforByHeight(currentHeight);
+      console.log("syncingBlockByHeight Read Block From Json File",BlockInfor.reward_addr, currentHeight)
+    }
+    else {
+      const result = await axios.get(NodeApi + '/block/height/' + currentHeight, {
+        headers: {},
+        params: {}
+      });
+      BlockInfor = result.data
+      console.log("syncingBlockByHeight Get Block From Remote Node",BlockInfor.reward_addr, currentHeight)
+    }
+    
 
     //Insert Address
     const insertAddress = db.prepare('INSERT OR IGNORE INTO address (address, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
@@ -895,7 +905,7 @@
     return LightNodeStatus;
   }
 
-  async function getBlockInforByHeight(Height) {
+  function getBlockInforByHeight(Height) {
     const HeightFilter = Number(Height)
     const BlockContent = readFile("blocks", HeightFilter + '.json', "getBlockInforByHeight", 'utf-8');
     return BlockContent;
