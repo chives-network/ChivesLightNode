@@ -234,7 +234,7 @@
       }
       const bundleid = "";
       const item_name = TagsMap['File-Name'] || "";
-      const item_type = getContentTypeAbbreviation(TagsMap['Content-Type']);
+      const item_type = contentTypeToFileType(TagsMap['Content-Type']);
       const item_parent = TagsMap['File-Parent'] || "Root";
       const content_type = TagsMap['Content-Type'] || "";
       const item_hash = TagsMap['File-Hash'] || "";
@@ -334,7 +334,7 @@
                         TagsMap[Tag.name] = Tag.value;
                     })
                     const item_name = TagsMap['File-Name'] || "";
-                    const item_type = getContentTypeAbbreviation(TagsMap['Content-Type']);
+                    const item_type = contentTypeToFileType(TagsMap['Content-Type']);
                     const item_parent = TagsMap['File-Parent'] || "Root";
                     const content_type = TagsMap['Content-Type'] || "";
                     const item_hash = TagsMap['File-Hash'] || "";
@@ -511,6 +511,42 @@
     updateAddress.run(data_root_status, TxId);
     updateAddress.finalize();
     return TxId;
+  }
+
+  function contentTypeToFileType(contentType) {
+    const contentTypeMap = {
+      "image/png": "image",
+      "image/jpeg": "image",
+      "image/jpg": "image",
+      "image/gif": "image",
+      "text/plain": "text",
+      "application/x-msdownload": "exe",
+      "application/pdf": "pdf",
+      "application/msword": "doc",
+      "application/vnd.ms-word": "doc",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+      "application/vnd.ms-excel": "xls",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+      "application/vnd.ms-powerpoint": "ppt",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+      "model/stl": "stl",
+      "application/stl": "stl",
+      "application/sla": "stl",
+      "video/mp4": "video",
+      "video/webm": "video",
+      "video/ogg": "video",
+      "video/mpeg": "video",
+      "video/quicktime": "video",
+      "video/x-msvideo": "video",		
+      "audio/mpeg": "audio",
+      "audio/wav": "audio",
+      "audio/midi": "audio",
+      "audio/ogg": "audio",
+      "audio/aac": "audio",
+      "audio/x-ms-wma": "audio"
+    };
+    
+    return contentTypeMap[contentType] || contentType; // 未知类型
   }
   
   function getContentTypeAbbreviation(contentType) {
@@ -742,7 +778,6 @@
       });
     });
   }
-
   async function getBlockPage(pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
@@ -755,7 +790,6 @@
       });
     });
   }
-
   async function getBlockPageJson(pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
@@ -783,7 +817,6 @@
       });
     });
   }
-
   async function getTxPage(height, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
@@ -796,7 +829,6 @@
       });
     });
   }
-
   async function getTxPageJson(height, pageid, pagesize) {
     const heightFiler = Number(height) < 0 ? 1 : Number(height);
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
@@ -827,7 +859,6 @@
       });
     });
   }
-
   async function getAllTxPage(pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
@@ -840,7 +871,6 @@
       });
     });
   }
-
   async function getAllTxPageJson(pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
@@ -868,7 +898,6 @@
       });
     });
   }
-
   async function getAllAddressPage(pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
@@ -881,7 +910,6 @@
       });
     });
   }
-
   async function getAllAddressPageJson(pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
@@ -898,6 +926,247 @@
     return RS;
   }
 
+  async function getAllFileTypeCount(FileType) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where item_type = '"+FileType+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+  async function getAllFileTypePage(FileType, pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where item_type = '"+FileType+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  async function getAllFileTypePageJson(FileType, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const getAddressCountValue = await getAllFileTypeCount(FileType);
+    const getAddressPageValue = await getAllFileTypePage(FileType, pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getAddressCountValue/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(getAddressPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getAddressCountValue;
+    return RS;
+  }
+
+  async function getAllFileTypeAddressCount(FileType, Address) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where item_type = '"+FileType+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+  async function getAllFileTypeAddressPage(FileType, Address, pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where item_type = '"+FileType+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  async function getAllFileTypeAddressPageJson(FileType, Address, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const FileTypeFilter = filterString(FileType)
+    const AddressFilter = filterString(Address)
+    const getAddressCountValue = await getAllFileTypeAddressCount(FileTypeFilter, AddressFilter);
+    const getAddressPageValue = await getAllFileTypeAddressPage(FileTypeFilter, AddressFilter, pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getAddressCountValue/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(getAddressPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getAddressCountValue;
+    return RS;
+  }
+
+  async function getWalletTxsAllCount(Address) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' ", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+  async function getWalletTxsAllPage(Address, pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where from_address = '"+Address+"' and is_encrypt = '' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  async function getWalletTxsAllPageJson(Address, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const AddressFilter = filterString(Address)
+    const getAddressCountValue = await getWalletTxsAllCount(AddressFilter);
+    const getAddressPageValue = await getWalletTxsAllPage(AddressFilter, pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getAddressCountValue/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(getAddressPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getAddressCountValue;
+    return RS;
+  }
+
+  async function getWalletTxsSentCount(Address) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'Tx' ", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+  async function getWalletTxsSentPage(Address, pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'Tx' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  async function getWalletTxsSentPageJson(Address, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const AddressFilter = filterString(Address)
+    const getAddressCountValue = await getWalletTxsSentCount(AddressFilter);
+    const getAddressPageValue = await getWalletTxsSentPage(AddressFilter, pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getAddressCountValue/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(getAddressPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getAddressCountValue;
+    return RS;
+  }
+
+  async function getWalletTxsReceivedCount(Address) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where target = '"+Address+"' and is_encrypt = '' ", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+  async function getWalletTxsReceivedPage(Address, pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where target = '"+Address+"' and is_encrypt = '' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  async function getWalletTxsReceivedPageJson(Address, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const AddressFilter = filterString(Address)
+    const getAddressCountValue = await getWalletTxsReceivedCount(AddressFilter);
+    const getAddressPageValue = await getWalletTxsReceivedPage(AddressFilter, pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getAddressCountValue/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(getAddressPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getAddressCountValue;
+    return RS;
+  }
+
+  async function getWalletTxsFilesCount(Address) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+  async function getWalletTxsFilesPage(Address, pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  async function getWalletTxsFilesPageJson(Address, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const AddressFilter = filterString(Address)
+    const getAddressCountValue = await getWalletTxsFilesCount(AddressFilter);
+    const getAddressPageValue = await getWalletTxsFilesPage(AddressFilter, pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getAddressCountValue/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(getAddressPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getAddressCountValue;
+    return RS;
+  }
+
+  
   function TxRowToJsonFormat(getTxPageValue) {
     const RS = []
     getTxPageValue.map((Item) =>{
@@ -1084,7 +1353,7 @@
     const inputFilePath = DataDir + '/files/' + TxId.substring(0, 2) + '/' + TxId;
     const outputFilePath = DataDir + '/thumbnail/' + TxId.substring(0, 2);
     enableDir(outputFilePath)
-    const fileType = getContentTypeAbbreviation(ContentType);
+    const fileType = contentTypeToFileType(ContentType);
     const fileTypeSuffix = String(fileType).toLowerCase();
     console.log("fileTypeSuffix", fileTypeSuffix)
     if(fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") {
@@ -1134,6 +1403,7 @@ export default {
     syncingTxChunksById,
     getTxsNotSyncing,
     getTxsHaveChunks,
+    contentTypeToFileType,
     getContentTypeAbbreviation,
     getWalletAddressBalanceFromDb,
     getBlockHeightFromDb,
@@ -1151,6 +1421,12 @@ export default {
     getAddressBalance,
     getAddressBalanceMining,
     getAllAddressPageJson,
+    getAllFileTypePageJson,
+    getAllFileTypeAddressPageJson,
+    getWalletTxsAllPageJson,
+    getWalletTxsSentPageJson,
+    getWalletTxsReceivedPageJson,
+    getWalletTxsFilesPageJson,
     isFile,
     readFile,
     writeFile,

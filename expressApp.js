@@ -96,6 +96,34 @@ expressApp.get('/wallet/:id/reserved_rewards_total', async (req, res) => {
   res.status(200).send(String(AddressBalance));  
 });
 
+expressApp.get('/wallet/:address/txsrecord/:pageid/:pagesize', async (req, res) => {
+  const { address, pageid, pagesize } = req.params;
+  const getWalletTxsAllPageJson = await syncing.getWalletTxsAllPageJson(address, pageid, pagesize);
+  console.log("getWalletTxsAllPageJson", getWalletTxsAllPageJson)
+  res.status(200).json(getWalletTxsAllPageJson);  
+});
+
+expressApp.get('/wallet/:address/sent/:pageid/:pagesize', async (req, res) => {
+  const { address, pageid, pagesize } = req.params;
+  const getWalletTxsSentPageJson = await syncing.getWalletTxsSentPageJson(address, pageid, pagesize);
+  console.log("getWalletTxsSentPageJson", getWalletTxsSentPageJson)
+  res.status(200).json(getWalletTxsSentPageJson);  
+});
+
+expressApp.get('/wallet/:address/received/:pageid/:pagesize', async (req, res) => {
+  const { address, pageid, pagesize } = req.params;
+  const getWalletTxsReceivedPageJson = await syncing.getWalletTxsReceivedPageJson(address, pageid, pagesize);
+  console.log("getWalletTxsReceivedPageJson", getWalletTxsReceivedPageJson)
+  res.status(200).json(getWalletTxsReceivedPageJson);  
+});
+
+expressApp.get('/wallet/:address/datarecord/:pageid/:pagesize', async (req, res) => {
+  const { address, pageid, pagesize } = req.params;
+  const getWalletTxsFilesPageJson = await syncing.getWalletTxsFilesPageJson(address, pageid, pagesize);
+  console.log("getWalletTxsFilesPageJson", getWalletTxsFilesPageJson)
+  res.status(200).json(getWalletTxsFilesPageJson);  
+});
+
 expressApp.get('/blockpage/:pageid/:pagesize', async (req, res) => {
   const { pageid, pagesize } = req.params;
   const getBlockPageJson = await syncing.getBlockPageJson(pageid, pagesize);
@@ -124,6 +152,19 @@ expressApp.get('/address/:pageid/:pagesize', async (req, res) => {
   res.status(200).json(getAllAddressPageJson);  
 });
 
+expressApp.get('/file/:filetype/:pageid/:pagesize', async (req, res) => {
+  const { filetype, pageid, pagesize } = req.params;
+  const getAllFileTypePageJson = await syncing.getAllFileTypePageJson(filetype, pageid, pagesize);
+  console.log("getAllFileTypePageJson", getAllFileTypePageJson)
+  res.status(200).json(getAllFileTypePageJson);  
+});
+
+expressApp.get('/file/:filetype/:address/:pageid/:pagesize', async (req, res) => {
+  const { filetype, address, pageid, pagesize } = req.params;
+  const getAllFileTypeAddressPageJson = await syncing.getAllFileTypeAddressPageJson(filetype, address, pageid, pagesize);
+  console.log("getAllFileTypeAddressPageJson", getAllFileTypeAddressPageJson)
+  res.status(200).json(getAllFileTypeAddressPageJson);  
+});
 
 
 expressApp.use(express.static(join(__dirname, 'html')));
