@@ -1,9 +1,13 @@
 // expressApp.js
 import express from 'express';
-import syncing from './syncing.js';
+import syncing from './src/syncing.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import cors from 'cors';
+import blockRoutes from './src/router/block.js'
+import txRoutes from './src/router/tx.js'
+import walletRoutes from './src/router/wallet.js'
+import fileRoutes from './src/router/file.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,11 +17,11 @@ expressApp.use(cors());
 const PORT = process.env.PORT || 3030;
 
 expressApp.get('/syncing', async (req, res) => {
-  //const result = await syncing.syncingBlock(10);
-  const result = await syncing.syncingTx(6);
-  //await syncing.syncingChunks(30);
+  //await syncing.syncingBlock(10);
+  await syncing.syncingTx(6);
+  await syncing.syncingChunks(30);
   //await syncing.syncingTxParseBundle(10);
-  res.json(result);
+  res.json({});
 });
 
 expressApp.get('/info', async (req, res) => {
@@ -25,162 +29,18 @@ expressApp.get('/info', async (req, res) => {
     res.json(getLightNodeStatusValue);
 });
 
-expressApp.get('/block/height/:id', async (req, res) => {
-  const { id } = req.params;
-  const BlockInfor = syncing.getBlockInforByHeight(id);
-  //console.log("/block/height/:id:", id);
-  res.json(JSON.parse(BlockInfor));
-});
+expressApp.use('/', blockRoutes);
+expressApp.use('/', txRoutes);
+expressApp.use('/', walletRoutes);
+expressApp.use('/', fileRoutes);
 
-expressApp.get('/block/hash/:id', async (req, res) => {
-  const { id } = req.params;
-  const BlockRow = await syncing.getBlockInforByHashFromDb(id);
-  if(BlockRow && BlockRow.height) {
-    const BlockInfor = syncing.getBlockInforByHeight(BlockRow.height);
-    //console.log("/block/hash/:id:", BlockRow.height);
-    res.json(JSON.parse(BlockInfor));
-  }
-  else {
-    //res.status(404).send('Not Found');
-    res.send("Not Found");
-  }
-});
 
-expressApp.get('/tx/:id', async (req, res) => {
-  const { id } = req.params;
-  const TxInfor = syncing.getTxInforById(id);
-  if(TxInfor && TxInfor.data && TxInfor.data_root == "") {
 
-  }
-  //console.log("/tx/:id:", id);
-  res.json(JSON.parse(TxInfor));
-});
 
-expressApp.get('/:id', async (req, res) => {
-  const { id } = req.params;
-  const {FileName, ContentType, FileContent} = await syncing.getTxData(id);
-  res.setHeader('Cache-Control', 'public, max-age=3600'); 
-  FileName ? res.setHeader('Content-Disposition', `inline; filename="${FileName}"`) : null;
-  ContentType ? res.setHeader('Content-Type', ContentType) : null;
-  res.status(200).send(FileContent);  
-});
 
-expressApp.get('/:id/thumbnail', async (req, res) => {
-  const { id } = req.params;
-  const {FileName, ContentType, FileContent} = await syncing.getTxDataThumbnail(id);
-  res.setHeader('Cache-Control', 'public, max-age=3600'); 
-  FileName ? res.setHeader('Content-Disposition', `inline; filename="${FileName}"`) : null;
-  ContentType ? res.setHeader('Content-Type', ContentType) : null;
-  res.status(200).send(FileContent);  
-});
 
-expressApp.get('/tx/:id/data', async (req, res) => {
-  const { id } = req.params;
-  const {FileName, ContentType, FileContent} = await syncing.getTxData(id);
-  res.setHeader('Cache-Control', 'public, max-age=3600'); 
-  //res.setHeader('Content-Disposition', `attachment; filename="${FileName}"`);
-  FileName ? res.setHeader('Content-Disposition', `inline; filename="${FileName}"`) : null;
-  ContentType ? res.setHeader('Content-Type', ContentType) : null;
-  res.status(200).send(FileContent);  
-});
 
-expressApp.get('/tx/:address/unbundle/:pageid/:pagesize', async (req, res) => {
-  //const { address, pageid, pagesize } = req.params;
-  //const getBlockPageJson = await syncing.getBlockPageJson(pageid, pagesize);
-  //console.log("getBlockPageJson", getBlockPageJson)
-  res.status(200).json({});  
-});
 
-expressApp.get('/wallet/:id/balance', async (req, res) => {
-  const { id } = req.params;
-  const AddressBalance = await syncing.getAddressBalance(id);
-  //console.log("AddressBalance", id, AddressBalance)
-  res.status(200).send(String(AddressBalance));  
-});
-
-expressApp.get('/wallet/:id/reserved_rewards_total', async (req, res) => {
-  const { id } = req.params;
-  const AddressBalance = await syncing.getAddressBalanceMining(id);
-  //console.log("AddressBalance", id, AddressBalance)
-  res.status(200).send(String(AddressBalance));  
-});
-
-expressApp.get('/wallet/:address/txsrecord/:pageid/:pagesize', async (req, res) => {
-  const { address, pageid, pagesize } = req.params;
-  const getWalletTxsAllPageJson = await syncing.getWalletTxsAllPageJson(address, pageid, pagesize);
-  //console.log("getWalletTxsAllPageJson", getWalletTxsAllPageJson)
-  res.status(200).json(getWalletTxsAllPageJson);  
-});
-
-expressApp.get('/wallet/:txid/txrecord', async (req, res) => {
-  const { txid, pageid, pagesize } = req.params;
-  const getWalletTxJson = await syncing.getWalletTxJson(txid, pageid, pagesize);
-  //console.log("getWalletTxJson", getWalletTxJson)
-  res.status(200).json(getWalletTxJson);  
-});
-
-expressApp.get('/wallet/:address/sent/:pageid/:pagesize', async (req, res) => {
-  const { address, pageid, pagesize } = req.params;
-  const getWalletTxsSentPageJson = await syncing.getWalletTxsSentPageJson(address, pageid, pagesize);
-  //console.log("getWalletTxsSentPageJson", getWalletTxsSentPageJson)
-  res.status(200).json(getWalletTxsSentPageJson);  
-});
-
-expressApp.get('/wallet/:address/received/:pageid/:pagesize', async (req, res) => {
-  const { address, pageid, pagesize } = req.params;
-  const getWalletTxsReceivedPageJson = await syncing.getWalletTxsReceivedPageJson(address, pageid, pagesize);
-  //console.log("getWalletTxsReceivedPageJson", getWalletTxsReceivedPageJson)
-  res.status(200).json(getWalletTxsReceivedPageJson);  
-});
-
-expressApp.get('/wallet/:address/datarecord/:pageid/:pagesize', async (req, res) => {
-  const { address, pageid, pagesize } = req.params;
-  const getWalletTxsFilesPageJson = await syncing.getWalletTxsFilesPageJson(address, pageid, pagesize);
-  //console.log("getWalletTxsFilesPageJson", getWalletTxsFilesPageJson)
-  res.status(200).json(getWalletTxsFilesPageJson);  
-});
-
-expressApp.get('/blockpage/:pageid/:pagesize', async (req, res) => {
-  const { pageid, pagesize } = req.params;
-  const getBlockPageJson = await syncing.getBlockPageJson(pageid, pagesize);
-  //console.log("getBlockPageJson", getBlockPageJson)
-  res.status(200).json(getBlockPageJson);  
-});
-
-expressApp.get('/block/txsrecord/:height/:pageid/:pagesize', async (req, res) => {
-  const { height, pageid, pagesize } = req.params;
-  const getTxPageJson = await syncing.getTxPageJson(height, pageid, pagesize);
-  //console.log("getTxPageJson", getTxPageJson.txs)
-  res.status(200).json(getTxPageJson);  
-});
-
-expressApp.get('/transaction/:pageid/:pagesize', async (req, res) => {
-  const { pageid, pagesize } = req.params;
-  const getAllTxPageJson = await syncing.getAllTxPageJson(pageid, pagesize);
-  //console.log("getAllTxPageJson", getAllTxPageJson)
-  res.status(200).json(getAllTxPageJson);  
-});
-
-expressApp.get('/address/:pageid/:pagesize', async (req, res) => {
-  const { pageid, pagesize } = req.params;
-  const getAllAddressPageJson = await syncing.getAllAddressPageJson(pageid, pagesize);
-  //console.log("getAllAddressPageJson", getAllAddressPageJson)
-  res.status(200).json(getAllAddressPageJson);  
-});
-
-expressApp.get('/file/:filetype/:pageid/:pagesize', async (req, res) => {
-  const { filetype, pageid, pagesize } = req.params;
-  const getAllFileTypePageJson = await syncing.getAllFileTypePageJson(filetype, pageid, pagesize);
-  //console.log("getAllFileTypePageJson", getAllFileTypePageJson)
-  res.status(200).json(getAllFileTypePageJson);  
-});
-
-expressApp.get('/file/:filetype/:address/:pageid/:pagesize', async (req, res) => {
-  const { filetype, address, pageid, pagesize } = req.params;
-  const getAllFileTypeAddressPageJson = await syncing.getAllFileTypeAddressPageJson(filetype, address, pageid, pagesize);
-  //console.log("getAllFileTypeAddressPageJson", getAllFileTypeAddressPageJson)
-  res.status(200).json(getAllFileTypeAddressPageJson);  
-});
 
 
 expressApp.use(express.static(join(__dirname, 'html')));

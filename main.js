@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Menu } from 'electron';
 import isDev from 'electron-is-dev'
 import { server, getPort } from './expressApp.js';
-import syncing from './syncing.js';
+import syncing from './src/syncing.js';
 
 // 启动 Express 服务器
 const PORT = getPort();
@@ -81,8 +81,8 @@ async function intervalTask() {
     console.log('Executing syncing tasks...');
     const startTime = Date.now();
     await Promise.all([
-      syncing.syncingBlockPromiseAll(50),
-      syncing.syncingTxPromiseAll(200),
+      syncing.syncingBlockPromiseAll(100),
+      syncing.syncingTxPromiseAll(100),
       syncing.syncingChunksPromiseAll(100),
       syncing.syncingTxParseBundle(50)
     ]);

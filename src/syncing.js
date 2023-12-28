@@ -176,23 +176,36 @@
   async function syncingTxById(TxId, Height) {
     // @ts-ignore
     let TxInfor = null
-    const TxJsonFilePath = DataDir + "/txs/" + TxId.substring(0, 2) + "/" + TxId + ".json";
+    let writeFileStatus = false
+    const TxJsonFilePath = DataDir + "/txs/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId + ".json";
     //console.log("TxInfor TxJsonFilePath",TxJsonFilePath)
     if(isFile(TxJsonFilePath)) {
       //Nothing to do
       const TxContent = getTxInforById(TxId);
       TxInfor = JSON.parse(TxContent)
-      console.log("syncingTxById Read Tx From Json File",TxId)
+      console.log("syncingTxById Read Tx From Json File",TxInfor.id)
+      writeFileStatus = true
+      console.log("TxInfor TagsMap",TxInfor.id)
+      if(TxInfor==undefined || TxInfor.id==undefined) {
+        try {
+          fs.unlinkSync(TxJsonFilePath);
+          console.log('File deleted successfully', TxJsonFilePath);
+        } 
+        catch (err) {
+          console.error('Error deleting file:', TxJsonFilePath, err);
+        }
+        writeFileStatus = false
+      }
     }
     else {
       const result = await axios.get(NodeApi + '/tx/' + TxId, {});
       TxInfor = result.data
       console.log("syncingTxById From Remote Node",TxId)
+      //Write Tx File
+      writeFileStatus = writeFile('txs/' + TxId.substring(0, 2).toLowerCase(), TxId + ".json", JSON.stringify(TxInfor), "syncingTxById")
     }
 
     //Write Tx File
-    const writeFileStatus = writeFile('txs/' + TxId.substring(0, 2), TxId + ".json", JSON.stringify(TxInfor), "syncingTxById")
-    //console.log("TxInfor Tags",TxInfor.tags)
     if(writeFileStatus)    {
       //Insert Tags
       TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
@@ -226,6 +239,7 @@
       //Update Tx
       const updateAddress = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, signature = ?, reward = ?, data_size = ?, data_root = ?, bundleid = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
       let from_address = '';
+      console.log("TxInfor TagsMap",TxId)
       if(TxInfor.owner && TxInfor.owner.address) {
         from_address = TxInfor.owner.address;
       }
@@ -362,7 +376,7 @@
                     insertTxBundleItem.finalize();
 
                     //Write Item Data to File
-                    writeFile('files' + Item.id.substring(0, 2), Item.id, Buffer.from(Item.data, 'base64'), "syncingTxParseBundleById")
+                    writeFile('files/' + Item.id.substring(0, 2).toLowerCase(), Item.id, Buffer.from(Item.data, 'base64'), "syncingTxParseBundleById")
 
                     //Write Item Json to File
                     const ItemJson = {}
@@ -390,7 +404,7 @@
                     ItemJson.signatureType = Item.signatureType
                     ItemJson.bundleid = TxId
                     //console.log("ItemJson", JSON.stringify(ItemJson))
-                    writeFile('txs/' + Item.id.substring(0, 2), Item.id + '.json', JSON.stringify(ItemJson), "syncingTxParseBundleById")
+                    writeFile('txs/' + Item.id.substring(0, 2).toLowerCase(), Item.id + '.json', JSON.stringify(ItemJson), "syncingTxParseBundleById")
 
                     //Update Tx Status
                     const EntityType    = TagsMap['Entity-Type'];
@@ -492,11 +506,11 @@
     let data_root_status = 0;
     try {
         const arrayBuffer = await fetch(NodeApi + '/' + TxId).then(res => res.arrayBuffer()).catch(() => {})
-        const FileBuffer = Buffer.from(arrayBuffer);
         //Write Chunks File
-        if(FileBuffer.length > 0) {
+        if(arrayBuffer && arrayBuffer.length > 0) {
+            const FileBuffer = Buffer.from(arrayBuffer);
             data_root_status = 200
-            writeFile('files' + TxId.substring(0, 2), TxId, FileBuffer, "syncingTxChunksById")
+            writeFile('files/' + TxId.substring(0, 2).toLowerCase(), TxId, FileBuffer, "syncingTxChunksById")
         }
         else {
             data_root_status = 404
@@ -680,7 +694,7 @@
     const BlockJsonFilePath = DataDir + "/blocks/" + BlockHeightDir + "/" + currentHeight + ".json";
     if(isFile(BlockJsonFilePath)) {
       //Nothing to do
-      BlockContent = getBlockInforByHeight(currentHeight);
+      const BlockContent = getBlockInforByHeight(currentHeight);
       BlockInfor = JSON.parse(BlockContent)
       console.log("syncingBlockByHeight Read Block From Json File",BlockInfor.reward_addr, currentHeight)
     }
@@ -1260,16 +1274,16 @@
 
   function getTxInforById(TxId) {
     const TxIdFilter = filterString(TxId)
-    const TxContent = readFile("txs/" + TxIdFilter.substring(0, 2), TxIdFilter + '.json', "getTxInforById", 'utf-8');
+    const TxContent = readFile("txs/" + TxIdFilter.substring(0, 2).toLowerCase(), TxIdFilter + '.json', "getTxInforById", 'utf-8');
     return TxContent;
   }
 
   async function getTxData(TxId) {
     const TxIdFilter = filterString(TxId)
     const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxIdFilter);
-    let FileContent = readFile("files/" + TxIdFilter.substring(0, 2), TxIdFilter, "getTxData", null);
+    let FileContent = readFile("files/" + TxIdFilter.substring(0, 2).toLowerCase(), TxIdFilter, "getTxData", null);
     if(FileContent == null) {
-        const TxContent = readFile("txs/" + TxIdFilter.substring(0, 2), TxIdFilter + '.json', "getTxData", 'utf-8');
+        const TxContent = readFile("txs/" + TxIdFilter.substring(0, 2).toLowerCase(), TxIdFilter + '.json', "getTxData", 'utf-8');
         const TxContentJson = JSON.parse(TxContent);
         if(TxContentJson && TxContentJson.data && TxContentJson.data_root == '') {
             FileContent = TxContentJson;
@@ -1331,13 +1345,18 @@
 
   function filterString(input) {
     console.log("filterString input:", input)
-    const sanitizedInput = input?.replace(/[^a-zA-Z0-9_\-@. ]/g, '');
-    return sanitizedInput;
+    if(input) {
+      const sanitizedInput = input?.replace(/[^a-zA-Z0-9_\-@. ]/g, '');
+      return sanitizedInput;
+    }
+    else {
+      return input;
+    }
   }
 
   async function getTxDataThumbnail(TxId) {
     mkdirForData();
-    const TxContent = readFile("txs/" + TxId.substring(0, 2), TxId + '.json', "getTxDataThumbnail", 'utf-8');
+    const TxContent = readFile("txs/" + TxId.substring(0, 2).toLowerCase(), TxId + '.json', "getTxDataThumbnail", 'utf-8');
     const TxInfor = JSON.parse(TxContent);
     //console.log("TxInfor", TxInfor);
     const TagsMap = {}
@@ -1348,19 +1367,19 @@
     const ContentType = TagsMap['Content-Type']
 
     //Thumbnail Exist
-    const compressFilePath = DataDir + "/thumbnail/" + TxId.substring(0, 2) + "/" + TxId
+    const compressFilePath = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
     if(isFile(compressFilePath)) {
       console.log("compressFilePath", compressFilePath)
-      const FileContent = readFile("thumbnail/" + TxId.substring(0, 2), TxId, "getTxDataThumbnail", null);
+      const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
       return {FileName, ContentType, FileContent};
     }
 
     //Compress File
-    const inputFilePath = DataDir + '/files/' + TxId.substring(0, 2) + '/' + TxId;
-    const outputFilePath = DataDir + '/thumbnail/' + TxId.substring(0, 2);
+    const inputFilePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
+    const outputFilePath = DataDir + '/thumbnail/' + TxId.substring(0, 2).toLowerCase();
     enableDir(outputFilePath)
     const fileType = contentTypeToFileType(ContentType);
-    const fileTypeSuffix = String(fileType).toLowerCase();
+    const fileTypeSuffix = String(fileType).toLowerCase()();
     console.log("fileTypeSuffix", fileTypeSuffix)
     if(fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") {
         sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath, (err, info) => {
@@ -1380,15 +1399,15 @@
     }
 
     //Thumbnail Exist
-    const compressFilePath2 = DataDir + "/thumbnail/" + TxId.substring(0, 2) + "/" + TxId
+    const compressFilePath2 = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
     if(isFile(compressFilePath2)) {
       console.log("compressFilePath2", compressFilePath2)
-      const FileContent = readFile("thumbnail/" + TxId.substring(0, 2), TxId, "getTxDataThumbnail", null);
+      const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
       return {FileName, ContentType, FileContent};
     }
 
     //Out Original File Content
-    const FileContent = readFile("files/" + TxId.substring(0, 2), TxId, "getTxDataThumbnail", null);
+    const FileContent = readFile("files/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
     return {FileName, ContentType, FileContent};
 
   }
