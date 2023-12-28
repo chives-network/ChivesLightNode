@@ -11,10 +11,10 @@ const expressApp = express();
 const PORT = process.env.PORT || 3030;
 
 expressApp.get('/syncing', async (req, res) => {
-  const result = await syncing.syncingBlock(10);
-  //const result = await syncing.syncingTx(6);
-  //await syncing.syncingChunks(300);
-  //const result = await syncing.syncingTxParseBundle(50);
+  //const result = await syncing.syncingBlock(10);
+  const result = await syncing.syncingTx(6);
+  //await syncing.syncingChunks(30);
+  //await syncing.syncingTxParseBundle(10);
   res.json(result);
 });
 
@@ -25,7 +25,7 @@ expressApp.get('/info', async (req, res) => {
 
 expressApp.get('/block/height/:id', async (req, res) => {
   const { id } = req.params;
-  const BlockInfor = await syncing.getBlockInforByHeight(id);
+  const BlockInfor = syncing.getBlockInforByHeight(id);
   console.log("/block/height/:id:", id);
   res.json(JSON.parse(BlockInfor));
 });
@@ -34,7 +34,7 @@ expressApp.get('/block/hash/:id', async (req, res) => {
   const { id } = req.params;
   const BlockRow = await syncing.getBlockInforByHashFromDb(id);
   if(BlockRow && BlockRow.height) {
-    const BlockInfor = await syncing.getBlockInforByHeight(BlockRow.height);
+    const BlockInfor = syncing.getBlockInforByHeight(BlockRow.height);
     console.log("/block/hash/:id:", BlockRow.height);
     res.json(JSON.parse(BlockInfor));
   }
@@ -46,7 +46,7 @@ expressApp.get('/block/hash/:id', async (req, res) => {
 
 expressApp.get('/tx/:id', async (req, res) => {
   const { id } = req.params;
-  const TxInfor = await syncing.getTxInforById(id);
+  const TxInfor = syncing.getTxInforById(id);
   if(TxInfor && TxInfor.data && TxInfor.data_root == "") {
 
   }
