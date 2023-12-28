@@ -451,13 +451,13 @@
                                 break;
                             case 'Agent':
                                 //EntityTarget, FromAddress, BlockTimestamp
-                                const updateBundleAddressAgent = db.prepare("update address set Agent = ?, timestamp = ? where address = ? and Agent = '0'");
+                                const updateBundleAddressAgent = db.prepare("update address set Agent = ?, timestamp = ? where id = ? and Agent = '0'");
                                 updateBundleAddressAgent.run('1', timestamp, from_address);
                                 updateBundleAddressAgent.finalize();
                                 break;
                             case 'Referee':
                                 //EntityTarget, FromAddress, BlockTimestamp
-                                const updateBundleAddressReferee = db.prepare("update address set referee = ? where address = ? and referee is null");
+                                const updateBundleAddressReferee = db.prepare("update address set referee = ? where id = ? and referee is null");
                                 updateBundleAddressReferee.run(EntityTarget, from_address);
                                 updateBundleAddressReferee.finalize();
                                 break;
@@ -695,7 +695,7 @@
     
 
     //Insert Address
-    const insertAddress = db.prepare('INSERT OR IGNORE INTO address (address, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     insertAddress.run(BlockInfor.reward_addr, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
     insertAddress.finalize();
   
@@ -708,7 +708,7 @@
       //console.log("AddressBalanceNodeApi", AddressBalance)
     }
     //console.log("AddressBalance", AddressBalance)
-    const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where address = ?');
+    const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
     updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, BlockInfor.reward_addr);
     updateAddress.finalize();
     
@@ -808,7 +808,7 @@
 
   async function getTxCount(Height) {
     return new Promise((resolve, reject) => {
-      db.get("SELECT COUNT(*) AS NUM FROM tx where block_height ='"+ Number(Height) +"'", (err, result) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where from_address is not null and block_height ='"+ Number(Height) +"'", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -820,7 +820,7 @@
   async function getTxPage(height, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
-      db.all("SELECT * FROM tx where block_height ='"+ Number(height) +"' order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx where from_address is not null and block_height ='"+ Number(height) +"' order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -850,7 +850,7 @@
 
   async function getAllTxCount() {
     return new Promise((resolve, reject) => {
-      db.get("SELECT COUNT(*) AS NUM FROM tx", (err, result) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where from_address is not null", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -862,7 +862,7 @@
   async function getAllTxPage(pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
-      db.all("SELECT * FROM tx order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx where from_address is not null order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -901,7 +901,7 @@
   async function getAllAddressPage(pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
-      db.all("SELECT * FROM address order by address desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM address order by balance desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -963,6 +963,12 @@
     RS['pagesize'] = pagesizeFiler;
     RS['total'] = getAddressCountValue;
     return RS;
+  }
+
+  async function getWalletTxJson(TxId) {
+    const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxId);
+    //console.log("getTxInforByIdFromDbValue", getTxInforByIdFromDbValue)
+    return TxRowToJsonFormat([getTxInforByIdFromDbValue])[0];
   }
 
   async function getAllFileTypeAddressCount(FileType, Address) {
@@ -1166,7 +1172,7 @@
     return RS;
   }
 
-  
+
   function TxRowToJsonFormat(getTxPageValue) {
     const RS = []
     getTxPageValue.map((Item) =>{
@@ -1206,7 +1212,7 @@
 
   async function getWalletAddressBalanceFromDb(Address) {
     return new Promise((resolve, reject) => {
-      db.get("SELECT balance FROM address where address = '"+ Address +"'", (err, result) => {
+      db.get("SELECT balance FROM address where id = '"+ Address +"'", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1423,6 +1429,7 @@ export default {
     getAllAddressPageJson,
     getAllFileTypePageJson,
     getAllFileTypeAddressPageJson,
+    getWalletTxJson,
     getWalletTxsAllPageJson,
     getWalletTxsSentPageJson,
     getWalletTxsReceivedPageJson,

@@ -9,7 +9,7 @@ const db = new sqlite3Verbose.Database(DataDir + '/chiveslightnode.db'); // or p
 db.serialize(() => {
     db.run(`
         CREATE TABLE IF NOT EXISTS address (
-            address TEXT PRIMARY KEY,
+            id TEXT PRIMARY KEY,
             balance INTEGER,
             txs INTEGER DEFAULT 0,
             sent INTEGER DEFAULT 0,
