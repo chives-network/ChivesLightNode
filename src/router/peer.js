@@ -8,13 +8,13 @@
   router.get('/peers', async (req, res) => {
     const getPeers = await syncing.getPeers();
     console.log("getPeers", getPeers)
-    res.status(200).json(getPeers);  
+    res.status(200).json(getPeers).end();  
   });
   
   router.get('/peersinfo', async (req, res) => {
     const getPeersInfo = await syncing.getPeersInfo();
     //console.log("getPeersInfo", getPeersInfo)
-    res.status(200).json(getPeersInfo);  
+    res.status(200).json(getPeersInfo).end();  
   });
 
   export default router;

@@ -107,6 +107,13 @@ db.serialize(() => {
             value TEXT
         );
     `);
+    db.run(`
+        CREATE TABLE IF NOT EXISTS blacklist (
+            id TEXT PRIMARY KEY,
+            reason TEXT,
+            timestamp TEXT
+        );
+    `);
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_id ON block (id);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_height ON block (height);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_indep_hash ON block (indep_hash);`);

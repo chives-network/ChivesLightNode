@@ -1,4 +1,4 @@
-  const NodeApi = "http://112.170.68.77:1987";
+  const NodeApi = "http://112.170.68.77:1985";
   import db from './db.js'
   import axios from 'axios'
   import fs from 'fs'
@@ -6,8 +6,6 @@
   import { unbundleData } from 'arbundles'
   import Arweave from 'arweave'
 
-  import imagemin from 'imagemin';
-  import imageminPngquant from 'imagemin-pngquant';
   import { join } from 'path';
   //const imagemin = require('imagemin');
   //const optipng = require('imagemin-optipng');
@@ -223,6 +221,7 @@
         insertTag.finalize();
       })
     
+      //console.log("TxInfor TagsMap",TxInfor)
       //Tags Data
       const newTags = []
       const TagsMap = {}
@@ -231,6 +230,8 @@
           TagsMap[Tag.name] = Tag.value;
           newTags.push({'name':Tag.name, 'value':Tag.value})
         })
+        TxInfor.owner = TxInfor.owner.key
+        TxInfor.quantity = TxInfor.quantity.winston
         //console.log("TxInfor TagsMap",TagsMap)
       }
       else {
@@ -242,18 +243,23 @@
         })
         //console.log("TxInfor TagsMap",TagsMap)
       }
+      //console.log("TxInfor TagsMap",TxInfor)
       
       //Update Tx
-      const updateAddress = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, signature = ?, reward = ?, data_size = ?, data_root = ?, bundleid = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
+      const updateAddress = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, signature = ?, reward = ?, data_size = ?, data_root = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
       let from_address = '';
-      console.log("TxInfor TagsMap",TxId)
+      //console.log("TxInfor TagsMap",TxInfor)
       if(TxInfor.owner && TxInfor.owner.address) {
         from_address = TxInfor.owner.address;
+        TxInfor.owner = TxInfor.owner.key
+        TxInfor.quantity = TxInfor.quantity.winston
       }
-      else {
+      else if(TxInfor.owner) {
         from_address = await ownerToAddress(TxInfor.owner);
       }
-      const bundleid = "";
+      else {
+        from_address = "";
+      }
       const item_name = TagsMap['File-Name'] || "";
       const item_type = contentTypeToFileType(TagsMap['Content-Type']);
       const item_parent = TagsMap['File-Parent'] || "Root";
@@ -280,7 +286,7 @@
       else {
           entity_type = "Tx";
       }    
-      updateAddress.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.signature, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, bundleid, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
+      updateAddress.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.signature, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
       updateAddress.finalize();
 
       console.log("TxInfor from_address: ", from_address)
@@ -331,7 +337,7 @@
                     //console.log("unbundleItems",Item)
                     console.log("unbundleItems id", Item.id, Item.tags)
                     //console.log("unBundleItem tags",Item.tags)
-                    //console.log("unBundleItem owner",Item.owner)
+                    console.log("unBundleItem owner",Item.owner)
                     //console.log("unBundleItem anchor",Item.anchor)
                     //console.log("unBundleItem target",Item.target)
                     //console.log("unBundleItem signature",Item.signature)
@@ -517,6 +523,7 @@
     try {
         const arrayBuffer = await fetch(NodeApi + '/' + TxId).then(res => res.arrayBuffer()).catch(() => {})
         //Write Chunks File
+        console.log("syncingTxChunksById arrayBuffer:", TxId, arrayBuffer)
         if(arrayBuffer && arrayBuffer.byteLength && arrayBuffer.byteLength > 0) {
             const FileBuffer = Buffer.from(arrayBuffer);
             data_root_status = 200
@@ -524,7 +531,17 @@
         }
         else {
             data_root_status = 404
-            console.log("syncingTxChunksById Error:", data_root_status, TxId)
+            const TxContent = getTxInforById(TxId)
+            const TxInfor = JSON.parse(TxContent)
+            const TagsMap = {}
+            TagsMap['Content-Type'] = ''
+            TagsMap['File-Name'] = ''
+            TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
+              const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
+              const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
+              TagsMap[TagName] = TagValue;
+            })
+            console.log("syncingTxChunksById Error:", data_root_status, TxId, TagsMap['Content-Type'], TagsMap['File-Name'])
         }
     } 
     catch (error) {
@@ -968,6 +985,16 @@
     return getTxBundleItemPageJsonValue;
   }
 
+  async function getTxPending() {
+    const TxPending = await axios.get(NodeApi + '/tx/pending', {}).then(res=>res.data);
+    return TxPending;
+  }
+
+  async function getTxStatusById(TxId) {
+    const TxStatus = await axios.get(NodeApi + '/tx/'+TxId+'/status', {}).then(res=>res.data);
+    return TxStatus;
+  }
+
   async function getAllAddressCount() {
     return new Promise((resolve, reject) => {
       db.get("SELECT COUNT(*) AS NUM FROM address", (err, result) => {
@@ -1265,7 +1292,6 @@
   async function calculatePeers() {
     const peersList = await axios.get(NodeApi + '/peers', {}).then(res=>res.data);
     const HaveIpLocationPeersList = await getPeers();
-    console.log("HaveIpLocationPeersList", HaveIpLocationPeersList)
     if(peersList && peersList.length > 0) {
       peersList.map(async (PeerAndPort)=>{
         if(!HaveIpLocationPeersList.includes(PeerAndPort)) {
@@ -1278,6 +1304,7 @@
           insertTag.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code, '0');
           insertTag.finalize();
           console.log("IPJSON", IPJSON)
+          console.log("PeerAndPort", PeerAndPort)
         }
 
       })
@@ -1304,6 +1331,7 @@
       const ItemJson = {}
       ItemJson.id = Item.id
       ItemJson.owner = {}
+      ItemJson.owner.key = Item.owner
       ItemJson.owner.address = Item.from_address
       //ItemJson.owner.key = Item.owner
       ItemJson.anchor = Item.anchor
@@ -1470,6 +1498,7 @@
     const TxContent = readFile("txs/" + TxId.substring(0, 2).toLowerCase(), TxId + '.json', "getTxDataThumbnail", 'utf-8');
     const TxInfor = JSON.parse(TxContent);
     //console.log("TxInfor", TxInfor);
+    
     const TagsMap = {}
     TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
       TagsMap[Tag.name] = Tag.value;
@@ -1489,23 +1518,19 @@
     const inputFilePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
     const outputFilePath = DataDir + '/thumbnail/' + TxId.substring(0, 2).toLowerCase();
     enableDir(outputFilePath)
-    const fileType = contentTypeToFileType(ContentType);
+    const fileType = getContentTypeAbbreviation(ContentType);
     const fileTypeSuffix = String(fileType).toLowerCase();
     console.log("fileTypeSuffix", fileTypeSuffix)
     if(fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") {
-        sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath, (err, info) => {
+        sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
             console.log("getTxDataThumbnail sharp:", err, info)
         });
     }
     else if(fileTypeSuffix == "png") {
-      const files = await imagemin([inputFilePath], {
-          destination: outputFilePath,
-          plugins: [
-              imageminPngquant()
-          ]
+      sharp(inputFilePath).png({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
+        console.log("getTxDataThumbnail sharp:", err, info)
       });
-      console.log("getTxDataThumbnail compressedImage:", files)
-    }    
+    }
     else if(fileTypeSuffix == "gif") {
     }
 
@@ -1537,6 +1562,9 @@
       DeleteTxs.run(Address);
     })
     DeleteTxs.finalize();    
+    const DeleteBlackListTxs = db.prepare("DELETE FROM tx WHERE id IN (SELECT id FROM blacklist)");
+    DeleteBlackListTxs.run();
+    DeleteBlackListTxs.finalize(); 
   }
 
   export default {
@@ -1572,6 +1600,8 @@
     getTxDataThumbnail,
     getTxBundleItemPageJson,
     getTxBundleItemsInUnbundle,
+    getTxPending,
+    getTxStatusById,
     getAddressBalance,
     getAddressBalanceMining,
     getAllAddressPageJson,
