@@ -42,7 +42,21 @@
     res.status(200).json(getWalletTxsSentPageJson);  
   });
 
+  router.get('/wallet/:address/send/:pageid/:pagesize', async (req, res) => {
+    const { address, pageid, pagesize } = req.params;
+    const getWalletTxsSentPageJson = await syncing.getWalletTxsSentPageJson(address, pageid, pagesize);
+    //console.log("getWalletTxsSentPageJson", getWalletTxsSentPageJson)
+    res.status(200).json(getWalletTxsSentPageJson);  
+  });
+
   router.get('/wallet/:address/received/:pageid/:pagesize', async (req, res) => {
+    const { address, pageid, pagesize } = req.params;
+    const getWalletTxsReceivedPageJson = await syncing.getWalletTxsReceivedPageJson(address, pageid, pagesize);
+    //console.log("getWalletTxsReceivedPageJson", getWalletTxsReceivedPageJson)
+    res.status(200).json(getWalletTxsReceivedPageJson);  
+  });
+
+  router.get('/wallet/:address/deposits/:pageid/:pagesize', async (req, res) => {
     const { address, pageid, pagesize } = req.params;
     const getWalletTxsReceivedPageJson = await syncing.getWalletTxsReceivedPageJson(address, pageid, pagesize);
     //console.log("getWalletTxsReceivedPageJson", getWalletTxsReceivedPageJson)

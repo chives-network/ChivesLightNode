@@ -5,8 +5,20 @@ const DataDir = "D:/GitHub/ChivesweaveDataDir";
 
 const db = new sqlite3Verbose.Database(DataDir + '/chiveslightnode.db'); // or provide a file path for persistent storage
 
-
 db.serialize(() => {
+    db.run(`
+        CREATE TABLE IF NOT EXISTS peers (
+            ip TEXT PRIMARY KEY,
+            isp TEXT not null,
+            country TEXT not null,
+            region TEXT not null,
+            city TEXT not null,
+            location TEXT not null,
+            area_code TEXT not null,
+            country_code TEXT not null,
+            status TEXT not null
+        );
+    `);
     db.run(`
         CREATE TABLE IF NOT EXISTS address (
             id TEXT PRIMARY KEY,

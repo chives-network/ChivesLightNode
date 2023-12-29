@@ -84,7 +84,9 @@ async function intervalTask() {
       syncing.syncingBlockPromiseAll(100),
       syncing.syncingTxPromiseAll(100),
       syncing.syncingChunksPromiseAll(100),
-      syncing.syncingTxParseBundle(50)
+      syncing.syncingTxParseBundle(50),
+      syncing.calculatePeers(),
+      syncing.deleteBlackTxsAndAddress()
     ]);
     const executionTime = Date.now() - startTime;
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);

@@ -2,18 +2,19 @@
   import db from './db.js'
   import axios from 'axios'
   import fs from 'fs'
-  import base64url from 'base64url'
   import sharp from 'sharp'
   import { unbundleData } from 'arbundles'
   import Arweave from 'arweave'
 
   import imagemin from 'imagemin';
   import imageminPngquant from 'imagemin-pngquant';
-  import { join, extname } from 'path';
+  import { join } from 'path';
   //const imagemin = require('imagemin');
   //const optipng = require('imagemin-optipng');
 
   const DataDir = "D:/GitHub/ChivesweaveDataDir";
+  const BlackListTxs = [];
+  const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
 
   const arweave = Arweave.init({
     host: '112.170.68.77',
@@ -57,7 +58,7 @@
       const result = [];
       for (const TxList of getTxsNotSyncingList) {
         const TxInfor = await syncingTxById(TxList.id, TxList.block_height);
-        console.log("syncingTx TxInfor: ", TxList.id, TxInfor.reward)
+        console.log("syncingTx TxInfor: ", TxList.id, TxInfor.id)
         result.push(TxInfor)
       }
       return result;
@@ -77,7 +78,7 @@
         getTxsNotSyncingList.map(async (TxList) => {
           try {
             const TxInfor = await syncingTxById(TxList.id, TxList.block_height);
-            console.log("syncingTxPromiseAll TxInfor: ", TxList.id, TxInfor.reward);
+            console.log("syncingTxPromiseAll TxInfor: ", TxList.id, TxInfor.id);
             return TxInfor;
           } 
           catch (error) {
@@ -125,7 +126,7 @@
     try {
       const result = [];
       for (const TxList of getTxsHaveChunksList) {
-        const TxInfor = await syncingTxChunksById(TxList.id, TxList.block_height);
+        const TxInfor = await syncingTxChunksById(TxList.id);
         result.push(TxInfor)
       }
       return result;
@@ -136,6 +137,12 @@
     }
   }
 
+  async function resetTx404() {
+    const updateDataRootStatus = db.prepare("update tx set data_root_status = ? where data_root_status = ?");
+    updateDataRootStatus.run('', '404');
+    updateDataRootStatus.finalize();
+  }
+
   async function syncingChunksPromiseAll(TxCount = 5) {
     try {
       const getTxsHaveChunksList = await getTxsHaveChunks(TxCount);
@@ -144,7 +151,7 @@
       const result = await Promise.all(
         getTxsHaveChunksList.map(async (TxList) => {
           try {
-            const TxInfor = await syncingTxChunksById(TxList.id, TxList.block_height);
+            const TxInfor = await syncingTxChunksById(TxList.id);
             return TxInfor;
           } catch (error) {
             console.error("syncingChunks error fetching block data:", error.message);
@@ -307,13 +314,16 @@
     //syncingChunksPromiseAll(50);
     //Write Tx File
     const TxId = TxInfor.id;
-    const BundlePath = DataDir + '/files/' + TxId;
-    console.log("syncingTxParseBundleById unBundleItem id",BundlePath)
+    const BundlePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
+    if( isFile(BundlePath) == false ) {
+      await syncingTxChunksById(TxId);
+      console.log("syncingTxParseBundleById unBundleItem id",BundlePath)
+    }
     if( isFile(BundlePath) ) {
         console.log("syncingTxParseBundleById Exist", BundlePath)  
         try {
             //const TxInfor = await getTxInforByIdFromDb(TxId);
-            //console.log("TxInfor TxInfor",TxInfor)
+            console.log("syncingTxParseBundleById TxInfor",TxInfor)
             const FileContent = fs.readFileSync(BundlePath);
             try {
                 const unbundleItems = unbundleData(FileContent);
@@ -392,7 +402,7 @@
                     ItemJson.block.timestamp = timestamp
                     ItemJson.data = {}
                     ItemJson.data.size = data_size
-                    ItemJson.data.type = content_type
+                    ItemJson.data.type = contentTypeToFileType(content_type)
                     ItemJson.fee = {}
                     ItemJson.fee.winston = 0
                     ItemJson.fee.xwe = 0
@@ -459,7 +469,7 @@
                                 break;
                             case 'Profile':
                                 //DataItemId, BlockTimestamp, BlockHeight, FromAddress, LastTxChange
-                                const updateBundleAddressProfile = db.prepare('update address set profile = ?, timestamp = ?, last_tx_action = ? where (last_tx_action is null and address = ?) or (address = ? and last_tx_action = ?)');
+                                const updateBundleAddressProfile = db.prepare('update address set profile = ?, timestamp = ?, last_tx_action = ? where (last_tx_action is null and id = ?) or (id = ? and last_tx_action = ?)');
                                 updateBundleAddressProfile.run(Item.id, timestamp, block_height, from_address, from_address, LastTxChange);
                                 updateBundleAddressProfile.finalize();
                                 break;
@@ -507,13 +517,14 @@
     try {
         const arrayBuffer = await fetch(NodeApi + '/' + TxId).then(res => res.arrayBuffer()).catch(() => {})
         //Write Chunks File
-        if(arrayBuffer && arrayBuffer.length > 0) {
+        if(arrayBuffer && arrayBuffer.byteLength && arrayBuffer.byteLength > 0) {
             const FileBuffer = Buffer.from(arrayBuffer);
             data_root_status = 200
             writeFile('files/' + TxId.substring(0, 2).toLowerCase(), TxId, FileBuffer, "syncingTxChunksById")
         }
         else {
             data_root_status = 404
+            console.log("syncingTxChunksById Error:", data_root_status, TxId)
         }
     } 
     catch (error) {
@@ -607,7 +618,10 @@
     const BeginHeight = getBlockHeightFromDbValue + 1;
     console.log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
     try {
-      const BlockHeightRange = Array.from({ length: EveryTimeDealBlockCount }, (_, index) => BeginHeight + index);
+      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
+      const MaxHeight = MinerNodeStatus.height;
+      const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight)
+      const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
       console.log("BlockHeightRange:", BlockHeightRange);
       const result = [];
       for (const Height of BlockHeightRange) {
@@ -628,7 +642,10 @@
       const BeginHeight = getBlockHeightFromDbValue + 1;
       console.log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
   
-      const BlockHeightRange = Array.from({ length: EveryTimeDealBlockCount }, (_, index) => BeginHeight + index);
+      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
+      const MaxHeight = MinerNodeStatus.height;
+      const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight)
+      const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
       console.log("BlockHeightRange:", BlockHeightRange);
   
       const result = await Promise.all(
@@ -901,6 +918,56 @@
     return RS;
   }
 
+  async function getTxBundleItemCount(txid) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where bundleid = '"+txid+"' and from_address is not null", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+  async function getTxBundleItemPage(txid, pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where bundleid = '"+txid+"' and from_address is not null order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  async function getTxBundleItemPageJson(txid, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const getTxCountValue = await getTxBundleItemCount(txid);
+    const getTxPageValue = await getTxBundleItemPage(txid, pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getTxCountValue/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(getTxPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getTxCountValue;
+    return RS;
+  }
+
+  async function getTxBundleItemsInUnbundle(txid, pageid, pagesize) {
+    const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(txid);
+    await syncingTxParseBundleById(getTxInforByIdFromDbValue);
+    const getTxBundleItemPageJsonValue = await getTxBundleItemPageJson(txid, pageid, pagesize);
+    const txArray = TxRowToJsonFormat([getTxInforByIdFromDbValue]);
+    getTxBundleItemPageJsonValue['tx'] = txArray[0];
+    getTxBundleItemPageJsonValue['txs'] = getTxBundleItemPageJsonValue['data'];
+    console.log("getTxBundleItemPageJsonValue", getTxBundleItemPageJsonValue);
+    return getTxBundleItemPageJsonValue;
+  }
+
   async function getAllAddressCount() {
     return new Promise((resolve, reject) => {
       db.get("SELECT COUNT(*) AS NUM FROM address", (err, result) => {
@@ -981,7 +1048,7 @@
 
   async function getWalletTxJson(TxId) {
     const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxId);
-    //console.log("getTxInforByIdFromDbValue", getTxInforByIdFromDbValue)
+    console.log("getTxInforByIdFromDbValue", getTxInforByIdFromDbValue)
     return TxRowToJsonFormat([getTxInforByIdFromDbValue])[0];
   }
 
@@ -1080,7 +1147,7 @@
   async function getWalletTxsSentPage(Address, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
-      db.all("SELECT * FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'Tx' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx where from_address = '"+Address+"' and is_encrypt = '' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1186,6 +1253,50 @@
     return RS;
   }
 
+  async function getPeers() {
+    const getPeersInfoValue = await getPeersInfo();
+    const RS = [];
+    getPeersInfoValue.map((Peer)=>{
+      RS.push(Peer.ip)
+    })
+    return RS;
+  }
+
+  async function calculatePeers() {
+    const peersList = await axios.get(NodeApi + '/peers', {}).then(res=>res.data);
+    const HaveIpLocationPeersList = await getPeers();
+    console.log("HaveIpLocationPeersList", HaveIpLocationPeersList)
+    if(peersList && peersList.length > 0) {
+      peersList.map(async (PeerAndPort)=>{
+        if(!HaveIpLocationPeersList.includes(PeerAndPort)) {
+          const PeerAndPortArray = PeerAndPort.split(':');
+          const ip = PeerAndPortArray[0];
+          const url = `https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data&ip=${ip}`;
+          const IPJSON = await axios.get(url, {}).then(res=>res.data);
+
+          const insertTag = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+          insertTag.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code, '0');
+          insertTag.finalize();
+          console.log("IPJSON", IPJSON)
+        }
+
+      })
+    }
+    return peersList;
+  }
+
+  async function getPeersInfo() {  
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * from peers where 1=1", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  
 
   function TxRowToJsonFormat(getTxPageValue) {
     const RS = []
@@ -1196,14 +1307,14 @@
       ItemJson.owner.address = Item.from_address
       //ItemJson.owner.key = Item.owner
       ItemJson.anchor = Item.anchor
-      ItemJson.tags = JSON.parse(Item.tags)
+      ItemJson.tags = Item.tags ? JSON.parse(Item.tags) : []
       ItemJson.block = {}
       ItemJson.block.height = Item.block_height
       ItemJson.block.indep_hash = Item.block_indep_hash
       ItemJson.block.timestamp = Item.timestamp
       ItemJson.data = {}
       ItemJson.data.size = Item.data_size
-      ItemJson.data.type = Item.content_type
+      ItemJson.data.type = contentTypeToFileType(Item.content_type)
       ItemJson.fee = {}
       ItemJson.fee.winston = Item.reward
       ItemJson.fee.xwe = String(Item.reward/1000000000000)
@@ -1379,7 +1490,7 @@
     const outputFilePath = DataDir + '/thumbnail/' + TxId.substring(0, 2).toLowerCase();
     enableDir(outputFilePath)
     const fileType = contentTypeToFileType(ContentType);
-    const fileTypeSuffix = String(fileType).toLowerCase()();
+    const fileTypeSuffix = String(fileType).toLowerCase();
     console.log("fileTypeSuffix", fileTypeSuffix)
     if(fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") {
         sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath, (err, info) => {
@@ -1415,7 +1526,20 @@
   async function compressImage(TxId, ContentType) {
   }
 
-export default {
+  async function deleteBlackTxsAndAddress() {
+    const DeleteAddress = db.prepare("delete from tx where from_address = ?");
+    BlackListAddress.map((Address)=>{
+      DeleteAddress.run(Address);
+    })
+    DeleteAddress.finalize();
+    const DeleteTxs = db.prepare("delete from tx where id = ?");
+    BlackListTxs.map((Address)=>{
+      DeleteTxs.run(Address);
+    })
+    DeleteTxs.finalize();    
+  }
+
+  export default {
     syncingBlock,
     syncingBlockPromiseAll,
     syncingBlockByHeight,
@@ -1425,7 +1549,9 @@ export default {
     syncingChunks,
     syncingChunksPromiseAll,
     syncingTxParseBundle,
+    syncingTxParseBundleById,
     syncingTxChunksById,
+    resetTx404,
     getTxsNotSyncing,
     getTxsHaveChunks,
     contentTypeToFileType,
@@ -1441,8 +1567,11 @@ export default {
     getTxPageJson,
     getAllTxPageJson,
     getTxInforById,
+    getTxInforByIdFromDb,
     getTxData,
     getTxDataThumbnail,
+    getTxBundleItemPageJson,
+    getTxBundleItemsInUnbundle,
     getAddressBalance,
     getAddressBalanceMining,
     getAllAddressPageJson,
@@ -1453,10 +1582,14 @@ export default {
     getWalletTxsSentPageJson,
     getWalletTxsReceivedPageJson,
     getWalletTxsFilesPageJson,
+    getPeers,
+    getPeersInfo,
+    calculatePeers,
     isFile,
     readFile,
     writeFile,
     filterString,
     compressImage,
-    mkdirForData
-};
+    mkdirForData,
+    deleteBlackTxsAndAddress
+  };

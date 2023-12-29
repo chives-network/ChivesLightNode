@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "npm run electron",
-    "electron": "electron main",
-    "express": "nodemon expressApp",
+    "electron": "electron main.js",
+    "express": "nodemon expressApp.js",
     "build": "electron-builder"
   },
   "keywords": [],

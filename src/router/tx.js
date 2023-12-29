@@ -27,8 +27,9 @@
   router.get('/:id/thumbnail', async (req, res) => {
     const { id } = req.params;
     const {FileName, ContentType, FileContent} = await syncing.getTxDataThumbnail(id);
+    console.log("FileName", FileName)
     res.setHeader('Cache-Control', 'public, max-age=3600'); 
-    FileName ? res.setHeader('Content-Disposition', `inline; filename="${FileName}"`) : null;
+    FileName ? res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`) : null;
     ContentType ? res.setHeader('Content-Type', ContentType) : null;
     res.status(200).send(FileContent);  
   });
@@ -43,11 +44,11 @@
     res.status(200).send(FileContent);  
   });
 
-  router.get('/tx/:address/unbundle/:pageid/:pagesize', async (req, res) => {
-    //const { address, pageid, pagesize } = req.params;
-    //const getBlockPageJson = await syncing.getBlockPageJson(pageid, pagesize);
-    //console.log("getBlockPageJson", getBlockPageJson)
-    res.status(200).json({});  
+  router.get('/tx/:txid/unbundle/:pageid/:pagesize', async (req, res) => {
+    const { txid, pageid, pagesize } = req.params;
+    const getTxBundleItemsInUnbundle = await syncing.getTxBundleItemsInUnbundle(txid, pageid, pagesize);
+    console.log("getTxBundleItemsInUnbundle", getTxBundleItemsInUnbundle)
+    res.status(200).json(getTxBundleItemsInUnbundle);  
   });
   
   router.get('/transaction/:pageid/:pagesize', async (req, res) => {
