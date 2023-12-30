@@ -17,4 +17,12 @@
     res.status(200).json(getPeersInfo).end();  
   });
 
+  router.get('/info', async (req, res) => {
+    const getLightNodeStatusValue = await syncing.getLightNodeStatus();
+    res.json(getLightNodeStatusValue);
+  });
+  router.get('/queue', async (req, res) => {
+    res.json([]);
+  });
+
   export default router;

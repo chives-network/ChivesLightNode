@@ -653,6 +653,55 @@
     }
   }
 
+  function generateSequence(m, n) {
+    return Array.from({ length: n - m + 1 }, (_, index) => m + index);
+  }
+
+  function arrayDifference(arr1, arr2) {
+    return arr1.filter(item => !arr2.includes(item));
+  }
+
+  async function syncingBlockMissing(Index = 0) {
+    const BeginHeight = Index * 100000 + 1;
+    const EndHeight = (Index + 1) * 100000;
+    try {
+      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
+      const MaxHeight = MinerNodeStatus.height;
+      const EndHeightFinal = (MaxHeight - EndHeight) > 0 ? EndHeight : MaxHeight
+      const BlockHeightRange = generateSequence(BeginHeight, EndHeightFinal);
+      const GetExistBlocks = await new Promise((resolve, reject) => {
+                                db.all("SELECT id FROM block where id in ("+BlockHeightRange.join(',')+")", (err, result) => {
+                                  if (err) {
+                                    reject(err);
+                                  } else {
+                                    resolve(result ? result : null);
+                                  }
+                                });
+                              });
+      const GetExistBlocksIds = []
+      if(GetExistBlocks) {
+        GetExistBlocks.map((Item)=>{
+          GetExistBlocksIds.push(Item.id)
+        })
+      }
+      console.log("GetExistBlocksIds:", GetExistBlocksIds);
+      const getMissingBlockIds = arrayDifference(BlockHeightRange, GetExistBlocksIds)
+      console.log("getMissingBlockIds:", getMissingBlockIds);
+      const result = [];
+      for (const Height of getMissingBlockIds) {
+        console.log("Height:", Height);
+        const BlockInfor = await syncingBlockByHeight(Height);
+        result.push(BlockInfor.height)
+      }
+      
+      return result;
+    } 
+    catch (error) {
+      console.error("syncingBlock error fetching block data:", error.message);
+      return { error: "Internal Server Error" };
+    }
+  }
+
   async function syncingBlockPromiseAll(EveryTimeDealBlockCount = 5) {
     try {
       const getBlockHeightFromDbValue = await getBlockHeightFromDb();
@@ -741,41 +790,51 @@
       console.log("syncingBlockByHeight Get Block From Remote Node",BlockInfor.reward_addr, currentHeight)
     }
     
-
-    //Insert Address
-    const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    insertAddress.run(BlockInfor.reward_addr, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
-    insertAddress.finalize();
-  
-    //Update Address
-    let AddressBalance = 0
-    AddressBalance = await getWalletAddressBalanceFromDb(BlockInfor.reward_addr)
-    //console.log("getWalletAddressBalanceFromDb", AddressBalance)
-    if(AddressBalance == 0) {
-      AddressBalance = await axios.get(NodeApi + "/wallet/" + BlockInfor.reward_addr + "/balance", {}).then((res)=>{return res.data});
-      //console.log("AddressBalanceNodeApi", AddressBalance)
-    }
-    //console.log("AddressBalance", AddressBalance)
-    const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
-    updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, BlockInfor.reward_addr);
-    updateAddress.finalize();
+    // Begin a transaction
+    db.exec('BEGIN TRANSACTION');
+    try {
+      //Insert Address
+      const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+      insertAddress.run(BlockInfor.reward_addr, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
+      insertAddress.finalize();
     
-    //Insert Tx
-    const Txs = BlockInfor.txs;
-    const insertTx = db.prepare('INSERT OR IGNORE INTO tx (id, block_indep_hash, block_height, timestamp, last_tx_action) VALUES (?, ?, ?, ?, ?)');
-    Txs.map((Tx)=>{
-      insertTx.run(Tx, BlockInfor.indep_hash, BlockInfor.height, BlockInfor.timestamp, Tx);
-    })
-    insertTx.finalize();
+      //Update Address
+      let AddressBalance = 0
+      AddressBalance = await getWalletAddressBalanceFromDb(BlockInfor.reward_addr)
+      //console.log("getWalletAddressBalanceFromDb", AddressBalance)
+      if(AddressBalance == 0) {
+        AddressBalance = await axios.get(NodeApi + "/wallet/" + BlockInfor.reward_addr + "/balance", {}).then((res)=>{return res.data});
+        //console.log("AddressBalanceNodeApi", AddressBalance)
+      }
+      //console.log("AddressBalance", AddressBalance)
+      const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
+      updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, BlockInfor.reward_addr);
+      updateAddress.finalize();
+      
+      //Insert Tx
+      const Txs = BlockInfor.txs;
+      const insertTx = db.prepare('INSERT OR IGNORE INTO tx (id, block_indep_hash, block_height, timestamp, last_tx_action) VALUES (?, ?, ?, ?, ?)');
+      Txs.map((Tx)=>{
+        insertTx.run(Tx, BlockInfor.indep_hash, BlockInfor.height, BlockInfor.timestamp, Tx);
+      })
+      insertTx.finalize();
 
-    //Write Block File
-    writeFile("/blocks/" + enableBlockHeightDir(currentHeight), BlockInfor.height + ".json", JSON.stringify(BlockInfor), "syncingBlockByHeight")
+      //Write Block File
+      writeFile("/blocks/" + enableBlockHeightDir(currentHeight), BlockInfor.height + ".json", JSON.stringify(BlockInfor), "syncingBlockByHeight")
 
-    //Insert Block
-    const insertStatement = db.prepare('INSERT OR REPLACE INTO block (id, height, indep_hash, block_size, mining_time, reward, reward_addr, txs_length, weave_size, timestamp, syncing_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    insertStatement.run(BlockInfor.height, BlockInfor.height, BlockInfor.indep_hash, BlockInfor.block_size, 0, BlockInfor.reward, BlockInfor.reward_addr, BlockInfor.txs.length, BlockInfor.weave_size, BlockInfor.timestamp, 0);
-    insertStatement.finalize();
-  
+      //Insert Block
+      const insertStatement = db.prepare('INSERT OR REPLACE INTO block (id, height, indep_hash, block_size, mining_time, reward, reward_addr, txs_length, weave_size, timestamp, syncing_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+      insertStatement.run(BlockInfor.height, BlockInfor.height, BlockInfor.indep_hash, BlockInfor.block_size, 0, BlockInfor.reward, BlockInfor.reward_addr, BlockInfor.txs.length, BlockInfor.weave_size, BlockInfor.timestamp, 0);
+      insertStatement.finalize();
+
+      // Commit the transaction
+      db.exec('COMMIT');
+    } 
+    catch (error) {
+      // Rollback the transaction if an error occurs
+      console.error('Error:', error.message);
+      db.exec('ROLLBACK');
+    }
     return BlockInfor;
   }
 
@@ -995,6 +1054,11 @@
     return TxStatus;
   }
 
+  async function getTxUnconfirmed(TxId) {
+    const TxStatus = await axios.get(NodeApi + '/unconfirmed_tx/'+TxId, {}).then(res=>res.data);
+    return TxStatus;
+  }
+
   async function getAllAddressCount() {
     return new Promise((resolve, reject) => {
       db.get("SELECT COUNT(*) AS NUM FROM address", (err, result) => {
@@ -1119,6 +1183,116 @@
     RS['total'] = getAddressCountValue;
     return RS;
   }
+  
+
+  async function getAllFileFolderAddressCount(Folder, Address) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where item_parent = '"+Folder+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+  async function getAllFileFolderAddressPage(Folder, Address, pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where item_parent = '"+Folder+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  async function getAllFileFolderAddressPageJson(Folder, Address, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const FolderFilter = filterString(Folder)
+    const AddressFilter = filterString(Address)
+    const getAddressCountValue = await getAllFileFolderAddressCount(FolderFilter, AddressFilter);
+    const getAddressPageValue = await getAllFileFolderAddressPage(FolderFilter, AddressFilter, pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getAddressCountValue/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(getAddressPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getAddressCountValue;
+    return RS;
+  }
+
+  async function getAllFileStarAddressCount(Star, Address) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where item_star = '"+Star+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+  async function getAllFileStarAddressPage(Star, Address, pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where item_star = '"+Star+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  async function getAllFileStarAddressPageJson(Star, Address, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const StarFilter = filterString(Star)
+    const AddressFilter = filterString(Address)
+    const getAddressCountValue = await getAllFileStarAddressCount(StarFilter, AddressFilter);
+    const getAddressPageValue = await getAllFileStarAddressPage(StarFilter, AddressFilter, pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getAddressCountValue/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(getAddressPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getAddressCountValue;
+    return RS;
+  }
+
+  async function getAllFileLabelGroup(Address) {
+    const AddressFilter = filterString(Address)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT item_label, COUNT(*) AS NUM FROM tx where is_encrypt = '' and entity_type = 'File' and from_address = '"+AddressFilter+"' group by item_label", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+
+  async function getAllFileFolder(Address) {
+    const AddressFilter = filterString(Address)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where is_encrypt = '' and entity_type = 'Folder' and from_address = '"+AddressFilter+"' order by timestamp desc", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  
 
   async function getWalletTxsAllCount(Address) {
     return new Promise((resolve, reject) => {
@@ -1398,6 +1572,7 @@
     LightNodeStatus['release'] = 66;
     LightNodeStatus['height'] = MinerNodeStatus.height;
     LightNodeStatus['current'] = BlockInfor.indep_hash;
+    LightNodeStatus['weave_size'] = BlockInfor.weave_size;
     LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
     LightNodeStatus['peers'] = 1;
     LightNodeStatus['time'] = BlockInfor.timestamp;
@@ -1493,9 +1668,9 @@
     }
   }
 
-  async function getTxDataThumbnail(TxId) {
+  async function getTxDataThumbnail(OriginalTxId) {
     mkdirForData();
-    const TxContent = readFile("txs/" + TxId.substring(0, 2).toLowerCase(), TxId + '.json', "getTxDataThumbnail", 'utf-8');
+    const TxContent = readFile("txs/" + OriginalTxId.substring(0, 2).toLowerCase(), OriginalTxId + '.json', "getTxDataThumbnail", 'utf-8');
     const TxInfor = JSON.parse(TxContent);
     //console.log("TxInfor", TxInfor);
     
@@ -1505,46 +1680,58 @@
     })
     const FileName = TagsMap['File-Name']
     const ContentType = TagsMap['Content-Type']
-
-    //Thumbnail Exist
-    const compressFilePath = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
-    if(isFile(compressFilePath)) {
-      console.log("compressFilePath", compressFilePath)
-      const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
-      return {FileName, ContentType, FileContent};
-    }
-
-    //Compress File
+    const TxId = TagsMap['File-TxId'] ? TagsMap['File-TxId'] : OriginalTxId
+    console.log("TxId OriginalTxId", TxId, OriginalTxId);
+    
     const inputFilePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
-    const outputFilePath = DataDir + '/thumbnail/' + TxId.substring(0, 2).toLowerCase();
-    enableDir(outputFilePath)
-    const fileType = getContentTypeAbbreviation(ContentType);
-    const fileTypeSuffix = String(fileType).toLowerCase();
-    console.log("fileTypeSuffix", fileTypeSuffix)
-    if(fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") {
-        sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
-            console.log("getTxDataThumbnail sharp:", err, info)
-        });
-    }
-    else if(fileTypeSuffix == "png") {
-      sharp(inputFilePath).png({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
-        console.log("getTxDataThumbnail sharp:", err, info)
-      });
-    }
-    else if(fileTypeSuffix == "gif") {
-    }
+    if(isFile(inputFilePath)) {
+      //Thumbnail Exist
+      const compressFilePath = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
+      if(isFile(compressFilePath)) {
+        console.log("compressFilePath", compressFilePath)
+        const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
+        return {FileName, ContentType, FileContent};
+      }
 
-    //Thumbnail Exist
-    const compressFilePath2 = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
-    if(isFile(compressFilePath2)) {
-      console.log("compressFilePath2", compressFilePath2)
-      const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
+      //Compress File
+      const outputFilePath = DataDir + '/thumbnail/' + TxId.substring(0, 2).toLowerCase();
+      enableDir(outputFilePath)
+      const fileType = getContentTypeAbbreviation(ContentType);
+      const fileTypeSuffix = String(fileType).toLowerCase();
+      console.log("fileTypeSuffix", fileTypeSuffix)
+      if(fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") {
+          sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
+              if (err) {
+                console.log("getTxDataThumbnail sharp:", TxId, err, info)
+              } else {
+                console.log(info);
+              }
+          });
+      }
+      else if(fileTypeSuffix == "png") {
+        sharp(inputFilePath).png({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
+          console.log("getTxDataThumbnail sharp:", TxId, err, info)
+        });
+      }
+      else if(fileTypeSuffix == "gif") {
+      }
+
+      //Thumbnail Exist
+      const compressFilePath2 = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
+      if(isFile(compressFilePath2)) {
+        console.log("compressFilePath2", compressFilePath2)
+        const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
+        return {FileName, ContentType, FileContent};
+      }
+
+      //Out Original File Content
+      const FileContent = readFile("files/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
       return {FileName, ContentType, FileContent};
     }
-
-    //Out Original File Content
-    const FileContent = readFile("files/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
-    return {FileName, ContentType, FileContent};
+    else {
+      console.log("inputFilePath Not Exist:", inputFilePath)
+      return {FileName:'', ContentType:'', FileContent:''};
+    }
 
   }
 
@@ -1570,6 +1757,7 @@
   export default {
     syncingBlock,
     syncingBlockPromiseAll,
+    syncingBlockMissing,
     syncingBlockByHeight,
     syncingTx,
     syncingTxPromiseAll,
@@ -1602,11 +1790,16 @@
     getTxBundleItemsInUnbundle,
     getTxPending,
     getTxStatusById,
+    getTxUnconfirmed,
     getAddressBalance,
     getAddressBalanceMining,
     getAllAddressPageJson,
     getAllFileTypePageJson,
     getAllFileTypeAddressPageJson,
+    getAllFileFolderAddressPageJson,
+    getAllFileStarAddressPageJson,
+    getAllFileLabelGroup,
+    getAllFileFolder,
     getWalletTxJson,
     getWalletTxsAllPageJson,
     getWalletTxsSentPageJson,
