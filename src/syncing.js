@@ -7,6 +7,7 @@
   import Arweave from 'arweave'
 
   import { join } from 'path';
+import { exit } from 'process';
   //const imagemin = require('imagemin');
   //const optipng = require('imagemin-optipng');
 
@@ -319,201 +320,203 @@
     //syncingTxPromiseAll(10);
     //syncingChunksPromiseAll(50);
     //Write Tx File
-    const TxId = TxInfor.id;
-    const BundlePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
-    if( isFile(BundlePath) == false ) {
-      await syncingTxChunksById(TxId);
-      console.log("syncingTxParseBundleById unBundleItem id",BundlePath)
-    }
-    if( isFile(BundlePath) ) {
-        console.log("syncingTxParseBundleById Exist", BundlePath)  
-        try {
-            //const TxInfor = await getTxInforByIdFromDb(TxId);
-            console.log("syncingTxParseBundleById TxInfor",TxInfor)
-            const FileContent = fs.readFileSync(BundlePath);
-            try {
-                const unbundleItems = unbundleData(FileContent);
-                unbundleItems.items.map(async (Item) => {
-                    //console.log("unbundleItems",Item)
-                    console.log("unbundleItems id", Item.id, Item.tags)
-                    //console.log("unBundleItem tags",Item.tags)
-                    console.log("unBundleItem owner",Item.owner)
-                    //console.log("unBundleItem anchor",Item.anchor)
-                    //console.log("unBundleItem target",Item.target)
-                    //console.log("unBundleItem signature",Item.signature)
-                    //console.log("unBundleItem signatureType",Item.signatureType)
-                    //console.log("unBundleItem data",Item.data)
-                    //Update Chunks Status IGNORE
-                    const insertTxBundleItem = db.prepare('INSERT OR IGNORE INTO tx (id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-                    const id = Item.id
-                    const block_indep_hash = TxInfor.block_indep_hash
-                    const last_tx = Item.anchor
-                    const owner = Item.owner
-                    const from_address = await ownerToAddress(Item.owner);
-                    const target = Item.target
-                    const quantity = Item.quantity || 0
-                    const signature = Item.signature
-                    const reward = 0
-                    const timestamp = TxInfor.timestamp
-                    const block_height = TxInfor.block_height
-                    const data_size = Item.data.length
-                    const bundleid = TxId;
-                    //Tags Data
-                    const TagsMap = {}
-                    Item && Item.tags && Item.tags.length > 0 && Item.tags.map( (Tag) => {
-                        TagsMap[Tag.name] = Tag.value;
-                    })
-                    const item_name = TagsMap['File-Name'] || "";
-                    const item_type = contentTypeToFileType(TagsMap['Content-Type']);
-                    const item_parent = TagsMap['File-Parent'] || "Root";
-                    const content_type = TagsMap['Content-Type'] || "";
-                    const item_hash = TagsMap['File-Hash'] || "";
-                    const item_summary = TagsMap['File-Summary'] || "";
-                    
-                    const item_star = TagsMap['File-Summary'] || "";
-                    const item_label = TagsMap['File-Summary'] || "";
-                    const item_download = TagsMap['File-Summary'] || "";
-                    const item_language = TagsMap['File-Summary'] || "";
-                    const item_pages = TagsMap['File-Summary'] || "";
-                    
-                    const entity_type = "File"
-                    const bundleTxParse = 1
-                    const data_root = ''
-                    const data_root_status = 200
+    if(TxInfor && TxInfor.id) {
+      const TxId = TxInfor.id;
+      const BundlePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
+      if( isFile(BundlePath) == false ) {
+        await syncingTxChunksById(TxId);
+        console.log("syncingTxParseBundleById unBundleItem id",BundlePath)
+      }
+      if( isFile(BundlePath) ) {
+          console.log("syncingTxParseBundleById Exist", BundlePath)  
+          try {
+              //const TxInfor = await getTxInforByIdFromDb(TxId);
+              console.log("syncingTxParseBundleById TxInfor",TxInfor)
+              const FileContent = fs.readFileSync(BundlePath);
+              try {
+                  const unbundleItems = unbundleData(FileContent);
+                  unbundleItems.items.map(async (Item) => {
+                      //console.log("unbundleItems",Item)
+                      console.log("unbundleItems id", Item.id, Item.tags)
+                      //console.log("unBundleItem tags",Item.tags)
+                      console.log("unBundleItem owner",Item.owner)
+                      //console.log("unBundleItem anchor",Item.anchor)
+                      //console.log("unBundleItem target",Item.target)
+                      //console.log("unBundleItem signature",Item.signature)
+                      //console.log("unBundleItem signatureType",Item.signatureType)
+                      //console.log("unBundleItem data",Item.data)
+                      //Update Chunks Status IGNORE
+                      const insertTxBundleItem = db.prepare('INSERT OR IGNORE INTO tx (id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                      const id = Item.id
+                      const block_indep_hash = TxInfor.block_indep_hash
+                      const last_tx = Item.anchor
+                      const owner = Item.owner
+                      const from_address = await ownerToAddress(Item.owner);
+                      const target = Item.target
+                      const quantity = Item.quantity || 0
+                      const signature = Item.signature
+                      const reward = 0
+                      const timestamp = TxInfor.timestamp
+                      const block_height = TxInfor.block_height
+                      const data_size = Item.data.length
+                      const bundleid = TxId;
+                      //Tags Data
+                      const TagsMap = {}
+                      Item && Item.tags && Item.tags.length > 0 && Item.tags.map( (Tag) => {
+                          TagsMap[Tag.name] = Tag.value;
+                      })
+                      const item_name = TagsMap['File-Name'] || "";
+                      const item_type = contentTypeToFileType(TagsMap['Content-Type']);
+                      const item_parent = TagsMap['File-Parent'] || "Root";
+                      const content_type = TagsMap['Content-Type'] || "";
+                      const item_hash = TagsMap['File-Hash'] || "";
+                      const item_summary = TagsMap['File-Summary'] || "";
+                      
+                      const item_star = TagsMap['File-Summary'] || "";
+                      const item_label = TagsMap['File-Summary'] || "";
+                      const item_download = TagsMap['File-Summary'] || "";
+                      const item_language = TagsMap['File-Summary'] || "";
+                      const item_pages = TagsMap['File-Summary'] || "";
+                      
+                      const entity_type = "File"
+                      const bundleTxParse = 1
+                      const data_root = ''
+                      const data_root_status = 200
 
-                    const is_encrypt = TagsMap['Cipher-ALG'] || "";
-                    const is_public = TagsMap['File-Public'] || "";
-                    const app_name = TagsMap['App-Name'] || "";
-                    const app_version = TagsMap['App-Version'] || "";
-                    const app_instance = TagsMap['App-Instance'] || "";
-                    const last_tx_action = id
+                      const is_encrypt = TagsMap['Cipher-ALG'] || "";
+                      const is_public = TagsMap['File-Public'] || "";
+                      const app_name = TagsMap['App-Name'] || "";
+                      const app_version = TagsMap['App-Version'] || "";
+                      const app_instance = TagsMap['App-Instance'] || "";
+                      const last_tx_action = id
 
-                    insertTxBundleItem.run(id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action);
-                    insertTxBundleItem.finalize();
+                      insertTxBundleItem.run(id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action);
+                      insertTxBundleItem.finalize();
 
-                    //Write Item Data to File
-                    writeFile('files/' + Item.id.substring(0, 2).toLowerCase(), Item.id, Buffer.from(Item.data, 'base64'), "syncingTxParseBundleById")
+                      //Write Item Data to File
+                      writeFile('files/' + Item.id.substring(0, 2).toLowerCase(), Item.id, Buffer.from(Item.data, 'base64'), "syncingTxParseBundleById")
 
-                    //Write Item Json to File
-                    const ItemJson = {}
-                    ItemJson.id = Item.id
-                    ItemJson.owner = {}
-                    ItemJson.owner.address = from_address
-                    ItemJson.owner.key = Item.owner
-                    ItemJson.anchor = Item.anchor
-                    ItemJson.tags = Item.tags
-                    ItemJson.block = {}
-                    ItemJson.block.height = block_height
-                    ItemJson.block.indep_hash = block_indep_hash
-                    ItemJson.block.timestamp = timestamp
-                    ItemJson.data = {}
-                    ItemJson.data.size = data_size
-                    ItemJson.data.type = contentTypeToFileType(content_type)
-                    ItemJson.fee = {}
-                    ItemJson.fee.winston = 0
-                    ItemJson.fee.xwe = 0
-                    ItemJson.quantity = {}
-                    ItemJson.quantity.winston = quantity
-                    ItemJson.quantity.xwe = String(quantity/1000000000000)
-                    ItemJson.recipient = Item.target
-                    ItemJson.signature = Item.signature
-                    ItemJson.signatureType = Item.signatureType
-                    ItemJson.bundleid = TxId
-                    //console.log("ItemJson", JSON.stringify(ItemJson))
-                    writeFile('txs/' + Item.id.substring(0, 2).toLowerCase(), Item.id + '.json', JSON.stringify(ItemJson), "syncingTxParseBundleById")
+                      //Write Item Json to File
+                      const ItemJson = {}
+                      ItemJson.id = Item.id
+                      ItemJson.owner = {}
+                      ItemJson.owner.address = from_address
+                      ItemJson.owner.key = Item.owner
+                      ItemJson.anchor = Item.anchor
+                      ItemJson.tags = Item.tags
+                      ItemJson.block = {}
+                      ItemJson.block.height = block_height
+                      ItemJson.block.indep_hash = block_indep_hash
+                      ItemJson.block.timestamp = timestamp
+                      ItemJson.data = {}
+                      ItemJson.data.size = data_size
+                      ItemJson.data.type = contentTypeToFileType(content_type)
+                      ItemJson.fee = {}
+                      ItemJson.fee.winston = 0
+                      ItemJson.fee.xwe = 0
+                      ItemJson.quantity = {}
+                      ItemJson.quantity.winston = quantity
+                      ItemJson.quantity.xwe = String(quantity/1000000000000)
+                      ItemJson.recipient = Item.target
+                      ItemJson.signature = Item.signature
+                      ItemJson.signatureType = Item.signatureType
+                      ItemJson.bundleid = TxId
+                      //console.log("ItemJson", JSON.stringify(ItemJson))
+                      writeFile('txs/' + Item.id.substring(0, 2).toLowerCase(), Item.id + '.json', JSON.stringify(ItemJson), "syncingTxParseBundleById")
 
-                    //Update Tx Status
-                    const EntityType    = TagsMap['Entity-Type'];
-                    const EntityAction  = TagsMap['Entity-Action'];
-                    const FileTxId      = TagsMap['FileTxId'];
-                    const EntityTarget  = TagsMap['Entity-Target'];
-                    const LastTxChange  = TagsMap['Last-Tx-Change'];
-                    if(EntityType == "Action") {
-                        console.log("TxInfor EntityAction: ______________________________________________________________", EntityAction)
-                        switch(EntityAction) {
-                            case 'Label':
-                                //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                const updateBundleLabel = db.prepare('update tx set item_label = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                updateBundleLabel.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                updateBundleLabel.finalize();
-                                break;
-                            case 'Star':
-                                //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                const updateBundleStar = db.prepare('update tx set item_star = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                updateBundleStar.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                updateBundleStar.finalize();
-                                break;
-                            case 'Folder':
-                                //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                const updateBundleFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                updateBundleFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                updateBundleFolder.finalize();
-                                break;
-                            case 'Public':
-                                //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                const updateBundlePublic = db.prepare('update tx set is_public = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                updateBundlePublic.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                updateBundlePublic.finalize();
-                                break;
-                            case 'RenameFolder':
-                                //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                const updateBundleRenameFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                updateBundleRenameFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                updateBundleRenameFolder.finalize();
-                                break;
-                            case 'DeleteFolder':
-                                //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                const updateBundleDeleteFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                updateBundleDeleteFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                updateBundleDeleteFolder.finalize();
-                                break;
-                            case 'Restorefolder':
-                                //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                const updateBundleRestorefolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                updateBundleRestorefolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                updateBundleRestorefolder.finalize();
-                                break;
-                            case 'Profile':
-                                //DataItemId, BlockTimestamp, BlockHeight, FromAddress, LastTxChange
-                                const updateBundleAddressProfile = db.prepare('update address set profile = ?, timestamp = ?, last_tx_action = ? where (last_tx_action is null and id = ?) or (id = ? and last_tx_action = ?)');
-                                updateBundleAddressProfile.run(Item.id, timestamp, block_height, from_address, from_address, LastTxChange);
-                                updateBundleAddressProfile.finalize();
-                                break;
-                            case 'Agent':
-                                //EntityTarget, FromAddress, BlockTimestamp
-                                const updateBundleAddressAgent = db.prepare("update address set Agent = ?, timestamp = ? where id = ? and Agent = '0'");
-                                updateBundleAddressAgent.run('1', timestamp, from_address);
-                                updateBundleAddressAgent.finalize();
-                                break;
-                            case 'Referee':
-                                //EntityTarget, FromAddress, BlockTimestamp
-                                const updateBundleAddressReferee = db.prepare("update address set referee = ? where id = ? and referee is null");
-                                updateBundleAddressReferee.run(EntityTarget, from_address);
-                                updateBundleAddressReferee.finalize();
-                                break;
-                        }
-                    }
+                      //Update Tx Status
+                      const EntityType    = TagsMap['Entity-Type'];
+                      const EntityAction  = TagsMap['Entity-Action'];
+                      const FileTxId      = TagsMap['FileTxId'];
+                      const EntityTarget  = TagsMap['Entity-Target'];
+                      const LastTxChange  = TagsMap['Last-Tx-Change'];
+                      if(EntityType == "Action") {
+                          console.log("TxInfor EntityAction: ______________________________________________________________", EntityAction)
+                          switch(EntityAction) {
+                              case 'Label':
+                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                  const updateBundleLabel = db.prepare('update tx set item_label = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                  updateBundleLabel.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                  updateBundleLabel.finalize();
+                                  break;
+                              case 'Star':
+                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                  const updateBundleStar = db.prepare('update tx set item_star = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                  updateBundleStar.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                  updateBundleStar.finalize();
+                                  break;
+                              case 'Folder':
+                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                  const updateBundleFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                  updateBundleFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                  updateBundleFolder.finalize();
+                                  break;
+                              case 'Public':
+                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                  const updateBundlePublic = db.prepare('update tx set is_public = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                  updateBundlePublic.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                  updateBundlePublic.finalize();
+                                  break;
+                              case 'RenameFolder':
+                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                  const updateBundleRenameFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                  updateBundleRenameFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                  updateBundleRenameFolder.finalize();
+                                  break;
+                              case 'DeleteFolder':
+                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                  const updateBundleDeleteFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                  updateBundleDeleteFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                  updateBundleDeleteFolder.finalize();
+                                  break;
+                              case 'Restorefolder':
+                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                  const updateBundleRestorefolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                  updateBundleRestorefolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                  updateBundleRestorefolder.finalize();
+                                  break;
+                              case 'Profile':
+                                  //DataItemId, BlockTimestamp, BlockHeight, FromAddress, LastTxChange
+                                  const updateBundleAddressProfile = db.prepare('update address set profile = ?, timestamp = ?, last_tx_action = ? where (last_tx_action is null and id = ?) or (id = ? and last_tx_action = ?)');
+                                  updateBundleAddressProfile.run(Item.id, timestamp, block_height, from_address, from_address, LastTxChange);
+                                  updateBundleAddressProfile.finalize();
+                                  break;
+                              case 'Agent':
+                                  //EntityTarget, FromAddress, BlockTimestamp
+                                  const updateBundleAddressAgent = db.prepare("update address set Agent = ?, timestamp = ? where id = ? and Agent = '0'");
+                                  updateBundleAddressAgent.run('1', timestamp, from_address);
+                                  updateBundleAddressAgent.finalize();
+                                  break;
+                              case 'Referee':
+                                  //EntityTarget, FromAddress, BlockTimestamp
+                                  const updateBundleAddressReferee = db.prepare("update address set referee = ? where id = ? and referee is null");
+                                  updateBundleAddressReferee.run(EntityTarget, from_address);
+                                  updateBundleAddressReferee.finalize();
+                                  break;
+                          }
+                      }
 
 
-                })
-                const updateBundle = db.prepare('update tx set bundleTxParse = ? where id = ?');
-                updateBundle.run('1', TxId);
-                updateBundle.finalize();
-            }
-            catch (err) {
-                console.error('Error Arbundles.unbundleData:', TxId);
-                const updateBundle = db.prepare('update tx set bundleTxParse = ? where id = ?');
-                updateBundle.run(-1, TxId);
-                updateBundle.finalize();
-            }
-        } 
-        catch (err) {
-            console.error('Error reading file:', err);
-        }
-        
-    }
-    else {
-        console.log("syncingTxParseBundleById Not Exist:", BundlePath)
+                  })
+                  const updateBundle = db.prepare('update tx set bundleTxParse = ? where id = ?');
+                  updateBundle.run('1', TxId);
+                  updateBundle.finalize();
+              }
+              catch (err) {
+                  console.error('Error Arbundles.unbundleData:', TxId);
+                  const updateBundle = db.prepare('update tx set bundleTxParse = ? where id = ?');
+                  updateBundle.run(-1, TxId);
+                  updateBundle.finalize();
+              }
+          } 
+          catch (err) {
+              console.error('Error reading file:', err);
+          }
+          
+      }
+      else {
+          console.log("syncingTxParseBundleById Not Exist:", BundlePath)
+      }
     }
   }
 
@@ -1040,7 +1043,7 @@
     const txArray = TxRowToJsonFormat([getTxInforByIdFromDbValue]);
     getTxBundleItemPageJsonValue['tx'] = txArray[0];
     getTxBundleItemPageJsonValue['txs'] = getTxBundleItemPageJsonValue['data'];
-    console.log("getTxBundleItemPageJsonValue", getTxBundleItemPageJsonValue);
+    //console.log("getTxBundleItemPageJsonValue", getTxBundleItemPageJsonValue);
     return getTxBundleItemPageJsonValue;
   }
 
@@ -1049,6 +1052,86 @@
     return TxPending;
   }
 
+  async function getTxAnchor() {
+    const TxAnchor = await axios.get(NodeApi + '/tx_anchor', {}).then(res=>res.data);
+    return TxAnchor;
+  }
+
+  async function getPrice(datasize) {
+    const Price = await axios.get(NodeApi + '/price/' + datasize, {}).then(res=>res.data);
+    return String(Price);
+  }
+
+  async function postTx(Payload) {
+    try {
+      const response = await axios.post(NodeApi + '/tx', Payload);
+      console.log('postTx:', response.data);
+      postTxForwarding(Payload);
+      return response.data;
+    } 
+    catch (error) {
+      console.error('Error:', error.message);
+      return 500;
+    }
+  }
+
+  async function postTxForwarding(Payload) {
+    try {
+      db.all("SELECT * from peers where status = '1'", (err, result) => {
+        if (err) {
+          console.error('Error:', err.message);
+        } else {
+          if(result) {
+            result.map((item)=>{
+              axios.post("http://"+item.ip + '/tx', Payload).then(res =>{
+                console.log('postTxForwarding postTx:', item.ip, res.data);              
+              });
+            })
+          }
+        }
+      });      
+    } 
+    catch (error) {
+      console.error('postTxForwarding Error:', error.message);
+      return 500;
+    }
+  }
+
+  async function postChunk(Payload) {
+    try {
+      const response = await axios.post(NodeApi + '/chunk', Payload);
+      console.log('postChunk:', response.data);
+      postChunkForwarding(Payload)
+      return response.data;
+    } 
+    catch (error) {
+      console.error('Error:', error.message);
+      return 500;
+    }
+  }
+
+  async function postChunkForwarding(Payload) {
+    try {
+      db.all("SELECT * from peers where status = '1'", (err, result) => {
+        if (err) {
+          console.error('Error:', err.message);
+        } else {
+          if(result) {
+            result.map((item)=>{
+              axios.post("http://"+item.ip + '/chunk', Payload).then(res =>{
+                console.log('postchunkForwarding postchunk:', item.ip, res.data);              
+              });
+            })
+          }
+        }
+      });      
+    } 
+    catch (error) {
+      console.error('postTxForwarding Error:', error.message);
+      return 500;
+    }
+  }
+  
   async function getTxStatusById(TxId) {
     const TxStatus = await axios.get(NodeApi + '/tx/'+TxId+'/status', {}).then(res=>res.data);
     return TxStatus;
@@ -1463,27 +1546,92 @@
     return RS;
   }
 
-  async function calculatePeers() {
-    const peersList = await axios.get(NodeApi + '/peers', {}).then(res=>res.data);
-    const HaveIpLocationPeersList = await getPeers();
-    if(peersList && peersList.length > 0) {
-      peersList.map(async (PeerAndPort)=>{
-        if(!HaveIpLocationPeersList.includes(PeerAndPort)) {
-          const PeerAndPortArray = PeerAndPort.split(':');
-          const ip = PeerAndPortArray[0];
-          const url = `https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data&ip=${ip}`;
-          const IPJSON = await axios.get(url, {}).then(res=>res.data);
-
-          const insertTag = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-          insertTag.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code, '0');
-          insertTag.finalize();
-          console.log("IPJSON", IPJSON)
-          console.log("PeerAndPort", PeerAndPort)
-        }
-
-      })
+  async function checkPeer(url) {
+    try {
+      const response = await axios.head(url);
+  
+      if (response.status === 200 || response.status === 204) {
+        //console.log(`URL ${url} is reachable.`);
+        return 1;
+      } else {
+        //console.log(`URL ${url} returned an unexpected status code: ${response.status}`);
+        return -1;
+      }
+    } catch (error) {
+      if (error.code === 'ECONNREFUSED') {
+        //console.error(`Connection refused to URL ${url}. Make sure the server is running and accessible.`);
+        return -1;
+      } else {
+        //console.error(`Error checking URL ${url}: ${error.message}`);
+        return -1;
+      }
     }
-    return peersList;
+  }
+
+  async function calculatePeers() {
+    try {
+      const getPeersAvailableList = await getPeersAvailable()
+      getPeersAvailableList.map(async (Item)=>{
+        const peerIsAvailable = await checkPeer("http://"+Item.ip)
+        const updatePeerAvailable = db.prepare('update peers set status = ? where ip = ?');
+        updatePeerAvailable.run(peerIsAvailable, Item.ip);
+        updatePeerAvailable.finalize();
+        if(peerIsAvailable) {
+          await getPeersAndInsertDb(Item.ip);
+        }
+      })
+      const peersList = await axios.get(NodeApi + '/peers', {}).then(res=>res.data);
+      const HaveIpLocationPeersList = await getPeers();
+      console.log("peersList", peersList)
+      if(peersList && peersList.length > 0) {
+        peersList.map(async (PeerAndPort)=>{
+          if(!HaveIpLocationPeersList.includes(PeerAndPort)) {
+            const peerIsAvailable = await checkPeer("http://"+PeerAndPort)
+            const PeerAndPortArray = PeerAndPort.split(':');
+            const ip = PeerAndPortArray[0];
+            const url = `https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data&ip=${ip}`;
+            const IPJSON = await axios.get(url, {}).then(res=>res.data);  
+            const insertTag = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            insertTag.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code, peerIsAvailable);
+            insertTag.finalize();
+            //console.log("IPJSON", IPJSON)
+          }  
+        })
+      }
+      return peersList;
+    } 
+    catch (error) {
+      console.error("calculatePeers:", "calculatePeers");
+      return [];
+    }
+  }
+
+  async function getPeersAndInsertDb(PeerUrl) {
+    try {
+      const peersList = await axios.get("http://" + PeerUrl + '/peers', {}).then(res=>res.data);
+      const HaveIpLocationPeersList = await getPeers();
+      console.log("peersList", peersList)
+      if(peersList && peersList.length > 0) {
+        peersList.map(async (PeerAndPort)=>{
+          if(!HaveIpLocationPeersList.includes(PeerAndPort)) {
+            const peerIsAvailable = await checkPeer("http://" + PeerAndPort)
+            const PeerAndPortArray = PeerAndPort.split(':');
+            const ip = PeerAndPortArray[0];
+            const url = `https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data&ip=${ip}`;
+            const IPJSON = await axios.get(url, {}).then(res=>res.data);  
+            const insertTag = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            insertTag.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code, peerIsAvailable);
+            insertTag.finalize();
+            console.log("getPeersAndInsertDb", PeerAndPort)
+          }  
+        })
+      }
+      return peersList;
+    } 
+    catch (error) {
+      console.error("getPeersAndInsertDb:", "getPeersAndInsertDb");
+      return [];
+    }
   }
 
   async function getPeersInfo() {  
@@ -1497,11 +1645,26 @@
       });
     });
   }
+
+  async function getPeersAvailable() {  
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * from peers where status = '1'", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
   
 
   function TxRowToJsonFormat(getTxPageValue) {
     const RS = []
     getTxPageValue.map((Item) =>{
+      if(Item == undefined) {
+        return []
+      }
       const ItemJson = {}
       ItemJson.id = Item.id
       ItemJson.owner = {}
@@ -1528,7 +1691,6 @@
       //ItemJson.signatureType = Item.signatureType
       ItemJson.bundleid = Item.bundleid
       RS.push(ItemJson)
-
     })
     return RS;
   }
@@ -1702,9 +1864,9 @@
       if(fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") {
           sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
               if (err) {
-                console.log("getTxDataThumbnail sharp:", TxId, err, info)
+                console.log("getTxDataThumbnail sharp err:", TxId, err, info)
               } else {
-                console.log(info);
+                console.log("getTxDataThumbnail sharp info:", info);
               }
           });
       }
@@ -1789,6 +1951,10 @@
     getTxBundleItemPageJson,
     getTxBundleItemsInUnbundle,
     getTxPending,
+    getTxAnchor,
+    getPrice,
+    postTx,
+    postChunk,
     getTxStatusById,
     getTxUnconfirmed,
     getAddressBalance,

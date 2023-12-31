@@ -81,7 +81,7 @@ async function intervalTask() {
     console.log('Executing syncing tasks...');
     const startTime = Date.now();
     await Promise.all([
-      syncing.syncingBlockPromiseAll(100),
+      syncing.syncingBlock(100),
       syncing.syncingTxPromiseAll(100),
       syncing.syncingChunksPromiseAll(100),
       syncing.syncingTxParseBundle(50),

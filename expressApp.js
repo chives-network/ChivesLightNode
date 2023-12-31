@@ -10,6 +10,7 @@ import txRoutes from './src/router/tx.js'
 import walletRoutes from './src/router/wallet.js'
 import fileRoutes from './src/router/file.js'
 import peerRoutes from './src/router/peer.js'
+import priceRoutes from './src/router/price.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -22,11 +23,12 @@ expressApp.use(cors());
 
 
 expressApp.get('/syncing', async (req, res) => {
-  await syncing.deleteBlackTxsAndAddress();
+  //await syncing.deleteBlackTxsAndAddress();
   //await syncing.calculatePeers();
-  await syncing.syncingBlockMissing();
+  //await syncing.syncingBlockMissing();
   //await syncing.syncingBlockByHeight(35753);
   //await syncing.syncingBlock(2);
+  //await syncing.calculatePeers();
   await syncing.syncingTx(20);
   await syncing.syncingChunksPromiseAll(400);
   await syncing.syncingTxParseBundle(10);
@@ -40,6 +42,7 @@ expressApp.use('/', blockRoutes);
 expressApp.use('/', walletRoutes);
 expressApp.use('/', fileRoutes);
 expressApp.use('/', peerRoutes);
+expressApp.use('/', priceRoutes);
 
 //PUT THE LAST LOCATION
 expressApp.use('/', txRoutes);

@@ -1,14 +1,38 @@
   // blockRoutes.js
 
-  import express from 'express';
-  import syncing from '../syncing.js';
+  import express from 'express'
+  import syncing from '../syncing.js'
+  import bodyParser from 'body-parser'
 
   const router = express.Router();
 
+  router.use(bodyParser.json({ limit: '2gb' }));
+
+  router.post('/chunk', async (req, res) => {
+    const payload = req.body;
+    const postChunk = await syncing.postChunk(payload);
+    console.log("/chunk", postChunk);
+    res.send(postChunk).end();
+  });
+
+  router.post('/tx', async (req, res) => {
+    const payload = req.body;
+    const postTx = await syncing.postTx(payload);
+    console.log("/tx", postTx);
+    res.send(postTx).end();
+  });
+  
   router.get('/tx/pending', async (req, res) => {
     const getTxPending = await syncing.getTxPending();
     //console.log("/tx/pending:", getTxPending);
     res.json(getTxPending).end();
+  });
+
+  router.get('/tx_anchor', async (req, res) => {
+    const getTxAnchor = await syncing.getTxAnchor();
+    //console.log("/tx_anchor:", getTxAnchor);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    res.send(getTxAnchor).end();
   });
 
   router.get('/tx/:id/status', async (req, res) => {
@@ -79,7 +103,7 @@
   router.get('/tx/:txid/unbundle/:pageid/:pagesize', async (req, res) => {
     const { txid, pageid, pagesize } = req.params;
     const getTxBundleItemsInUnbundle = await syncing.getTxBundleItemsInUnbundle(txid, pageid, pagesize);
-    console.log("getTxBundleItemsInUnbundle", getTxBundleItemsInUnbundle)
+    //console.log("getTxBundleItemsInUnbundle", getTxBundleItemsInUnbundle)
     res.status(200).json(getTxBundleItemsInUnbundle).end();  
   });
   
