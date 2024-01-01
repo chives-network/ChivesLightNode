@@ -26,12 +26,12 @@ expressApp.get('/syncing', async (req, res) => {
   //await syncing.deleteBlackTxsAndAddress();
   //await syncing.calculatePeers();
   //await syncing.syncingBlockMissing();
-  //await syncing.syncingBlockByHeight(35753);
+  //await syncing.syncingBlockByHeight(55741);
   //await syncing.syncingBlock(2);
   //await syncing.calculatePeers();
-  await syncing.syncingTx(20);
-  await syncing.syncingChunksPromiseAll(400);
-  await syncing.syncingTxParseBundle(10);
+  //await syncing.syncingTx(20);
+  //await syncing.syncingChunksPromiseAll(400);
+  await syncing.syncingTxParseBundle(300);
   res.json({});
 });
 

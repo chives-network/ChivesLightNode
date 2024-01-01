@@ -109,7 +109,7 @@ import { exit } from 'process';
 
   async function getTxsBundleNotSyncing(TxCount) {
     return new Promise((resolve, reject) => {
-      db.all("SELECT * from tx where entity_type ='Bundle' and data_root_status = '200' and (bundleTxParse is null or bundleTxParse = '') limit " + TxCount + " offset 0", (err, result) => {
+      db.all("SELECT * from tx where entity_type ='Bundle' and data_root_status = '200' and (bundleTxParse is null or bundleTxParse = '') order by block_height asc limit " + TxCount + " offset 0", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -346,7 +346,7 @@ import { exit } from 'process';
                       //console.log("unBundleItem signatureType",Item.signatureType)
                       //console.log("unBundleItem data",Item.data)
                       //Update Chunks Status IGNORE
-                      const insertTxBundleItem = db.prepare('INSERT OR IGNORE INTO tx (id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                      const insertTxBundleItem = db.prepare('INSERT OR IGNORE INTO tx (id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
                       const id = Item.id
                       const block_indep_hash = TxInfor.block_indep_hash
                       const last_tx = Item.anchor
@@ -379,7 +379,7 @@ import { exit } from 'process';
                       const item_pages = TagsMap['File-Summary'] || "";
                       
                       const entity_type = "File"
-                      const bundleTxParse = 1
+                      const bundleTxParse = ''
                       const data_root = ''
                       const data_root_status = 200
 
@@ -390,7 +390,7 @@ import { exit } from 'process';
                       const app_instance = TagsMap['App-Instance'] || "";
                       const last_tx_action = id
 
-                      insertTxBundleItem.run(id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action);
+                      insertTxBundleItem.run(id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,JSON.stringify(Item.tags));
                       insertTxBundleItem.finalize();
 
                       //Write Item Data to File
@@ -503,7 +503,7 @@ import { exit } from 'process';
                   updateBundle.finalize();
               }
               catch (err) {
-                  console.error('Error Arbundles.unbundleData:', TxId);
+                  console.error('Error Arbundles.unbundleData ---------------------------------:', TxId);
                   const updateBundle = db.prepare('update tx set bundleTxParse = ? where id = ?');
                   updateBundle.run(-1, TxId);
                   updateBundle.finalize();
@@ -1366,7 +1366,7 @@ import { exit } from 'process';
   async function getAllFileFolder(Address) {
     const AddressFilter = filterString(Address)
     return new Promise((resolve, reject) => {
-      db.all("SELECT * FROM tx where is_encrypt = '' and entity_type = 'Folder' and from_address = '"+AddressFilter+"' order by timestamp desc", (err, result) => {
+      db.all("SELECT * FROM tx where is_encrypt = '' and entity_type = 'Folder' and from_address = '"+AddressFilter+"' order by block_height desc", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1582,7 +1582,6 @@ import { exit } from 'process';
       })
       const peersList = await axios.get(NodeApi + '/peers', {}).then(res=>res.data);
       const HaveIpLocationPeersList = await getPeers();
-      console.log("peersList", peersList)
       if(peersList && peersList.length > 0) {
         peersList.map(async (PeerAndPort)=>{
           if(!HaveIpLocationPeersList.includes(PeerAndPort)) {
@@ -1762,7 +1761,7 @@ import { exit } from 'process';
         const TxContent = readFile("txs/" + TxIdFilter.substring(0, 2).toLowerCase(), TxIdFilter + '.json', "getTxData", 'utf-8');
         const TxContentJson = JSON.parse(TxContent);
         if(TxContentJson && TxContentJson.data && TxContentJson.data_root == '') {
-            FileContent = TxContentJson;
+            FileContent = Buffer.from(TxContentJson.data, 'base64');
         }
         else {
             FileContent = '';
@@ -1770,7 +1769,7 @@ import { exit } from 'process';
     }
     const FileName = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['item_name'] ? getTxInforByIdFromDbValue['item_name'] : TxId;
     const ContentType = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['content_type'] ? getTxInforByIdFromDbValue['content_type'] : "";
-    console.log("ContentType", ContentType)
+    console.log("FileContent", FileContent)
     return {FileName, ContentType, FileContent};
   }
 
@@ -1838,9 +1837,14 @@ import { exit } from 'process';
     
     const TagsMap = {}
     TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
+      //For Bundle ITem
       TagsMap[Tag.name] = Tag.value;
+      //For Tx Item
+      const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
+      const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
+      TagsMap[TagName] = TagValue;
     })
-    const FileName = TagsMap['File-Name']
+    const FileName = TagsMap['File-Name'] || "Unknown"
     const ContentType = TagsMap['Content-Type']
     const TxId = TagsMap['File-TxId'] ? TagsMap['File-TxId'] : OriginalTxId
     console.log("TxId OriginalTxId", TxId, OriginalTxId);
@@ -1891,8 +1895,14 @@ import { exit } from 'process';
       return {FileName, ContentType, FileContent};
     }
     else {
-      console.log("inputFilePath Not Exist:", inputFilePath)
-      return {FileName:'', ContentType:'', FileContent:''};
+      let FileContent = ''
+      if(TxInfor && TxInfor.data && TxInfor.data_root == '') {
+          FileContent = Buffer.from(TxInfor.data, 'base64');
+      }
+      else {
+          console.log("inputFilePath Not Exist:", inputFilePath)
+      }
+      return {FileName, ContentType, FileContent};
     }
 
   }

@@ -31,7 +31,7 @@
   router.get('/tx_anchor', async (req, res) => {
     const getTxAnchor = await syncing.getTxAnchor();
     //console.log("/tx_anchor:", getTxAnchor);
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=3600');
     res.send(getTxAnchor).end();
   });
 
@@ -76,18 +76,23 @@
     if(FileName != undefined) {
       res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`)
     }
-    ContentType ? res.setHeader('Content-Type', ContentType) : null;
+    if(ContentType != undefined) {
+      res.setHeader('Content-Type', ContentType);
+    }
     res.status(200).send(FileContent).end();  
   });
 
   router.get('/:id/thumbnail', async (req, res) => {
     const { id } = req.params;
     const {FileName, ContentType, FileContent} = await syncing.getTxDataThumbnail(id);
-    console.log("FileName", FileName)
     res.setHeader('Cache-Control', 'public, max-age=3600'); 
-    FileName ? res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`) : null;
-    ContentType ? res.setHeader('Content-Type', ContentType) : null;
-    res.status(200).send(FileContent).end();  
+    if(FileName != undefined) {
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`)
+    }
+    if(ContentType != undefined) {
+      res.setHeader('Content-Type', ContentType);
+    }
+    res.status(200).send(FileContent).end(); 
   });
 
   router.get('/tx/:id/data', async (req, res) => {
@@ -95,8 +100,12 @@
     const {FileName, ContentType, FileContent} = await syncing.getTxData(id);
     res.setHeader('Cache-Control', 'public, max-age=3600'); 
     //res.setHeader('Content-Disposition', `attachment; filename="${FileName}"`);
-    FileName ? res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`) : null;
-    ContentType ? res.setHeader('Content-Type', ContentType) : null;
+    if(FileName != undefined) {
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`)
+    }
+    if(ContentType != undefined) {
+      res.setHeader('Content-Type', ContentType);
+    }
     res.status(200).send(FileContent).end();  
   });
 
