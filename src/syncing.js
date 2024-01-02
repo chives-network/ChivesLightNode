@@ -5,11 +5,12 @@
   import sharp from 'sharp'
   import { unbundleData } from 'arbundles'
   import Arweave from 'arweave'
-
-  import { join } from 'path';
-import { exit } from 'process';
-  //const imagemin = require('imagemin');
-  //const optipng = require('imagemin-optipng');
+  import { join } from 'path'
+  import { exit } from 'process'
+  //const imagemin = require('imagemin')
+  //const optipng = require('imagemin-optipng')
+  import pkg from '@pdftron/pdfnet-node';
+  const { PDFNet } = pkg;
 
   const DataDir = "D:/GitHub/ChivesweaveDataDir";
   const BlackListTxs = [];
@@ -323,6 +324,19 @@ import { exit } from 'process';
     if(TxInfor && TxInfor.id) {
       const TxId = TxInfor.id;
       const BundlePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
+      if( isFile(BundlePath) == true ) {
+        //Check File Content Valid
+        const FileContent = fs.readFileSync(BundlePath);
+        const FileContentString = FileContent.toString('utf-8')
+        if(FileContentString.includes("This page cannot be found, yet.")) {
+          //Invalid FileContent
+          fs.unlinkSync(BundlePath);
+          //Update Tx Status
+          const updateBundle = db.prepare('update tx set data_root_status = ? where id = ?');
+          updateBundle.run('', TxId);
+          updateBundle.finalize();
+        }
+      }
       if( isFile(BundlePath) == false ) {
         await syncingTxChunksById(TxId);
         console.log("syncingTxParseBundleById unBundleItem id",BundlePath)
@@ -336,167 +350,188 @@ import { exit } from 'process';
               try {
                   const unbundleItems = unbundleData(FileContent);
                   unbundleItems.items.map(async (Item) => {
-                      //console.log("unbundleItems",Item)
-                      console.log("unbundleItems id", Item.id, Item.tags)
-                      //console.log("unBundleItem tags",Item.tags)
-                      console.log("unBundleItem owner",Item.owner)
-                      //console.log("unBundleItem anchor",Item.anchor)
-                      //console.log("unBundleItem target",Item.target)
-                      //console.log("unBundleItem signature",Item.signature)
-                      //console.log("unBundleItem signatureType",Item.signatureType)
-                      //console.log("unBundleItem data",Item.data)
-                      //Update Chunks Status IGNORE
-                      const insertTxBundleItem = db.prepare('INSERT OR IGNORE INTO tx (id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-                      const id = Item.id
-                      const block_indep_hash = TxInfor.block_indep_hash
-                      const last_tx = Item.anchor
-                      const owner = Item.owner
-                      const from_address = await ownerToAddress(Item.owner);
-                      const target = Item.target
-                      const quantity = Item.quantity || 0
-                      const signature = Item.signature
-                      const reward = 0
-                      const timestamp = TxInfor.timestamp
-                      const block_height = TxInfor.block_height
-                      const data_size = Item.data.length
-                      const bundleid = TxId;
                       //Tags Data
                       const TagsMap = {}
                       Item && Item.tags && Item.tags.length > 0 && Item.tags.map( (Tag) => {
                           TagsMap[Tag.name] = Tag.value;
                       })
-                      const item_name = TagsMap['File-Name'] || "";
-                      const item_type = contentTypeToFileType(TagsMap['Content-Type']);
-                      const item_parent = TagsMap['File-Parent'] || "Root";
-                      const content_type = TagsMap['Content-Type'] || "";
-                      const item_hash = TagsMap['File-Hash'] || "";
-                      const item_summary = TagsMap['File-Summary'] || "";
-                      
-                      const item_star = TagsMap['File-Summary'] || "";
-                      const item_label = TagsMap['File-Summary'] || "";
-                      const item_download = TagsMap['File-Summary'] || "";
-                      const item_language = TagsMap['File-Summary'] || "";
-                      const item_pages = TagsMap['File-Summary'] || "";
-                      
-                      const entity_type = "File"
-                      const bundleTxParse = ''
-                      const data_root = ''
-                      const data_root_status = 200
+                      if('Content-Type' in TagsMap && TagsMap['Content-Type'] != "application/x.chivesweave-manifest+json")    {
+                        //console.log("unbundleItems",Item)
+                        console.log("unbundleItems id", Item.id, Item.tags)
+                        //console.log("unBundleItem tags",Item.tags)
+                        //console.log("unBundleItem owner",Item.owner)
+                        //console.log("unBundleItem anchor",Item.anchor)
+                        //console.log("unBundleItem target",Item.target)
+                        //console.log("unBundleItem signature",Item.signature)
+                        //console.log("unBundleItem signatureType",Item.signatureType)
+                        //console.log("unBundleItem data",Item.data)
+                        //Update Chunks Status IGNORE
+                        const insertTxBundleItem = db.prepare('INSERT OR IGNORE INTO tx (id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                        const id = Item.id
+                        const block_indep_hash = TxInfor.block_indep_hash
+                        const last_tx = Item.anchor
+                        const owner = Item.owner
+                        const from_address = await ownerToAddress(Item.owner);
+                        const target = Item.target
+                        const quantity = Item.quantity || 0
+                        const signature = Item.signature
+                        const reward = 0
+                        const timestamp = TxInfor.timestamp
+                        const block_height = TxInfor.block_height
+                        const data_size = Item.data.length
+                        const bundleid = TxId;
 
-                      const is_encrypt = TagsMap['Cipher-ALG'] || "";
-                      const is_public = TagsMap['File-Public'] || "";
-                      const app_name = TagsMap['App-Name'] || "";
-                      const app_version = TagsMap['App-Version'] || "";
-                      const app_instance = TagsMap['App-Instance'] || "";
-                      const last_tx_action = id
+                        const item_name = TagsMap['File-Name'] || "";
+                        const item_type = contentTypeToFileType(TagsMap['Content-Type']);
+                        const item_parent = TagsMap['File-Parent'] || "Root";
+                        const content_type = TagsMap['Content-Type'] || "";
+                        const item_hash = TagsMap['File-Hash'] || "";
+                        const item_summary = TagsMap['File-Summary'] || "";
+                        
+                        const item_star = TagsMap['File-Summary'] || "";
+                        const item_label = TagsMap['File-Summary'] || "";
+                        const item_download = TagsMap['File-Summary'] || "";
+                        const item_language = TagsMap['File-Summary'] || "";
+                        const item_pages = TagsMap['File-Summary'] || "";
+                        
+                        const entity_type = TagsMap['Entity-Type'] || "File"
+                        const bundleTxParse = ''
+                        const data_root = ''
+                        const data_root_status = 200
 
-                      insertTxBundleItem.run(id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,JSON.stringify(Item.tags));
-                      insertTxBundleItem.finalize();
+                        const is_encrypt = TagsMap['Cipher-ALG'] || "";
+                        const is_public = TagsMap['File-Public'] || "";
+                        const app_name = TagsMap['App-Name'] || "";
+                        const app_version = TagsMap['App-Version'] || "";
+                        const app_instance = TagsMap['App-Instance'] || "";
+                        const last_tx_action = id
 
-                      //Write Item Data to File
-                      writeFile('files/' + Item.id.substring(0, 2).toLowerCase(), Item.id, Buffer.from(Item.data, 'base64'), "syncingTxParseBundleById")
+                        insertTxBundleItem.run(id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,JSON.stringify(Item.tags));
+                        insertTxBundleItem.finalize();
 
-                      //Write Item Json to File
-                      const ItemJson = {}
-                      ItemJson.id = Item.id
-                      ItemJson.owner = {}
-                      ItemJson.owner.address = from_address
-                      ItemJson.owner.key = Item.owner
-                      ItemJson.anchor = Item.anchor
-                      ItemJson.tags = Item.tags
-                      ItemJson.block = {}
-                      ItemJson.block.height = block_height
-                      ItemJson.block.indep_hash = block_indep_hash
-                      ItemJson.block.timestamp = timestamp
-                      ItemJson.data = {}
-                      ItemJson.data.size = data_size
-                      ItemJson.data.type = contentTypeToFileType(content_type)
-                      ItemJson.fee = {}
-                      ItemJson.fee.winston = 0
-                      ItemJson.fee.xwe = 0
-                      ItemJson.quantity = {}
-                      ItemJson.quantity.winston = quantity
-                      ItemJson.quantity.xwe = String(quantity/1000000000000)
-                      ItemJson.recipient = Item.target
-                      ItemJson.signature = Item.signature
-                      ItemJson.signatureType = Item.signatureType
-                      ItemJson.bundleid = TxId
-                      //console.log("ItemJson", JSON.stringify(ItemJson))
-                      writeFile('txs/' + Item.id.substring(0, 2).toLowerCase(), Item.id + '.json', JSON.stringify(ItemJson), "syncingTxParseBundleById")
+                        //Write Item Data to File
+                        writeFile('files/' + Item.id.substring(0, 2).toLowerCase(), Item.id, Buffer.from(Item.data, 'base64'), "syncingTxParseBundleById")
 
-                      //Update Tx Status
-                      const EntityType    = TagsMap['Entity-Type'];
-                      const EntityAction  = TagsMap['Entity-Action'];
-                      const FileTxId      = TagsMap['FileTxId'];
-                      const EntityTarget  = TagsMap['Entity-Target'];
-                      const LastTxChange  = TagsMap['Last-Tx-Change'];
-                      if(EntityType == "Action") {
-                          console.log("TxInfor EntityAction: ______________________________________________________________", EntityAction)
+                        //Write Item Json to File
+                        const ItemJson = {}
+                        ItemJson.id = Item.id
+                        ItemJson.owner = {}
+                        ItemJson.owner.address = from_address
+                        ItemJson.owner.key = Item.owner
+                        ItemJson.anchor = Item.anchor
+                        ItemJson.tags = Item.tags
+                        ItemJson.block = {}
+                        ItemJson.block.height = block_height
+                        ItemJson.block.indep_hash = block_indep_hash
+                        ItemJson.block.timestamp = timestamp
+                        ItemJson.data = {}
+                        ItemJson.data.size = data_size
+                        ItemJson.data.type = contentTypeToFileType(content_type)
+                        ItemJson.fee = {}
+                        ItemJson.fee.winston = 0
+                        ItemJson.fee.xwe = 0
+                        ItemJson.quantity = {}
+                        ItemJson.quantity.winston = quantity
+                        ItemJson.quantity.xwe = String(quantity/1000000000000)
+                        ItemJson.recipient = Item.target
+                        ItemJson.signature = Item.signature
+                        ItemJson.signatureType = Item.signatureType
+                        ItemJson.bundleid = TxId
+                        //console.log("ItemJson", JSON.stringify(ItemJson))
+                        writeFile('txs/' + Item.id.substring(0, 2).toLowerCase(), Item.id + '.json', JSON.stringify(ItemJson), "syncingTxParseBundleById")
+
+                        //Update Tx Status
+                        const EntityType    = TagsMap['Entity-Type'];
+                        const EntityAction  = TagsMap['Entity-Action'];
+                        const FileTxId      = TagsMap['File-TxId'];
+                        const EntityTarget  = TagsMap['Entity-Target'];
+                        const LastTxChange  = TagsMap['Last-Tx-Change'];
+                        if(EntityType == "Action") {
+                            console.log("Action TxInfor EntityAction: ______________________________________________________________", EntityAction)
+                            switch(EntityAction) {
+                                case 'Label':
+                                    //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                    const updateBundleLabel = db.prepare('update tx set item_label = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                    updateBundleLabel.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    updateBundleLabel.finalize();
+                                    console.log("Action Label", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    break;
+                                case 'Star':
+                                    //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                    const updateBundleStar = db.prepare('update tx set item_star = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                    updateBundleStar.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    updateBundleStar.finalize();
+                                    console.log("Action Star", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    break;
+                                case 'Folder':
+                                    //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                    const updateBundleFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                    updateBundleFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    updateBundleFolder.finalize();
+                                    console.log("Action Folder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    break;
+                                case 'Public':
+                                    //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                    const updateBundlePublic = db.prepare('update tx set is_public = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                    updateBundlePublic.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    updateBundlePublic.finalize();
+                                    console.log("Action Public", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    break;
+                                case 'RenameFolder':
+                                    //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                    const updateBundleRenameFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                    updateBundleRenameFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    updateBundleRenameFolder.finalize();
+                                    console.log("Action RenameFolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    break;
+                                case 'DeleteFolder':
+                                    //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                    const updateBundleDeleteFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                    updateBundleDeleteFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    updateBundleDeleteFolder.finalize();
+                                    console.log("Action DeleteFolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    break;
+                                case 'Restorefolder':
+                                    //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
+                                    const updateBundleRestorefolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                    updateBundleRestorefolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    updateBundleRestorefolder.finalize();
+                                    console.log("Action Restorefolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    break;
+                                case 'Profile':
+                                    //DataItemId, BlockTimestamp, BlockHeight, FromAddress, LastTxChange
+                                    const updateBundleAddressProfile = db.prepare('update address set profile = ?, timestamp = ?, last_tx_action = ? where (last_tx_action is null and id = ?) or (id = ? and last_tx_action = ?)');
+                                    updateBundleAddressProfile.run(Item.id, timestamp, block_height, from_address, from_address, LastTxChange);
+                                    updateBundleAddressProfile.finalize();
+                                    console.log("Action Profile", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    break;
+                                case 'Agent':
+                                    //EntityTarget, FromAddress, BlockTimestamp
+                                    const updateBundleAddressAgent = db.prepare("update address set Agent = ?, timestamp = ? where id = ? and Agent = '0'");
+                                    updateBundleAddressAgent.run('1', timestamp, from_address);
+                                    updateBundleAddressAgent.finalize();
+                                    console.log("Action Agent", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    break;
+                                case 'Referee':
+                                    //EntityTarget, FromAddress, BlockTimestamp
+                                    const updateBundleAddressReferee = db.prepare("update address set referee = ? where id = ? and referee is null");
+                                    updateBundleAddressReferee.run(EntityTarget, from_address);
+                                    updateBundleAddressReferee.finalize();
+                                    console.log("Action Referee", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    break;
+                            }
+                        }
+                        if(EntityType == "Folder") {
+                          console.log("Folder TxInfor EntityAction: ______________________________________________________________", EntityAction)
                           switch(EntityAction) {
-                              case 'Label':
-                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                  const updateBundleLabel = db.prepare('update tx set item_label = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                  updateBundleLabel.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                  updateBundleLabel.finalize();
-                                  break;
-                              case 'Star':
-                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                  const updateBundleStar = db.prepare('update tx set item_star = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                  updateBundleStar.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                  updateBundleStar.finalize();
-                                  break;
-                              case 'Folder':
-                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                  const updateBundleFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                  updateBundleFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                  updateBundleFolder.finalize();
-                                  break;
-                              case 'Public':
-                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                  const updateBundlePublic = db.prepare('update tx set is_public = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                  updateBundlePublic.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                  updateBundlePublic.finalize();
-                                  break;
-                              case 'RenameFolder':
-                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                  const updateBundleRenameFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                  updateBundleRenameFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                  updateBundleRenameFolder.finalize();
-                                  break;
-                              case 'DeleteFolder':
-                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                  const updateBundleDeleteFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                  updateBundleDeleteFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                  updateBundleDeleteFolder.finalize();
-                                  break;
-                              case 'Restorefolder':
-                                  //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                  const updateBundleRestorefolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                  updateBundleRestorefolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                  updateBundleRestorefolder.finalize();
-                                  break;
-                              case 'Profile':
-                                  //DataItemId, BlockTimestamp, BlockHeight, FromAddress, LastTxChange
-                                  const updateBundleAddressProfile = db.prepare('update address set profile = ?, timestamp = ?, last_tx_action = ? where (last_tx_action is null and id = ?) or (id = ? and last_tx_action = ?)');
-                                  updateBundleAddressProfile.run(Item.id, timestamp, block_height, from_address, from_address, LastTxChange);
-                                  updateBundleAddressProfile.finalize();
-                                  break;
-                              case 'Agent':
-                                  //EntityTarget, FromAddress, BlockTimestamp
-                                  const updateBundleAddressAgent = db.prepare("update address set Agent = ?, timestamp = ? where id = ? and Agent = '0'");
-                                  updateBundleAddressAgent.run('1', timestamp, from_address);
-                                  updateBundleAddressAgent.finalize();
-                                  break;
-                              case 'Referee':
-                                  //EntityTarget, FromAddress, BlockTimestamp
-                                  const updateBundleAddressReferee = db.prepare("update address set referee = ? where id = ? and referee is null");
-                                  updateBundleAddressReferee.run(EntityTarget, from_address);
-                                  updateBundleAddressReferee.finalize();
-                                  break;
+                            case 'CreateFolder':
+                              const EntityActionSql = db.prepare("update tx set entity_type = ? where id = ?");
+                              EntityActionSql.run(EntityType, Item.id);
+                              EntityActionSql.finalize();
+                              break;
                           }
+                        }
                       }
-
-
                   })
                   const updateBundle = db.prepare('update tx set bundleTxParse = ? where id = ?');
                   updateBundle.run('1', TxId);
@@ -530,7 +565,13 @@ import { exit } from 'process';
         if(arrayBuffer && arrayBuffer.byteLength && arrayBuffer.byteLength > 0) {
             const FileBuffer = Buffer.from(arrayBuffer);
             data_root_status = 200
-            writeFile('files/' + TxId.substring(0, 2).toLowerCase(), TxId, FileBuffer, "syncingTxChunksById")
+            const FileContentString = FileBuffer.toString('utf-8')
+            if(arrayBuffer.byteLength<10000 && FileContentString.includes("This page cannot be found, yet.")) {
+              console.log("arrayBuffer.byteLength--------------------------------------", arrayBuffer.byteLength)
+            }
+            else {
+              writeFile('files/' + TxId.substring(0, 2).toLowerCase(), TxId, FileBuffer, "syncingTxChunksById")
+            }
         }
         else {
             data_root_status = 404
@@ -687,7 +728,7 @@ import { exit } from 'process';
           GetExistBlocksIds.push(Item.id)
         })
       }
-      console.log("GetExistBlocksIds:", GetExistBlocksIds);
+      //console.log("GetExistBlocksIds:", GetExistBlocksIds);
       const getMissingBlockIds = arrayDifference(BlockHeightRange, GetExistBlocksIds)
       console.log("getMissingBlockIds:", getMissingBlockIds);
       const result = [];
@@ -794,7 +835,7 @@ import { exit } from 'process';
     }
     
     // Begin a transaction
-    db.exec('BEGIN TRANSACTION');
+    //db.exec('BEGIN TRANSACTION');
     try {
       //Insert Address
       const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
@@ -831,12 +872,12 @@ import { exit } from 'process';
       insertStatement.finalize();
 
       // Commit the transaction
-      db.exec('COMMIT');
+      //db.exec('COMMIT');
     } 
     catch (error) {
       // Rollback the transaction if an error occurs
       console.error('Error:', error.message);
-      db.exec('ROLLBACK');
+      //db.exec('ROLLBACK');
     }
     return BlockInfor;
   }
@@ -1195,7 +1236,7 @@ import { exit } from 'process';
   async function getAllFileTypePage(FileType, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
-      db.all("SELECT * FROM tx where item_type = '"+FileType+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx where item_type = '"+FileType+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') order by entity_type desc, block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1240,7 +1281,7 @@ import { exit } from 'process';
   async function getAllFileTypeAddressPage(FileType, Address, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
-      db.all("SELECT * FROM tx where item_type = '"+FileType+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx where item_type = '"+FileType+"' and from_address = '"+Address+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') order by entity_type desc, block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1270,7 +1311,7 @@ import { exit } from 'process';
 
   async function getAllFileFolderAddressCount(Folder, Address) {
     return new Promise((resolve, reject) => {
-      db.get("SELECT COUNT(*) AS NUM FROM tx where item_parent = '"+Folder+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where item_parent = '"+Folder+"' and from_address = '"+Address+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') ", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1282,7 +1323,7 @@ import { exit } from 'process';
   async function getAllFileFolderAddressPage(Folder, Address, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
-      db.all("SELECT * FROM tx where item_parent = '"+Folder+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx where item_parent = '"+Folder+"' and from_address = '"+Address+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') order by entity_type desc, block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1570,7 +1611,7 @@ import { exit } from 'process';
 
   async function calculatePeers() {
     try {
-      const getPeersAvailableList = await getPeersAvailable()
+      const getPeersAvailableList = await getPeersInfo()
       getPeersAvailableList.map(async (Item)=>{
         const peerIsAvailable = await checkPeer("http://"+Item.ip)
         const updatePeerAvailable = db.prepare('update peers set status = ? where ip = ?');
@@ -1600,7 +1641,7 @@ import { exit } from 'process';
       return peersList;
     } 
     catch (error) {
-      console.error("calculatePeers:", "calculatePeers");
+      console.error("calculatePeers-------------------------------:", "calculatePeers");
       return [];
     }
   }
@@ -1628,7 +1669,7 @@ import { exit } from 'process';
       return peersList;
     } 
     catch (error) {
-      console.error("getPeersAndInsertDb:", "getPeersAndInsertDb");
+      console.error("getPeersAndInsertDb:", error);
       return [];
     }
   }
@@ -1829,6 +1870,28 @@ import { exit } from 'process';
     }
   }
 
+  async function convertPdfFirstPageToImage(inputFilePath, outputFilePath) {
+    // Now you can use PDFNet
+    return await PDFNet.initialize('demo:1704219714023:7c982fff030000000045c09496df8439e7d5df23f3324ed470716e6ef6').then(async () => {
+                  try {
+                    const draw = await PDFNet.PDFDraw.create(); 
+                    const doc = await PDFNet.PDFDoc.createFromFilePath(inputFilePath);
+                    doc.initSecurityHandler();
+                    draw.setDPI(92);
+                    const firstPage = await (await doc.getPageIterator()).current();
+                    // C) Rasterize the first page in the document and save the result as PNG.
+                    await draw.export(firstPage, outputFilePath);
+                    return true;
+                  } catch (err) {
+                    console.log(err);
+                    return false;
+                  }
+                }).catch(error => {
+                  console.error('Error initializing PDFNet:', error);
+                  return false;
+                });
+  }
+
   async function getTxDataThumbnail(OriginalTxId) {
     mkdirForData();
     const TxContent = readFile("txs/" + OriginalTxId.substring(0, 2).toLowerCase(), OriginalTxId + '.json', "getTxDataThumbnail", 'utf-8');
@@ -1880,6 +1943,25 @@ import { exit } from 'process';
         });
       }
       else if(fileTypeSuffix == "gif") {
+        sharp(inputFilePath).gif({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
+          console.log("getTxDataThumbnail sharp:", TxId, err, info)
+        });
+      }
+      else if(fileTypeSuffix == "pdf")    {
+        if(isFile(outputFilePath + '/' + TxId + '.png')) {
+          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+          return {FileName, ContentType:"image/png", FileContent};
+        }
+        else {
+          const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(inputFilePath, outputFilePath + '/' + TxId + '.png');
+          if(convertPdfFirstPageToImageStatus) {
+            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+            return {FileName, ContentType:"image/png", FileContent};
+          }
+          console.log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
+        }
+        //printer(inputFilePath).then(console.log);
+        console.log("outputFilePath", outputFilePath + '/' + TxId + '.png')
       }
 
       //Thumbnail Exist
