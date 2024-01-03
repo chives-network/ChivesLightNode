@@ -11,6 +11,7 @@ import walletRoutes from './src/router/wallet.js'
 import fileRoutes from './src/router/file.js'
 import peerRoutes from './src/router/peer.js'
 import priceRoutes from './src/router/price.js'
+import statRoutes from './src/router/stat.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,12 +25,13 @@ expressApp.use(cors());
 
 expressApp.get('/syncing', async (req, res) => {
   //await syncing.deleteBlackTxsAndAddress();
-  await syncing.calculatePeers();
+  //await syncing.calculatePeers();
+  await syncing.syncingBlockAndTxStatAllDates();
   //await syncing.syncingBlockMissing();
   //35753 43355 
-  await syncing.syncingBlockPromiseAll(30);
+  //await syncing.syncingBlockPromiseAll(30);
   //await syncing.syncingBlock(2);
-  await syncing.syncingTx(5);
+  //await syncing.syncingTx(5);
   //await syncing.syncingChunksPromiseAll(10);
   //await syncing.syncingTxParseBundle(1);
   //await syncing.syncingBlockMinedTime(1000);
@@ -38,6 +40,7 @@ expressApp.get('/syncing', async (req, res) => {
 
 
 
+expressApp.use('/', statRoutes);
 expressApp.use('/', htmlRoutes);
 expressApp.use('/', blockRoutes);
 expressApp.use('/', walletRoutes);

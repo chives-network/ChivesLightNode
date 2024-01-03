@@ -40,18 +40,18 @@
     res.status(200).json(getAllFileFolderAddressPageJson).end();  
   });
   
-  router.get('/file/star/:Folder/:address/:pageid/:pagesize', async (req, res) => {
-    const { Folder, address, pageid, pagesize } = req.params;
-    const getAllFileFolderAddressPageJson = await syncing.getAllFileFolderAddressPageJson(Folder, address, pageid, pagesize);
-    console.log("getAllFileFolderAddressPageJson", getAllFileFolderAddressPageJson)
-    res.status(200).json(getAllFileFolderAddressPageJson).end();  
-  });
-  
-  router.get('/file/star/:Folder/:address/:pageid/:pagesize', async (req, res) => {
+  router.get('/file/star/:Star/:address/:pageid/:pagesize', async (req, res) => {
     const { Star, address, pageid, pagesize } = req.params;
     const getAllFileStarAddressPageJson = await syncing.getAllFileStarAddressPageJson(Star, address, pageid, pagesize);
     console.log("getAllFileStarAddressPageJson", getAllFileStarAddressPageJson)
     res.status(200).json(getAllFileStarAddressPageJson).end();  
+  });
+
+  router.get('/file/label/:Label/:address/:pageid/:pagesize', async (req, res) => {
+    const { Label, address, pageid, pagesize } = req.params;
+    const getAllFileLabelAddressPageJson = await syncing.getAllFileLabelAddressPageJson(Label, address, pageid, pagesize);
+    console.log("getAllFileLabelAddressPageJson", getAllFileLabelAddressPageJson)
+    res.status(200).json(getAllFileLabelAddressPageJson).end();  
   });
 
   export default router;

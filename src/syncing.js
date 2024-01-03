@@ -490,52 +490,66 @@
                             switch(EntityAction) {
                                 case 'Label':
                                     //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                    const updateBundleLabel = db.prepare('update tx set item_label = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                    updateBundleLabel.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                    updateBundleLabel.finalize();
-                                    console.log("Action Label", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    if(EntityTarget != undefined)  {
+                                      const updateBundleLabel = db.prepare('update tx set item_label = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                      updateBundleLabel.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      updateBundleLabel.finalize();
+                                      console.log("Action Label", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    }
                                     break;
                                 case 'Star':
                                     //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                    const updateBundleStar = db.prepare('update tx set item_star = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                    updateBundleStar.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                    updateBundleStar.finalize();
-                                    console.log("Action Star", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    if(EntityTarget != undefined)  {
+                                      const updateBundleStar = db.prepare('update tx set item_star = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                      updateBundleStar.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      updateBundleStar.finalize();
+                                      console.log("Action Star", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    }
                                     break;
                                 case 'Folder':
                                     //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                    const updateBundleFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                    updateBundleFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                    updateBundleFolder.finalize();
-                                    console.log("Action Folder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    if(EntityTarget != undefined)  {
+                                      const updateBundleFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                      updateBundleFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      updateBundleFolder.finalize();
+                                      console.log("Action Folder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    }
                                     break;
                                 case 'Public':
                                     //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                    const updateBundlePublic = db.prepare('update tx set is_public = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                    updateBundlePublic.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                    updateBundlePublic.finalize();
-                                    console.log("Action Public", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    if(EntityTarget != undefined)  {
+                                      const updateBundlePublic = db.prepare('update tx set is_public = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                      updateBundlePublic.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      updateBundlePublic.finalize();
+                                      console.log("Action Public", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    }
                                     break;
                                 case 'RenameFolder':
                                     //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                    const updateBundleRenameFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                    updateBundleRenameFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                    updateBundleRenameFolder.finalize();
-                                    console.log("Action RenameFolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    if(EntityTarget != undefined)  {
+                                      const updateBundleRenameFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                      updateBundleRenameFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      updateBundleRenameFolder.finalize();
+                                      console.log("Action RenameFolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    }
                                     break;
                                 case 'DeleteFolder':
                                     //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                    const updateBundleDeleteFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                    updateBundleDeleteFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                    updateBundleDeleteFolder.finalize();
-                                    console.log("Action DeleteFolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    if(EntityTarget != undefined)  {
+                                      const updateBundleDeleteFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                      updateBundleDeleteFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      updateBundleDeleteFolder.finalize();
+                                      console.log("Action DeleteFolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    }
                                     break;
                                 case 'Restorefolder':
                                     //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
-                                    const updateBundleRestorefolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
-                                    updateBundleRestorefolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
-                                    updateBundleRestorefolder.finalize();
-                                    console.log("Action Restorefolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    if(EntityTarget != undefined)  {
+                                      const updateBundleRestorefolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
+                                      updateBundleRestorefolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      updateBundleRestorefolder.finalize();
+                                      console.log("Action Restorefolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    }
                                     break;
                                 case 'Profile':
                                     //DataItemId, BlockTimestamp, BlockHeight, FromAddress, LastTxChange
@@ -547,17 +561,21 @@
                                     break;
                                 case 'Agent':
                                     //EntityTarget, FromAddress, BlockTimestamp
-                                    const updateBundleAddressAgent = db.prepare("update address set Agent = ?, timestamp = ? where id = ? and Agent = '0'");
-                                    updateBundleAddressAgent.run('1', timestamp, from_address);
-                                    updateBundleAddressAgent.finalize();
-                                    console.log("Action Agent", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange==undefined?'':LastTxChange);
+                                    if(EntityTarget != undefined)  {
+                                      const updateBundleAddressAgent = db.prepare("update address set Agent = ?, timestamp = ? where id = ? and Agent = '0'");
+                                      updateBundleAddressAgent.run('1', timestamp, from_address);
+                                      updateBundleAddressAgent.finalize();
+                                      console.log("Action Agent", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange==undefined?'':LastTxChange);
+                                    }
                                     break;
                                 case 'Referee':
                                     //EntityTarget, FromAddress, BlockTimestamp
-                                    const updateBundleAddressReferee = db.prepare("update address set referee = ? where id = ?");
-                                    updateBundleAddressReferee.run(EntityTarget, from_address);
-                                    updateBundleAddressReferee.finalize();
-                                    console.log("Action Referee", EntityTarget, timestamp, block_height, from_address);
+                                    if(EntityTarget != undefined)  {
+                                      const updateBundleAddressReferee = db.prepare("update address set referee = ? where id = ?");
+                                      updateBundleAddressReferee.run(EntityTarget, from_address);
+                                      updateBundleAddressReferee.finalize();
+                                      console.log("Action Referee", EntityTarget, timestamp, block_height, from_address);
+                                    }
                                     break;
                             }
                         }
@@ -978,9 +996,21 @@
     return BlockInfor;
   }
 
+  async function syncingBlockAndTxStatAllDates(AllDates=80)  {
+    const today = new Date();
+    const recent30Days = [];
+    for (let i = AllDates; i > 0; i--) {
+      const day = new Date(today);
+      day.setDate(today.getDate() - i);
+      const block_date = day.toISOString().slice(0, 10)
+      await syncingBlockAndTxStat(block_date);
+    }
+    console.log("recent30Days", recent30Days)
+  }
+
   async function syncingBlockAndTxStat(block_date)  {
     const BlockStat = await new Promise((resolve, reject) => {
-      db.get("SELECT SUM(block_size/1048576) AS block_size, SUM(mining_time) AS mining_time, SUM(reward/100000000000) AS reward, SUM(txs_length) AS txs_length, SUM(weave_size/1048576) AS weave_size, SUM(cumulative_diff/1024) AS cumulative_diff, SUM(reward_pool/100000000000) AS reward_pool FROM block where block_date='"+filterString(block_date)+"'", (err, result) => {
+      db.get("SELECT SUM(block_size/1048576) AS block_size, SUM(mining_time) AS mining_time, SUM(reward/1000000000000) AS reward, SUM(txs_length) AS txs_length, MAX(weave_size/1048576) AS weave_size, MAX(cumulative_diff/1024) AS cumulative_diff, SUM(reward_pool/1000000000000) AS reward_pool, COUNT(*) AS block_count FROM block where block_date='"+filterString(block_date)+"'", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -992,7 +1022,7 @@
     if(BlockStat && BlockStat.reward) {
 
       const TxStat = await new Promise((resolve, reject) => {
-        db.all("SELECT item_type, COUNT(id) AS item_type_count FROM tx where 1=1 group by item_type", (err, result) => {
+        db.all("SELECT item_type, COUNT(id) AS item_type_count FROM tx where tx_date='"+filterString(block_date)+"' group by item_type", (err, result) => {
           if (err) {
             reject(err);
           } else {
@@ -1041,8 +1071,8 @@
       const txs_task_item = 0
       const txs_task_reward = 0
       //Insert Stat
-      const insertStat = db.prepare('INSERT OR REPLACE INTO stat (block_date,block_size,mining_time,reward,txs_length,weave_size,cumulative_diff,reward_pool,txs_item,txs_image,txs_video,txs_audio,txs_pdf,txs_word,txs_excel,txs_ppt,txs_stl,txs_text,txs_exe,txs_zip,txs_action,txs_profile,txs_agent,txs_referee,txs_task_item,txs_task_reward) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-      insertStat.run(block_date,BlockStat.block_size,BlockStat.mining_time,BlockStat.reward,BlockStat.txs_length,BlockStat.weave_size,BlockStat.cumulative_diff,BlockStat.reward_pool,txs_item,txs_image,txs_video,txs_audio,txs_pdf,txs_word,txs_excel,txs_ppt,txs_stl,txs_text,txs_exe,txs_zip,txs_action,txs_profile,txs_agent,txs_referee,txs_task_item,txs_task_reward);
+      const insertStat = db.prepare('INSERT OR REPLACE INTO stat (block_date,block_size,mining_time,reward,txs_length,weave_size,cumulative_diff,reward_pool,block_count,txs_item,txs_image,txs_video,txs_audio,txs_pdf,txs_word,txs_excel,txs_ppt,txs_stl,txs_text,txs_exe,txs_zip,txs_action,txs_profile,txs_agent,txs_referee,txs_task_item,txs_task_reward) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+      insertStat.run(block_date,BlockStat.block_size,BlockStat.mining_time,BlockStat.reward,BlockStat.txs_length,BlockStat.weave_size,BlockStat.cumulative_diff,BlockStat.reward_pool,BlockStat.block_count,txs_item,txs_image,txs_video,txs_audio,txs_pdf,txs_word,txs_excel,txs_ppt,txs_stl,txs_text,txs_exe,txs_zip,txs_action,txs_profile,txs_agent,txs_referee,txs_task_item,txs_task_reward);
       insertStat.finalize();
     }
 
@@ -1577,6 +1607,47 @@
     return RS;
   }
 
+  async function getAllFileLabelAddressCount(Label, Address) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where item_label = '"+Label+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+  async function getAllFileLabelAddressPage(Label, Address, pageid, pagesize) {
+    const From = Number(pagesize) * Number(pageid)
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where item_label = '"+Label+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  async function getAllFileLabelAddressPageJson(Label, Address, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const LabelFilter = filterString(Label)
+    const AddressFilter = filterString(Address)
+    const getAddressCountValue = await getAllFileLabelAddressCount(LabelFilter, AddressFilter);
+    const getAddressPageValue = await getAllFileLabelAddressPage(LabelFilter, AddressFilter, pageidFiler, pagesizeFiler);
+    const RS = {};
+    RS['allpages'] = Math.ceil(getAddressCountValue/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(getAddressPageValue);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = getAddressCountValue;
+    return RS;
+  }
+
   async function getAllFileLabelGroup(Address) {
     const AddressFilter = filterString(Address)
     return new Promise((resolve, reject) => {
@@ -1884,8 +1955,86 @@
       });
     });
   }
-  
 
+  async function getStatisticsBlock(AllDates=30) {  
+    const BlockStat = await new Promise((resolve, reject) => {
+                        db.all("SELECT * from stat order by block_date desc limit "+Number(AllDates), (err, result) => {
+                          if (err) {
+                            reject(err);
+                          } else {
+                            resolve(result ? result : null);
+                          }
+                        });
+                      });
+    const block_date = []
+    const block_size = []
+    const block_count = []
+    const mining_time = []
+    const reward = []
+    const txs_length = []
+    const weave_size = []
+    const cumulative_diff = []
+    const reward_pool = []
+    const txs_item = []
+    const txs_image = []
+    const txs_video = []
+    const txs_audio = []
+    const txs_pdf = []
+    const txs_word = []
+    const txs_excel = []
+    const txs_ppt = []
+    const txs_stl = []
+    const txs_text = []
+    const txs_exe = []
+    const txs_zip = []
+    BlockStat && BlockStat.map((Item)=>{
+      block_date.push(Item.block_date.substring(5, 10))
+      block_size.push(Item.block_size)
+      block_count.push(Item.block_count)
+      mining_time.push(Item.mining_time)
+      reward.push(Item.reward)
+      txs_length.push(Item.txs_length)
+      weave_size.push(Item.weave_size)
+      cumulative_diff.push(Item.cumulative_diff)
+      reward_pool.push(Item.reward_pool)
+      txs_item.push(Item.txs_item)
+      txs_image.push(Item.txs_image)
+      txs_video.push(Item.txs_video)
+      txs_audio.push(Item.txs_audio)
+      txs_pdf.push(Item.txs_pdf)
+      txs_word.push(Item.txs_word)
+      txs_excel.push(Item.txs_excel)
+      txs_ppt.push(Item.txs_ppt)
+      txs_stl.push(Item.txs_stl)
+      txs_text.push(Item.txs_text)
+      txs_exe.push(Item.txs_exe)
+      txs_zip.push(Item.txs_zip)
+    })
+    const StatInfor = {}
+    StatInfor['block_date'] = block_date.reverse()
+    StatInfor['block_size'] = block_size.reverse()
+    StatInfor['block_count'] = block_count.reverse()
+    StatInfor['mining_time'] = mining_time.reverse()
+    StatInfor['reward'] = reward.reverse()
+    StatInfor['txs_length'] = txs_length.reverse()
+    StatInfor['weave_size'] = weave_size.reverse()
+    StatInfor['cumulative_diff'] = cumulative_diff.reverse()
+    StatInfor['reward_pool'] = reward_pool.reverse()
+    StatInfor['txs_item'] = txs_item.reverse()
+    StatInfor['txs_image'] = txs_image.reverse()
+    StatInfor['txs_video'] = txs_video.reverse()
+    StatInfor['txs_audio'] = txs_audio.reverse()
+    StatInfor['txs_pdf'] = txs_pdf.reverse()
+    StatInfor['txs_word'] = txs_word.reverse()
+    StatInfor['txs_excel'] = txs_excel.reverse()
+    StatInfor['txs_ppt'] = txs_ppt.reverse()
+    StatInfor['txs_stl'] = txs_stl.reverse()
+    StatInfor['txs_text'] = txs_text.reverse()
+    StatInfor['txs_exe'] = txs_exe.reverse()
+    StatInfor['txs_zip'] = txs_zip.reverse()
+    return StatInfor
+  }
+  
   function TxRowToJsonFormat(getTxPageValue) {
     const RS = []
     getTxPageValue.map((Item) =>{
@@ -1914,6 +2063,7 @@
       ItemJson.quantity.winston = Item.quantity
       ItemJson.quantity.xwe = String(Item.quantity/1000000000000)
       ItemJson.recipient = Item.target
+      ItemJson.table = Item
       //ItemJson.signature = Item.signature
       //ItemJson.signatureType = Item.signatureType
       ItemJson.bundleid = Item.bundleid
@@ -2259,6 +2409,7 @@
     syncingBlockMinedTime,
     syncingBlockByHeight,
     syncingBlockAndTxStat,
+    syncingBlockAndTxStatAllDates,
     syncingTx,
     syncingTxPromiseAll,
     syncingTxById,
@@ -2302,6 +2453,7 @@
     getAllFileTypeAddressPageJson,
     getAllFileFolderAddressPageJson,
     getAllFileStarAddressPageJson,
+    getAllFileLabelAddressPageJson,
     getAllFileLabelGroup,
     getAllFileFolder,
     getWalletTxJson,
@@ -2312,6 +2464,7 @@
     getPeers,
     getPeersInfo,
     calculatePeers,
+    getStatisticsBlock,
     isFile,
     readFile,
     writeFile,

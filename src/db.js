@@ -122,6 +122,7 @@ db.serialize(() => {
         CREATE TABLE IF NOT EXISTS stat (
             block_date PRIMARY KEY,
             block_size INTEGER default 0,
+            block_count INTEGER default 0,
             mining_time INTEGER default 0,
             reward INTEGER default 0,
             txs_length INTEGER default 0,
