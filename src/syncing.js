@@ -302,7 +302,7 @@
       let AddressBalance = 0
       AddressBalance = await getWalletAddressBalanceFromDb(from_address)
       //console.log("getWalletAddressBalanceFromDb", AddressBalance)
-      if(AddressBalance == 0) {
+      if(AddressBalance == 0 || AddressBalance == undefined) {
         AddressBalance = await axios.get(NodeApi + "/wallet/" + from_address + "/balance", {}).then((res)=>{return res.data});
         //console.log("AddressBalanceNodeApi", AddressBalance)
       }
@@ -318,7 +318,7 @@
         let AddressBalance = 0
         AddressBalance = await getWalletAddressBalanceFromDb(TxInfor.target)
         //console.log("getWalletAddressBalanceFromDb", AddressBalance)
-        if(AddressBalance == 0) {
+        if(AddressBalance == 0 || AddressBalance == undefined) {
           AddressBalance = await axios.get(NodeApi + "/wallet/" + TxInfor.target + "/balance", {}).then((res)=>{return res.data});
           //console.log("AddressBalanceNodeApi", AddressBalance)
         }
@@ -405,7 +405,7 @@
                         //console.log("unBundleItem signatureType",Item.signatureType)
                         //console.log("unBundleItem data",Item.data)
                         //Update Chunks Status IGNORE
-                        const insertTxBundleItem = db.prepare('INSERT OR IGNORE INTO tx (id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                        const insertTxBundleItem = db.prepare('INSERT OR IGNORE INTO tx (id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,tags, tx_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
                         const id = Item.id
                         const block_indep_hash = TxInfor.block_indep_hash
                         const last_tx = Item.anchor
@@ -445,7 +445,7 @@
                         const app_instance = TagsMap['App-Instance'] || "";
                         const last_tx_action = id
 
-                        insertTxBundleItem.run(id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,JSON.stringify(Item.tags));
+                        insertTxBundleItem.run(id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,JSON.stringify(Item.tags), timestampToDate(timestamp));
                         insertTxBundleItem.finalize();
 
                         //Write Item Data to File
@@ -745,6 +745,48 @@
     return arr1.filter(item => !arr2.includes(item));
   }
 
+  async function syncingBlockMinedTime(Index = 100) {
+    try {
+      const GetExistBlocks = await new Promise((resolve, reject) => {
+                                db.all("SELECT id, timestamp FROM block where mining_time = '0' order by id asc limit " + Number(Index), (err, result) => {
+                                  if (err) {
+                                    reject(err);
+                                  } else {
+                                    resolve(result ? result : null);
+                                  }
+                                });
+                              });
+      //console.log("GetExistBlocks:", GetExistBlocks);
+      const result = [];
+      const BlockTimestamp = {}
+      const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
+      updateBlockMinedTime.run(60, 1);
+      updateBlockMinedTime.finalize();
+      for (const BlockInfor of GetExistBlocks) {
+        //console.log("syncingBlockMinedTime BlockInfor:", BlockInfor);
+        BlockTimestamp[Number(BlockInfor.id)] = BlockInfor.timestamp
+        if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] == undefined) {
+          const previousBlock = await getBlockInforByHeightFromDb(Number(BlockInfor.id)-1);
+          BlockTimestamp[Number(BlockInfor.id)-1] = previousBlock.timestamp;
+        }
+        if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] ) {
+          const MinedTime = BlockInfor.timestamp - BlockTimestamp[Number(BlockInfor.id)-1]
+          console.log("MinedTime", BlockInfor.id, MinedTime)
+          const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
+          updateBlockMinedTime.run(MinedTime, BlockInfor.id);
+          updateBlockMinedTime.finalize();
+        }
+        result.push(BlockInfor.id)
+      }
+      
+      return result;
+    } 
+    catch (error) {
+      console.error("syncingBlock error fetching block data:", error.message);
+      return { error: "Internal Server Error" };
+    }
+  }
+
   async function syncingBlockMissing(Index = 0) {
     const BeginHeight = Index * 100000 + 1;
     const EndHeight = (Index + 1) * 100000;
@@ -853,6 +895,15 @@
         }
     }
   }
+
+  function timestampToDate(timestamp) {
+    const date = new Date(Number(timestamp) * 1000);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+  
+    return `${year}-${month}-${day}`;
+  }
   
   async function syncingBlockByHeight(currentHeight) {
     // @ts-ignore
@@ -886,7 +937,7 @@
       let AddressBalance = 0
       AddressBalance = await getWalletAddressBalanceFromDb(BlockInfor.reward_addr)
       //console.log("getWalletAddressBalanceFromDb", AddressBalance)
-      if(AddressBalance == 0) {
+      if(AddressBalance == 0 || AddressBalance == undefined) {
         AddressBalance = await axios.get(NodeApi + "/wallet/" + BlockInfor.reward_addr + "/balance", {}).then((res)=>{return res.data});
         //console.log("AddressBalanceNodeApi", AddressBalance)
       }
@@ -897,9 +948,9 @@
       
       //Insert Tx
       const Txs = BlockInfor.txs;
-      const insertTx = db.prepare('INSERT OR IGNORE INTO tx (id, block_indep_hash, block_height, timestamp, last_tx_action) VALUES (?, ?, ?, ?, ?)');
+      const insertTx = db.prepare('INSERT OR IGNORE INTO tx (id, block_indep_hash, block_height, timestamp, last_tx_action, tx_date) VALUES (?, ?, ?, ?, ?, ?)');
       Txs.map((Tx)=>{
-        insertTx.run(Tx, BlockInfor.indep_hash, BlockInfor.height, BlockInfor.timestamp, Tx);
+        insertTx.run(Tx, BlockInfor.indep_hash, BlockInfor.height, BlockInfor.timestamp, Tx, timestampToDate(BlockInfor.timestamp));
       })
       insertTx.finalize();
 
@@ -907,9 +958,14 @@
       writeFile("/blocks/" + enableBlockHeightDir(currentHeight), BlockInfor.height + ".json", JSON.stringify(BlockInfor), "syncingBlockByHeight")
 
       //Insert Block
-      const insertStatement = db.prepare('INSERT OR REPLACE INTO block (id, height, indep_hash, block_size, mining_time, reward, reward_addr, txs_length, weave_size, timestamp, syncing_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-      insertStatement.run(BlockInfor.height, BlockInfor.height, BlockInfor.indep_hash, BlockInfor.block_size, 0, BlockInfor.reward, BlockInfor.reward_addr, BlockInfor.txs.length, BlockInfor.weave_size, BlockInfor.timestamp, 0);
+      const insertStatement = db.prepare('INSERT OR REPLACE INTO block (id, height, indep_hash, block_size, mining_time, reward, reward_addr, txs_length, weave_size, timestamp, syncing_status, cumulative_diff, reward_pool, block_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+      insertStatement.run(BlockInfor.height, BlockInfor.height, BlockInfor.indep_hash, BlockInfor.block_size, 0, BlockInfor.reward, BlockInfor.reward_addr, BlockInfor.txs.length, BlockInfor.weave_size, BlockInfor.timestamp, 0, BlockInfor.cumulative_diff, BlockInfor.reward_pool, timestampToDate(BlockInfor.timestamp) );
       insertStatement.finalize();
+
+      if(BlockInfor.height % 100 == 0) {
+        //Only calculate the previous day
+        await syncingBlockAndTxStat(timestampToDate(BlockInfor.timestamp - 86400));
+      }
 
       // Commit the transaction
       //db.exec('COMMIT');
@@ -920,6 +976,76 @@
       //db.exec('ROLLBACK');
     }
     return BlockInfor;
+  }
+
+  async function syncingBlockAndTxStat(block_date)  {
+    const BlockStat = await new Promise((resolve, reject) => {
+      db.get("SELECT SUM(block_size/1048576) AS block_size, SUM(mining_time) AS mining_time, SUM(reward/100000000000) AS reward, SUM(txs_length) AS txs_length, SUM(weave_size/1048576) AS weave_size, SUM(cumulative_diff/1024) AS cumulative_diff, SUM(reward_pool/100000000000) AS reward_pool FROM block where block_date='"+filterString(block_date)+"'", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+    console.log("BlockStat", BlockStat)
+    if(BlockStat && BlockStat.reward) {
+
+      const TxStat = await new Promise((resolve, reject) => {
+        db.all("SELECT item_type, COUNT(id) AS item_type_count FROM tx where 1=1 group by item_type", (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result : null);
+          }
+        });
+      });
+      let txs_item = 0;
+      const txs_item_map = {}
+      txs_item_map['application/gzip'] = 0;
+      txs_item_map['application/zip'] = 0;
+      txs_item_map['video'] = 0;
+      txs_item_map['image'] = 0;
+      txs_item_map['pdf'] = 0;
+      txs_item_map['text'] = 0;
+      txs_item_map['text/html'] = 0;
+      txs_item_map['exe'] = 0;
+      txs_item_map['doc'] = 0;
+      txs_item_map['docx'] = 0;
+      txs_item_map['xls'] = 0;
+      txs_item_map['xlsx'] = 0;
+      txs_item_map['ppt'] = 0;
+      txs_item_map['pptx'] = 0;
+      txs_item_map['audio'] = 0;
+      txs_item_map['stl'] = 0;
+      console.log("TxStat", TxStat)
+      TxStat && TxStat.map((Item)=>{
+        txs_item += Item.item_type_count
+        txs_item_map[Item.item_type] = Item.item_type_count
+      })
+      const txs_image = txs_item_map['image']
+      const txs_video = txs_item_map['video']
+      const txs_audio = txs_item_map['audio']
+      const txs_pdf = txs_item_map['pdf']
+      const txs_word = txs_item_map['doc'] + txs_item_map['docx']
+      const txs_excel = txs_item_map['xls'] + txs_item_map['xlsx']
+      const txs_ppt = txs_item_map['ppt'] + txs_item_map['pptx']
+      const txs_stl = txs_item_map['stl']
+      const txs_text = txs_item_map['text']
+      const txs_exe = txs_item_map['exe']
+      const txs_zip = txs_item_map['application/zip'] + txs_item_map['application/gzip']
+      const txs_action = 0
+      const txs_profile = 0
+      const txs_agent = 0
+      const txs_referee = 0
+      const txs_task_item = 0
+      const txs_task_reward = 0
+      //Insert Stat
+      const insertStat = db.prepare('INSERT OR REPLACE INTO stat (block_date,block_size,mining_time,reward,txs_length,weave_size,cumulative_diff,reward_pool,txs_item,txs_image,txs_video,txs_audio,txs_pdf,txs_word,txs_excel,txs_ppt,txs_stl,txs_text,txs_exe,txs_zip,txs_action,txs_profile,txs_agent,txs_referee,txs_task_item,txs_task_reward) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+      insertStat.run(block_date,BlockStat.block_size,BlockStat.mining_time,BlockStat.reward,BlockStat.txs_length,BlockStat.weave_size,BlockStat.cumulative_diff,BlockStat.reward_pool,txs_item,txs_image,txs_video,txs_audio,txs_pdf,txs_word,txs_excel,txs_ppt,txs_stl,txs_text,txs_exe,txs_zip,txs_action,txs_profile,txs_agent,txs_referee,txs_task_item,txs_task_reward);
+      insertStat.finalize();
+    }
+
   }
 
   async function getTxInforByIdFromDb(TxId) {
@@ -1828,18 +1954,20 @@
     const getBlockHeightFromDbValue = await getBlockHeightFromDb();
     const BlockInfor = await getBlockInforByHeightFromDb(getBlockHeightFromDbValue);
     //console.log("BlockInfor", BlockInfor)
-    const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
     const LightNodeStatus = {}
-    LightNodeStatus['network'] = "chivesweave.mainnet";
-    LightNodeStatus['version'] = 5;
-    LightNodeStatus['release'] = 66;
-    LightNodeStatus['height'] = MinerNodeStatus.height;
-    LightNodeStatus['current'] = BlockInfor.indep_hash;
-    LightNodeStatus['weave_size'] = BlockInfor.weave_size;
-    LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
-    LightNodeStatus['peers'] = 1;
-    LightNodeStatus['time'] = BlockInfor.timestamp;
-    LightNodeStatus['type'] = "lightnode";
+    if(BlockInfor)  {
+      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
+      LightNodeStatus['network'] = "chivesweave.mainnet";
+      LightNodeStatus['version'] = 5;
+      LightNodeStatus['release'] = 66;
+      LightNodeStatus['height'] = MinerNodeStatus.height;
+      LightNodeStatus['current'] = BlockInfor.indep_hash;
+      LightNodeStatus['weave_size'] = BlockInfor.weave_size;
+      LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
+      LightNodeStatus['peers'] = 1;
+      LightNodeStatus['time'] = BlockInfor.timestamp;
+      LightNodeStatus['type'] = "lightnode";
+    }
     return LightNodeStatus;
   }
 
@@ -2128,7 +2256,9 @@
     syncingBlock,
     syncingBlockPromiseAll,
     syncingBlockMissing,
+    syncingBlockMinedTime,
     syncingBlockByHeight,
+    syncingBlockAndTxStat,
     syncingTx,
     syncingTxPromiseAll,
     syncingTxById,

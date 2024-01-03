@@ -52,7 +52,10 @@ db.serialize(() => {
             txs_length INTEGER default 0,
             weave_size INTEGER default 0,
             timestamp INTEGER,
-            syncing_status INTEGER default 0
+            syncing_status INTEGER default 0,
+            cumulative_diff INTEGER default 0,
+            reward_pool INTEGER default 0,
+            block_date TEXT
         );
     `);
     db.run(`
@@ -96,7 +99,8 @@ db.serialize(() => {
             item_node_delete TEXT,
             last_tx_action TEXT,
             bundleTxParse INTEGER,
-            tags TEXT
+            tags TEXT,
+            tx_date TEXT
         );
     `);
     db.run(`
@@ -113,6 +117,36 @@ db.serialize(() => {
             reason TEXT,
             timestamp TEXT
         );
+    `);    
+    db.run(`
+        CREATE TABLE IF NOT EXISTS stat (
+            block_date PRIMARY KEY,
+            block_size INTEGER default 0,
+            mining_time INTEGER default 0,
+            reward INTEGER default 0,
+            txs_length INTEGER default 0,
+            weave_size INTEGER default 0,
+            cumulative_diff INTEGER default 0,
+            reward_pool INTEGER default 0,
+            txs_item INTEGER default 0,
+            txs_image INTEGER default 0,
+            txs_video INTEGER default 0,
+            txs_audio INTEGER default 0,
+            txs_pdf INTEGER default 0,
+            txs_word INTEGER default 0,
+            txs_excel INTEGER default 0,
+            txs_ppt INTEGER default 0,
+            txs_stl INTEGER default 0,
+            txs_text INTEGER default 0,
+            txs_exe INTEGER default 0,
+            txs_zip INTEGER default 0,
+            txs_action INTEGER default 0,
+            txs_profile INTEGER default 0,
+            txs_agent INTEGER default 0,
+            txs_referee INTEGER default 0,
+            txs_task_item INTEGER default 0,
+            txs_task_reward INTEGER default 0
+        );
     `);
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_id ON block (id);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_height ON block (height);`);
@@ -120,7 +154,8 @@ db.serialize(() => {
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_reward_addr ON block (reward_addr);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_syncing_status ON block (syncing_status);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_timestamp ON block (timestamp);`);
-
+    db.run(`CREATE INDEX IF NOT EXISTS idx_block_block_date ON block (block_date);`);
+    
     db.run(`CREATE INDEX IF NOT EXISTS idx_tx_block_indep_hash ON tx (block_indep_hash);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_tx_from_address ON tx (from_address);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_tx_target ON tx (target);`);
@@ -140,6 +175,7 @@ db.serialize(() => {
     db.run(`CREATE INDEX IF NOT EXISTS idx_tx_app_name ON tx (app_name);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_tx_app_version ON tx (app_version);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_tx_app_instance ON tx (app_instance);`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_tx_tx_date ON tx (tx_date);`);
         
     db.run(`CREATE INDEX IF NOT EXISTS idx_tx_item_label ON tx (item_label);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_tx_item_star ON tx (item_star);`);

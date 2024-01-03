@@ -83,16 +83,16 @@ async function intervalTask() {
     await Promise.all([
       //syncing.calculatePeers(),
       //syncing.resetTx404(),
-      syncing.syncingBlockPromiseAll(100),
-      syncing.syncingTxPromiseAll(100),
-      syncing.syncingChunksPromiseAll(20),
+      syncing.syncingBlockPromiseAll(20),
+      syncing.syncingTxPromiseAll(10),
+      syncing.syncingChunksPromiseAll(5),
       syncing.syncingTxParseBundle(1),
       //syncing.deleteBlackTxsAndAddress()
     ]);
     const executionTime = Date.now() - startTime;
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
     console.log('Resuming interval tasks.');
-    const nextInterval = 2 * 1000;
+    const nextInterval = 1 * 1000;
     setTimeout(intervalTask, nextInterval);
   } catch (error) {
     console.error('Error in intervalTask:', error);
