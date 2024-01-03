@@ -248,7 +248,7 @@
       //console.log("TxInfor TagsMap",TxInfor)
       
       //Update Tx
-      const updateAddress = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, signature = ?, reward = ?, data_size = ?, data_root = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
+      const updateTx = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, signature = ?, reward = ?, data_size = ?, data_root = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
       let from_address = '';
       //console.log("TxInfor TagsMap",TxInfor)
       if(TxInfor.owner && TxInfor.owner.address) {
@@ -288,10 +288,45 @@
       else {
           entity_type = "Tx";
       }    
-      updateAddress.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.signature, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
-      updateAddress.finalize();
+      updateTx.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.signature, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
+      updateTx.finalize();
 
       console.log("TxInfor from_address: ", from_address)
+
+      //Insert Address
+      const BlockInfor = await getBlockInforByHeightFromDb(Height);
+      const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+      insertAddress.run(from_address, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
+      insertAddress.finalize();
+      //Update Address
+      let AddressBalance = 0
+      AddressBalance = await getWalletAddressBalanceFromDb(from_address)
+      //console.log("getWalletAddressBalanceFromDb", AddressBalance)
+      if(AddressBalance == 0) {
+        AddressBalance = await axios.get(NodeApi + "/wallet/" + from_address + "/balance", {}).then((res)=>{return res.data});
+        //console.log("AddressBalanceNodeApi", AddressBalance)
+      }
+      //console.log("AddressBalance", AddressBalance)
+      const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
+      updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, from_address);
+      updateAddress.finalize();
+      if(TxInfor.target && TxInfor.target.length==43) {
+        const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        insertAddress.run(TxInfor.target, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
+        insertAddress.finalize();
+        //Update Address
+        let AddressBalance = 0
+        AddressBalance = await getWalletAddressBalanceFromDb(TxInfor.target)
+        //console.log("getWalletAddressBalanceFromDb", AddressBalance)
+        if(AddressBalance == 0) {
+          AddressBalance = await axios.get(NodeApi + "/wallet/" + TxInfor.target + "/balance", {}).then((res)=>{return res.data});
+          //console.log("AddressBalanceNodeApi", AddressBalance)
+        }
+        //console.log("AddressBalance", AddressBalance)
+        const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
+        updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, TxInfor.target);
+        updateAddress.finalize();
+      }
 
       //Download Chunk
       const data_root = TxInfor.data_root
@@ -345,18 +380,22 @@
           console.log("syncingTxParseBundleById Exist", BundlePath)  
           try {
               //const TxInfor = await getTxInforByIdFromDb(TxId);
-              console.log("syncingTxParseBundleById TxInfor",TxInfor)
+              //console.log("syncingTxParseBundleById TxInfor",TxInfor)
               const FileContent = fs.readFileSync(BundlePath);
               try {
                   const unbundleItems = unbundleData(FileContent);
+                  //console.log("syncingTxParseBundleById unbundleItems",unbundleItems)
                   unbundleItems.items.map(async (Item) => {
                       //Tags Data
                       const TagsMap = {}
                       Item && Item.tags && Item.tags.length > 0 && Item.tags.map( (Tag) => {
                           TagsMap[Tag.name] = Tag.value;
                       })
-                      if('Content-Type' in TagsMap && TagsMap['Content-Type'] != "application/x.chivesweave-manifest+json")    {
-                        //console.log("unbundleItems",Item)
+                      if('Content-Type' in TagsMap && TagsMap['Content-Type'] == "application/x.chivesweave-manifest+json")    {
+                        //Not Need Parse File
+                      }
+                      else {
+                        console.log("unbundleItems",Item)
                         console.log("unbundleItems id", Item.id, Item.tags)
                         //console.log("unBundleItem tags",Item.tags)
                         //console.log("unBundleItem owner",Item.owner)
@@ -501,23 +540,24 @@
                                 case 'Profile':
                                     //DataItemId, BlockTimestamp, BlockHeight, FromAddress, LastTxChange
                                     const updateBundleAddressProfile = db.prepare('update address set profile = ?, timestamp = ?, last_tx_action = ? where (last_tx_action is null and id = ?) or (id = ? and last_tx_action = ?)');
-                                    updateBundleAddressProfile.run(Item.id, timestamp, block_height, from_address, from_address, LastTxChange);
+                                    updateBundleAddressProfile.run(Item.id, timestamp, block_height, from_address, from_address, LastTxChange==undefined?'':LastTxChange);
                                     updateBundleAddressProfile.finalize();
-                                    console.log("Action Profile", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    //console.log("LastTxChange", LastTxChange)
+                                    console.log("Action Profile", Item.id, timestamp, block_height, from_address, from_address, LastTxChange);
                                     break;
                                 case 'Agent':
                                     //EntityTarget, FromAddress, BlockTimestamp
                                     const updateBundleAddressAgent = db.prepare("update address set Agent = ?, timestamp = ? where id = ? and Agent = '0'");
                                     updateBundleAddressAgent.run('1', timestamp, from_address);
                                     updateBundleAddressAgent.finalize();
-                                    console.log("Action Agent", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    console.log("Action Agent", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange==undefined?'':LastTxChange);
                                     break;
                                 case 'Referee':
                                     //EntityTarget, FromAddress, BlockTimestamp
-                                    const updateBundleAddressReferee = db.prepare("update address set referee = ? where id = ? and referee is null");
+                                    const updateBundleAddressReferee = db.prepare("update address set referee = ? where id = ?");
                                     updateBundleAddressReferee.run(EntityTarget, from_address);
                                     updateBundleAddressReferee.finalize();
-                                    console.log("Action Referee", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                    console.log("Action Referee", EntityTarget, timestamp, block_height, from_address);
                                     break;
                             }
                         }
@@ -754,10 +794,10 @@
   
       const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
       const MaxHeight = MinerNodeStatus.height;
-      const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight)
+      const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight + 1)
       const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
       console.log("BlockHeightRange:", BlockHeightRange);
-  
+      
       const result = await Promise.all(
         BlockHeightRange.map(async (Height) => {
           try {
@@ -1224,7 +1264,17 @@
 
   async function getAllFileTypeCount(FileType) {
     return new Promise((resolve, reject) => {
-      db.get("SELECT COUNT(*) AS NUM FROM tx where item_type = '"+FileType+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
+      let ItemTypeSql = "item_type = '"+FileType+"'";
+      if(FileType == "word") {
+        ItemTypeSql = "item_type in ('doc', 'docx')";
+      }
+      else if(FileType == "excel") {
+        ItemTypeSql = "item_type in ('xls', 'xlsx')";
+      }
+      else if(FileType == "pptx") {
+        ItemTypeSql = "item_type in ('ppt', 'pptx')";
+      }
+      db.get("SELECT COUNT(*) AS NUM FROM tx where "+ ItemTypeSql +" and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1236,7 +1286,17 @@
   async function getAllFileTypePage(FileType, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
-      db.all("SELECT * FROM tx where item_type = '"+FileType+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') order by entity_type desc, block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      let ItemTypeSql = "item_type = '"+FileType+"'";
+      if(FileType == "word") {
+        ItemTypeSql = "item_type in ('doc', 'docx')";
+      }
+      else if(FileType == "excel") {
+        ItemTypeSql = "item_type in ('xls', 'xlsx')";
+      }
+      else if(FileType == "pptx") {
+        ItemTypeSql = "item_type in ('ppt', 'pptx')";
+      }
+      db.all("SELECT * FROM tx where "+ ItemTypeSql +" and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') order by entity_type desc, block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1766,7 +1826,7 @@
   async function getLightNodeStatus() {
     const getBlockHeightFromDbValue = await getBlockHeightFromDb();
     const BlockInfor = await getBlockInforByHeightFromDb(getBlockHeightFromDbValue);
-    console.log("BlockInfor", BlockInfor)
+    //console.log("BlockInfor", BlockInfor)
     const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
     const LightNodeStatus = {}
     LightNodeStatus['network'] = "chivesweave.mainnet";
@@ -1870,8 +1930,19 @@
     }
   }
 
+  function copyFileSync(source, destination) {
+    try {
+      const content = fs.readFileSync(source);
+      fs.writeFileSync(destination, content);
+      console.log('File copied successfully!');
+      return true;
+    } catch (error) {
+      console.error('Error copying file:', error);
+      return false;
+    }
+  }
+
   async function convertPdfFirstPageToImage(inputFilePath, outputFilePath) {
-    // Now you can use PDFNet
     return await PDFNet.initialize('demo:1704219714023:7c982fff030000000045c09496df8439e7d5df23f3324ed470716e6ef6').then(async () => {
                   try {
                     const draw = await PDFNet.PDFDraw.create(); 
@@ -1883,6 +1954,28 @@
                     await draw.export(firstPage, outputFilePath);
                     return true;
                   } catch (err) {
+                    console.log(err);
+                    return false;
+                  }
+                }).catch(error => {
+                  console.error('Error initializing PDFNet:', error);
+                  return false;
+                });
+  }
+
+  async function convertOfficeToPdf(inputFilePath, outputFilePath) {
+    return await PDFNet.initialize('demo:1704219714023:7c982fff030000000045c09496df8439e7d5df23f3324ed470716e6ef6').then(async () => {
+                  try {
+                    const pdfdoc = await PDFNet.PDFDoc.create();
+                    await pdfdoc.initSecurityHandler();
+                    await PDFNet.Convert.printerSetMode(PDFNet.Convert.PrinterMode.e_prefer_builtin_converter);
+                    await PDFNet.Convert.toPdf(pdfdoc, inputFilePath);
+                    await pdfdoc.save(outputFilePath, PDFNet.SDFDoc.SaveOptions.e_linearized);
+                    console.log('Converted file: ' + inputFilePath + '\nto: ' + outputFilePath);
+                    return true;
+                  } 
+                  catch (err) {
+                    console.log('Unable to convert file ' + inputFilePath);
                     console.log(err);
                     return false;
                   }
@@ -1959,6 +2052,28 @@
             return {FileName, ContentType:"image/png", FileContent};
           }
           console.log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
+        }
+        //printer(inputFilePath).then(console.log);
+        console.log("outputFilePath", outputFilePath + '/' + TxId + '.png')
+      }
+      else if(fileTypeSuffix == "docx" || fileTypeSuffix == "doc" || fileTypeSuffix == "xls" || fileTypeSuffix == "xlsx" || fileTypeSuffix == "ppt" || fileTypeSuffix == "pptx")    {
+        if(isFile(outputFilePath + '/' + TxId + '.png')) {
+          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+          return {FileName, ContentType:"image/png", FileContent};
+        }
+        else {
+          const copyFileSyncStatus = copyFileSync(inputFilePath, inputFilePath + "." + fileTypeSuffix);
+          if(copyFileSyncStatus)   {
+            const convertOfficeToPdfStatus = await convertOfficeToPdf(inputFilePath + "." + fileTypeSuffix, outputFilePath + '/' + TxId + '.pdf');
+            if(convertOfficeToPdfStatus) {
+              const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(outputFilePath + '/' + TxId + '.pdf', outputFilePath + '/' + TxId + '.png');
+              if(convertPdfFirstPageToImageStatus) {
+                const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+                return {FileName, ContentType:"image/png", FileContent};
+              }
+            }
+          }
+          console.log("convertOfficeToPdfStatus", convertOfficeToPdfStatus);
         }
         //printer(inputFilePath).then(console.log);
         console.log("outputFilePath", outputFilePath + '/' + TxId + '.png')
