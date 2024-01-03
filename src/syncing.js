@@ -1677,7 +1677,8 @@
         const updatePeerAvailable = db.prepare('update peers set status = ? where ip = ?');
         updatePeerAvailable.run(peerIsAvailable, Item.ip);
         updatePeerAvailable.finalize();
-        if(peerIsAvailable) {
+        if(peerIsAvailable == 1) {
+          console.log("peerIsAvailable", Item.ip, peerIsAvailable)
           await getPeersAndInsertDb(Item.ip);
         }
       })
@@ -1710,7 +1711,7 @@
     try {
       const peersList = await axios.get("http://" + PeerUrl + '/peers', {}).then(res=>res.data);
       const HaveIpLocationPeersList = await getPeers();
-      console.log("peersList", peersList)
+      //console.log("peersList", peersList)
       if(peersList && peersList.length > 0) {
         peersList.map(async (PeerAndPort)=>{
           if(!HaveIpLocationPeersList.includes(PeerAndPort)) {
@@ -1729,7 +1730,7 @@
       return peersList;
     } 
     catch (error) {
-      console.error("getPeersAndInsertDb:", error);
+      console.error("getPeersAndInsertDb: error", PeerUrl);
       return [];
     }
   }
