@@ -10,9 +10,14 @@
   import { exit } from 'process'
   //const imagemin = require('imagemin')
   //const optipng = require('imagemin-optipng')
-  import pkg from '@pdftron/pdfnet-node';
-  const { PDFNet } = pkg;
   import { execSync } from 'child_process';
+  import * as mammoth from 'mammoth';
+  import xlsx from 'xlsx';
+  import pptx2html from 'pptx2html';
+  import util from 'util';
+  import puppeteer from 'puppeteer';
+  import officegen from 'officegen';
+  import PDFServicesSdk  from '@adobe/pdfservices-node-sdk';
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
@@ -2417,54 +2422,74 @@
       console.error('执行命令时发生错误:', error.message);
       return false;
     }
-    /*
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`convertPdfFirstPageToImage Error: ${error.message}`);
-        return false;
-      }
-      if (stderr) {
-        console.error(`convertPdfFirstPageToImage Stderr: ${stderr}`);
-        return false;
-      }
-      try {
-        fs.renameSync(outputFilePath+"-000.png", outputFilePath+".png");
-        fs.unlinkSync(outputFilePath+"-001.png");
-        fs.unlinkSync(outputFilePath+"-002.png");
-        fs.unlinkSync(outputFilePath+"-003.png");
-        console.log('convertPdfFirstPageToImage File Deleted Successfully', outputFilePath);
-        return true;
-      } 
-      catch (err) {
-        console.error('convertPdfFirstPageToImage Error Deleting File:', outputFilePath, err);
-        return false;
-      }
-    });
-    */
   }
 
-  async function convertOfficeToPdf(inputFilePath, outputFilePath) {
-    return await PDFNet.initialize('demo:1704219714023:7c982fff030000000045c09496df8439e7d5df23f3324ed470716e6ef6').then(async () => {
-                  try {
-                    const pdfdoc = await PDFNet.PDFDoc.create();
-                    await pdfdoc.initSecurityHandler();
-                    await PDFNet.Convert.printerSetMode(PDFNet.Convert.PrinterMode.e_prefer_builtin_converter);
-                    await PDFNet.Convert.toPdf(pdfdoc, inputFilePath);
-                    await pdfdoc.save(outputFilePath, PDFNet.SDFDoc.SaveOptions.e_linearized);
-                    console.log('Converted file: ' + inputFilePath + '\nto: ' + outputFilePath);
-                    return true;
-                  } 
-                  catch (err) {
-                    console.log('Unable to convert file ' + inputFilePath);
-                    console.log(err);
-                    return false;
-                  }
-                }).catch(error => {
-                  console.error('Error initializing PDFNet:', error);
-                  return false;
-                });
+  async function htmlToImage(html, outputPath) {
+    const browser = await puppeteer.launch({headless: 'new',});
+    const page = await browser.newPage();
+    await page.setContent(html);
+    await page.screenshot({ path: outputPath });
+    await browser.close();
   }
 
+  async function convertDocxToImage(inputFilePath, outputFilePath) {
+    mammoth.convertToHtml({ path: inputFilePath })
+      .then((result) => {
+        const html = result.value;
+        if(html) {
+          htmlToImage(html, outputFilePath + '.png')
+        }
+      })
+      .catch((err) => {
+        console.error('Error extracting text:', err);
+        return false;
+      });
+  }
+
+  async function convertXlsxToImage(inputFilePath, outputFilePath) {
+    const workbook = xlsx.readFile(inputFilePath);
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const html = xlsx.utils.sheet_to_html(worksheet);
+    await htmlToImage(html, outputFilePath + '.png')
+  }
+
+  async function convertPptxToPdf(inputFilePath, outputFilePath, fileTypeSuffix) {
+    copyFileSync(inputFilePath, inputFilePath+"."+fileTypeSuffix);
+    try {
+        // Initial setup, create credentials instance.
+        // ORGANIZATION ID: 224C1261659736570A495C04@AdobeOrg
+        const credentials =  PDFServicesSdk.Credentials
+            .servicePrincipalCredentialsBuilder()
+            .withClientId("0c5ed96b68c8468d8fd741297a12377e")
+            .withClientSecret("p8e-_tcS0A068_r3vV2ohzD4spfzdEFi-O0D")
+            .build();
+    
+        // Create an ExecutionContext using credentials and create a new operation instance.
+        const executionContext = PDFServicesSdk.ExecutionContext.create(credentials),
+            createPdfOperation = PDFServicesSdk.CreatePDF.Operation.createNew();
+    
+        // Set operation input from a source file.
+        const input = PDFServicesSdk.FileRef.createFromLocalFile(inputFilePath+"."+fileTypeSuffix);
+        createPdfOperation.setInput(input);
+    
+        // Execute the operation and Save the result to the specified location.
+        createPdfOperation.execute(executionContext)
+            .then(result => result.saveAsFile(outputFilePath+".pdf"))
+            .catch(err => {
+                if(err instanceof PDFServicesSdk.Error.ServiceApiError
+                    || err instanceof PDFServicesSdk.Error.ServiceUsageError) {
+                    console.log('Exception encountered while executing operation', err);
+                } else {
+                    console.log('Exception encountered while executing operation', err);
+                }
+            });
+    
+    } catch (err) {
+        console.log('Exception encountered while executing operation', err);
+    }
+  }
+  
   async function getTxDataThumbnail(OriginalTxId) {
     mkdirForData();
     const TxContent = readFile("txs/" + OriginalTxId.substring(0, 2).toLowerCase(), OriginalTxId + '.json', "getTxDataThumbnail", 'utf-8');
@@ -2486,6 +2511,7 @@
     console.log("TxId OriginalTxId", TxId, OriginalTxId);
     
     const inputFilePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
+    console.log("inputFilePath", inputFilePath)
     if(isFile(inputFilePath)) {
       //Thumbnail Exist
       const compressFilePath = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
@@ -2536,29 +2562,50 @@
         //printer(inputFilePath).then(console.log);
         console.log("outputFilePath", outputFilePath + '/' + TxId + '.png')
       }
-      else if(fileTypeSuffix == "docx" || fileTypeSuffix == "doc" || fileTypeSuffix == "xls" || fileTypeSuffix == "xlsx" || fileTypeSuffix == "ppt" || fileTypeSuffix == "pptx")    {
+      else if(fileTypeSuffix == "docx" || fileTypeSuffix == "doc")    {
         if(isFile(outputFilePath + '/' + TxId + '.png')) {
           const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
           return {FileName, ContentType:"image/png", FileContent};
         }
         else {
-          const copyFileSyncStatus = copyFileSync(inputFilePath, inputFilePath + "." + fileTypeSuffix);
-          if(copyFileSyncStatus)   {
-            const convertOfficeToPdfStatus = await convertOfficeToPdf(inputFilePath + "." + fileTypeSuffix, outputFilePath + '/' + TxId + '.pdf');
-            if(convertOfficeToPdfStatus) {
-              const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(outputFilePath + '/' + TxId + '.pdf', outputFilePath + '/' + TxId);
-              if(convertPdfFirstPageToImageStatus) {
-                const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-                return {FileName, ContentType:"image/png", FileContent};
-              }
-            }
-          }
-          console.log("convertOfficeToPdfStatus", convertOfficeToPdfStatus);
+          convertDocxToImage(inputFilePath, outputFilePath + '/' + TxId);
+          const sleep = util.promisify(setTimeout);
+          await sleep(2000);
+          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+          return {FileName, ContentType:"image/png", FileContent};
         }
-        //printer(inputFilePath).then(console.log);
-        console.log("outputFilePath", outputFilePath + '/' + TxId + '.png')
       }
-
+      else if(fileTypeSuffix == "xls" || fileTypeSuffix == "xlsx")    {
+        if(isFile(outputFilePath + '/' + TxId + '.png')) {
+          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+          return {FileName, ContentType:"image/png", FileContent};
+        }
+        else {
+          await convertXlsxToImage(inputFilePath, outputFilePath + '/' + TxId);
+          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+          return {FileName, ContentType:"image/png", FileContent};
+        }
+      }
+      else if(fileTypeSuffix == "ppt" || fileTypeSuffix == "pptx")    {
+        if(isFile(outputFilePath + '/' + TxId + '.png')) {
+          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+          return {FileName, ContentType:"image/png", FileContent};
+        }
+        else if(!isFile(outputFilePath + '/' + TxId + '.pdf')) {
+          await convertPptxToPdf(inputFilePath, outputFilePath + '/' + TxId, fileTypeSuffix);
+          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+          return {FileName, ContentType:"image/png", FileContent};
+        }
+        else if(isFile(outputFilePath + '/' + TxId + '.pdf')) {
+          const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(outputFilePath + '/' + TxId + '.pdf', outputFilePath + '/' + TxId);
+          if(convertPdfFirstPageToImageStatus) {
+            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+            return {FileName, ContentType:"image/png", FileContent};
+          }
+          console.log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
+        }
+      }
+      
       //Thumbnail Exist
       const compressFilePath2 = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
       if(isFile(compressFilePath2)) {
