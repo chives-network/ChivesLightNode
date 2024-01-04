@@ -27,6 +27,12 @@
     //console.log("/tx/pending:", getTxPending);
     res.json(getTxPending).end();
   });
+  
+  router.get('/tx/pending/record', async (req, res) => {
+    const getTxPendingRecord = await syncing.getTxPendingRecord();
+    //console.log("/tx/pending:", getTxPending);
+    res.json(getTxPendingRecord).end();
+  });
 
   router.get('/tx_anchor', async (req, res) => {
     const getTxAnchor = await syncing.getTxAnchor();

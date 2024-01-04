@@ -5,12 +5,18 @@
   import sharp from 'sharp'
   import { unbundleData } from 'arbundles'
   import Arweave from 'arweave'
-  import { join } from 'path'
+  import { fileURLToPath } from 'url'
+  import { dirname, join } from 'path'
   import { exit } from 'process'
   //const imagemin = require('imagemin')
   //const optipng = require('imagemin-optipng')
   import pkg from '@pdftron/pdfnet-node';
   const { PDFNet } = pkg;
+  import { execSync } from 'child_process';
+
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  console.log("__dirname", __dirname)
 
   const DataDir = "D:/GitHub/ChivesweaveDataDir";
   const BlackListTxs = [];
@@ -1289,6 +1295,11 @@
     return TxPending;
   }
 
+  async function getTxPendingRecord() {
+    const TxPending = await axios.get(NodeApi + '/tx/pending/record', {}).then(res=>res.data);
+    return TxPending;
+  }
+  
   async function getTxAnchor() {
     const TxAnchor = await axios.get(NodeApi + '/tx_anchor', {}).then(res=>res.data);
     return TxAnchor;
@@ -2267,6 +2278,7 @@
     //console.log("BlockInfor", BlockInfor)
     const LightNodeStatus = {}
     if(BlockInfor)  {
+      const getPeersList = await getPeers();
       const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
       LightNodeStatus['network'] = "chivesweave.mainnet";
       LightNodeStatus['version'] = 5;
@@ -2275,7 +2287,7 @@
       LightNodeStatus['current'] = BlockInfor.indep_hash;
       LightNodeStatus['weave_size'] = BlockInfor.weave_size;
       LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
-      LightNodeStatus['peers'] = 1;
+      LightNodeStatus['peers'] = getPeersList.length || 1;
       LightNodeStatus['time'] = BlockInfor.timestamp;
       LightNodeStatus['type'] = "lightnode";
     }
@@ -2384,24 +2396,51 @@
   }
 
   async function convertPdfFirstPageToImage(inputFilePath, outputFilePath) {
-    return await PDFNet.initialize('demo:1704219714023:7c982fff030000000045c09496df8439e7d5df23f3324ed470716e6ef6').then(async () => {
-                  try {
-                    const draw = await PDFNet.PDFDraw.create(); 
-                    const doc = await PDFNet.PDFDoc.createFromFilePath(inputFilePath);
-                    doc.initSecurityHandler();
-                    draw.setDPI(92);
-                    const firstPage = await (await doc.getPageIterator()).current();
-                    // C) Rasterize the first page in the document and save the result as PNG.
-                    await draw.export(firstPage, outputFilePath);
-                    return true;
-                  } catch (err) {
-                    console.log(err);
-                    return false;
-                  }
-                }).catch(error => {
-                  console.error('Error initializing PDFNet:', error);
-                  return false;
-                });
+    const command = `${__dirname}/../lib/poppler-23.11.0/Library/bin/pdfimages -png -f 0 ${inputFilePath} ${outputFilePath}`;
+    try {
+      const output = execSync(command);
+      if(output.toString() == "") {
+        try {
+          fs.renameSync(outputFilePath+"-000.png", outputFilePath+".png");
+          fs.unlinkSync(outputFilePath+"-001.png");
+          fs.unlinkSync(outputFilePath+"-002.png");
+          fs.unlinkSync(outputFilePath+"-003.png");
+          console.log('convertPdfFirstPageToImage File Deleted Successfully', outputFilePath);
+          return true;
+        } 
+        catch (err) {
+          console.error('convertPdfFirstPageToImage Error Deleting File:', outputFilePath, err);
+          return false;
+        }
+      }
+    } catch (error) {
+      console.error('执行命令时发生错误:', error.message);
+      return false;
+    }
+    /*
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`convertPdfFirstPageToImage Error: ${error.message}`);
+        return false;
+      }
+      if (stderr) {
+        console.error(`convertPdfFirstPageToImage Stderr: ${stderr}`);
+        return false;
+      }
+      try {
+        fs.renameSync(outputFilePath+"-000.png", outputFilePath+".png");
+        fs.unlinkSync(outputFilePath+"-001.png");
+        fs.unlinkSync(outputFilePath+"-002.png");
+        fs.unlinkSync(outputFilePath+"-003.png");
+        console.log('convertPdfFirstPageToImage File Deleted Successfully', outputFilePath);
+        return true;
+      } 
+      catch (err) {
+        console.error('convertPdfFirstPageToImage Error Deleting File:', outputFilePath, err);
+        return false;
+      }
+    });
+    */
   }
 
   async function convertOfficeToPdf(inputFilePath, outputFilePath) {
@@ -2487,7 +2526,7 @@
           return {FileName, ContentType:"image/png", FileContent};
         }
         else {
-          const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(inputFilePath, outputFilePath + '/' + TxId + '.png');
+          const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(inputFilePath, outputFilePath + '/' + TxId);
           if(convertPdfFirstPageToImageStatus) {
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
             return {FileName, ContentType:"image/png", FileContent};
@@ -2507,7 +2546,7 @@
           if(copyFileSyncStatus)   {
             const convertOfficeToPdfStatus = await convertOfficeToPdf(inputFilePath + "." + fileTypeSuffix, outputFilePath + '/' + TxId + '.pdf');
             if(convertOfficeToPdfStatus) {
-              const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(outputFilePath + '/' + TxId + '.pdf', outputFilePath + '/' + TxId + '.png');
+              const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(outputFilePath + '/' + TxId + '.pdf', outputFilePath + '/' + TxId);
               if(convertPdfFirstPageToImageStatus) {
                 const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
                 return {FileName, ContentType:"image/png", FileContent};
@@ -2602,6 +2641,7 @@
     getTxBundleItemPageJson,
     getTxBundleItemsInUnbundle,
     getTxPending,
+    getTxPendingRecord,
     getTxAnchor,
     getPrice,
     postTx,
