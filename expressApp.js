@@ -12,6 +12,7 @@ import fileRoutes from './src/router/file.js'
 import peerRoutes from './src/router/peer.js'
 import priceRoutes from './src/router/price.js'
 import statRoutes from './src/router/stat.js'
+import agentRoutes from './src/router/agent.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -40,6 +41,7 @@ expressApp.get('/syncing', async (req, res) => {
 
 
 
+expressApp.use('/', agentRoutes);
 expressApp.use('/', statRoutes);
 expressApp.use('/', htmlRoutes);
 expressApp.use('/', blockRoutes);

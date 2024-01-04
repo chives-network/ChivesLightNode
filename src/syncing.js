@@ -1303,9 +1303,12 @@
     try {
       const response = await axios.post(NodeApi + '/tx', Payload);
       console.log('postTx:', response.data);
+      if(response.data != "OK") {
+        await axios.post(NodeApi + '/tx', Payload);
+      }
       postTxForwarding(Payload);
       return response.data;
-    } 
+    }
     catch (error) {
       console.error('Error:', error.message);
       return 500;
@@ -1321,8 +1324,11 @@
           if(result) {
             result.map((item)=>{
               axios.post("http://"+item.ip + '/tx', Payload).then(res =>{
-                console.log('postTxForwarding postTx:', item.ip, res.data);              
-              });
+                  console.log('postTxForwarding postTx:', item.ip, res.data);              
+                })
+                .catch(error => {
+                  console.error('postchunkForwarding Error:', item.ip, "Failed ******");
+                });
             })
           }
         }
@@ -1338,6 +1344,9 @@
     try {
       const response = await axios.post(NodeApi + '/chunk', Payload);
       console.log('postChunk:', response.data);
+      if(response.data != "OK") {
+        await axios.post(NodeApi + '/chunk', Payload);
+      }
       postChunkForwarding(Payload)
       return response.data;
     } 
@@ -1356,8 +1365,11 @@
           if(result) {
             result.map((item)=>{
               axios.post("http://"+item.ip + '/chunk', Payload).then(res =>{
-                console.log('postchunkForwarding postchunk:', item.ip, res.data);              
-              });
+                  console.log('postchunkForwarding postchunk:', item.ip, res.data);              
+                })
+                .catch(error => {
+                  console.error('postchunkForwarding Error:', item.ip, "Failed ******");
+                });
             })
           }
         }
@@ -2034,7 +2046,156 @@
     StatInfor['txs_zip'] = txs_zip.reverse()
     return StatInfor
   }
-  
+
+  async function getWalletAddressProfile(Address) {
+    const AddressInfor = await new Promise((resolve, reject) => {
+                            db.get("SELECT * from address where id='"+filterString(Address)+"'", (err, result) => {
+                              if (err) {
+                                reject(err);
+                              } else {
+                                resolve(result ? result : null);
+                              }
+                            });
+                          });
+    const RS = {}
+    if(AddressInfor) {
+      const ProfileTxId = AddressInfor.profile;
+      const TxIdFilter = filterString(ProfileTxId)
+      const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxIdFilter);
+      const {FileName, ContentType, FileContent} = await getTxData(TxIdFilter);
+      const FileContentJson = FileContent.toString('utf-8');
+      RS['id'] = Address
+      RS['Profile'] = FileContentJson ? JSON.parse(FileContentJson) : {}
+      RS['Address'] = Address
+      RS['TxId'] = ProfileTxId
+      RS['BundleId'] = getTxInforByIdFromDbValue.bundleid
+      RS['Block'] = getTxInforByIdFromDbValue.block_height
+      RS['AgentLevel'] = AddressInfor.agent
+      RS['Balance'] = AddressInfor.balance
+      RS['Referee'] = AddressInfor.referee
+      RS['LastTxAction'] = AddressInfor.last_tx_action
+    }
+    return RS
+  }
+
+  async function getAgentList(pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const AgentTotal = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM from address where agent>'0'", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : null);
+        }
+      });
+    });
+    const AgentAll = await new Promise((resolve, reject) => {
+                            db.all("SELECT * from address where agent>'0' order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+                              if (err) {
+                                reject(err);
+                              } else {
+                                resolve(result ? result : null);
+                              }
+                            });
+                          });
+    let RSDATA = []
+    if(AgentAll != undefined) {
+      RSDATA = await Promise.all(
+          AgentAll.map(async (AddressInfor)=>{
+            const ProfileTxId = AddressInfor.profile;
+            const TxIdFilter = filterString(ProfileTxId)
+            const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxIdFilter);
+            const {FileName, ContentType, FileContent} = await getTxData(TxIdFilter);
+            const FileContentJson = FileContent.toString('utf-8');
+            const RSItem = {}
+            RSItem['id'] = AddressInfor.id
+            RSItem['Profile'] = FileContentJson ? JSON.parse(FileContentJson) : {}
+            RSItem['Address'] = AddressInfor.id
+            RSItem['TxId'] = ProfileTxId
+            RSItem['BundleId'] = getTxInforByIdFromDbValue.bundleid
+            RSItem['Block'] = getTxInforByIdFromDbValue.block_height
+            RSItem['AgentLevel'] = AddressInfor.agent
+            RSItem['Balance'] = AddressInfor.balance
+            RSItem['Referee'] = AddressInfor.referee
+            RSItem['LastTxAction'] = AddressInfor.last_tx_action
+            return RSItem
+          })
+      );
+      
+      console.log("RSDATA", RSDATA)
+    }
+    const RS = {};
+    RS['allpages'] = Math.ceil(AgentTotal/pagesizeFiler);
+    RS['data'] = RSDATA;
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = AgentTotal;
+    return RS;
+  }
+
+  async function getAddressReferee(Address, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler
+    const AgentTotal = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM from address where referee='"+Address+"'", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : null);
+        }
+      });
+    });
+    const AgentAll = await new Promise((resolve, reject) => {
+                            db.all("SELECT * from address where referee='"+Address+"' order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+                              if (err) {
+                                reject(err);
+                              } else {
+                                resolve(result ? result : null);
+                              }
+                            });
+                          });
+    let RSDATA = []
+    if(AgentAll != undefined) {
+      RSDATA = await Promise.all(
+          AgentAll.map(async (AddressInfor)=>{
+            const ProfileTxId = AddressInfor.profile;
+            if(ProfileTxId && ProfileTxId.length == 43) {
+              const TxIdFilter = filterString(ProfileTxId)
+              const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxIdFilter);
+              const {FileName, ContentType, FileContent} = await getTxData(TxIdFilter);
+              const FileContentJson = FileContent.toString('utf-8');
+              const RSItem = {}
+              RSItem['id'] = AddressInfor.id
+              RSItem['Profile'] = FileContentJson ? JSON.parse(FileContentJson) : {}
+              RSItem['Address'] = AddressInfor.id
+              RSItem['TxId'] = ProfileTxId
+              RSItem['BundleId'] = getTxInforByIdFromDbValue.bundleid
+              RSItem['Block'] = getTxInforByIdFromDbValue.block_height
+              RSItem['AgentLevel'] = AddressInfor.agent
+              RSItem['Balance'] = AddressInfor.balance
+              RSItem['Referee'] = AddressInfor.referee
+              RSItem['LastTxAction'] = AddressInfor.last_tx_action
+              return RSItem
+            }
+          })
+      );
+      
+      console.log("RSDATA", RSDATA)
+    }
+    const RS = {};
+    RS['allpages'] = Math.ceil(AgentTotal/pagesizeFiler);
+    RS['data'] = RSDATA.filter(element => element !== null && element !== undefined && element !== '');
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = AgentTotal;
+    return RS;
+  }
+
   function TxRowToJsonFormat(getTxPageValue) {
     const RS = []
     getTxPageValue.map((Item) =>{
@@ -2168,6 +2329,7 @@
   function readFile(Dir, FileName, Mark, OpenFormat) {
     const filePath = DataDir + '/' + Dir + '/' + FileName;
     if(isFile(filePath)) {
+      console.log("filePath", filePath)
       const data = fs.readFileSync(filePath, OpenFormat);
       return data;
     }
@@ -2465,6 +2627,9 @@
     getPeersInfo,
     calculatePeers,
     getStatisticsBlock,
+    getWalletAddressProfile,
+    getAgentList,
+    getAddressReferee,
     isFile,
     readFile,
     writeFile,
