@@ -76,24 +76,40 @@ function openNewURL(url) {
   newWindow.loadURL(url);
 }
 
-async function intervalTask() {
+async function intervalTaskShortTime() {
   try {
-    console.log('Executing syncing tasks...');
+    console.log('Executing intervalTaskShortTime tasks...');
     const startTime = Date.now();
     await Promise.all([
-      //syncing.calculatePeers(),
-      //syncing.resetTx404(),
       syncing.syncingBlockPromiseAll(20),
       syncing.syncingTxPromiseAll(10),
       syncing.syncingChunksPromiseAll(5),
-      syncing.syncingTxParseBundle(1),
-      //syncing.syncingBlockAndTxStatAllDates(),
-      //syncing.deleteBlackTxsAndAddress()
+      syncing.syncingTxParseBundle(1)
     ]);
     const executionTime = Date.now() - startTime;
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
     console.log('Resuming interval tasks.');
-    const nextInterval = 1 * 1000;
+    const nextInterval = 10 * 1000;
+    setTimeout(intervalTask, nextInterval);
+  } catch (error) {
+    console.error('Error in intervalTask:', error);
+  }
+}
+
+async function intervalTaskLongTime() {
+  try {
+    console.log('Executing intervalTaskLongTime tasks...');
+    const startTime = Date.now();
+    await Promise.all([
+      //syncing.resetTx404(),
+      syncing.calculatePeers(),
+      syncing.syncingBlockAndTxStatAllDates(),
+      syncing.deleteBlackTxsAndAddress()
+    ]);
+    const executionTime = Date.now() - startTime;
+    console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
+    console.log('Resuming interval tasks.');
+    const nextInterval = 1800 * 1000;
     setTimeout(intervalTask, nextInterval);
   } catch (error) {
     console.error('Error in intervalTask:', error);
@@ -101,7 +117,8 @@ async function intervalTask() {
 }
 
 app.whenReady().then(()=>{
-  setTimeout(intervalTask, 5 * 1000);
+  setTimeout(intervalTaskShortTime, 10 * 1000);
+  setTimeout(intervalTaskLongTime, 1800 * 1000);
   createWindow();
 });
 

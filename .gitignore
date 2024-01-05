@@ -2,3 +2,4 @@ dist/
 my-next-app/
 node_modules/
 html/
+lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe

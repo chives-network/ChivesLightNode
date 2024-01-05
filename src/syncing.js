@@ -1321,6 +1321,11 @@
     return String(Price);
   }
 
+  async function getPriceAddress(datasize, Address) {
+    const Price = await axios.get(NodeApi + '/price/' + datasize + '/' + Address, {}).then(res=>res.data);
+    return String(Price);
+  }
+
   async function postTx(Payload) {
     try {
       const response = await axios.post(NodeApi + '/tx', Payload);
@@ -1880,9 +1885,8 @@
 
   async function checkPeer(url) {
     try {
-      const response = await axios.head(url);
-  
-      if (response.status === 200 || response.status === 204) {
+      const response = await axios.head(url);  
+      if (response.status === 200) {
         //log(`URL ${url} is reachable.`);
         return 1;
       } else {
@@ -1908,8 +1912,8 @@
         const updatePeerAvailable = db.prepare('update peers set status = ? where ip = ?');
         updatePeerAvailable.run(peerIsAvailable, Item.ip);
         updatePeerAvailable.finalize();
+        log("peerIsAvailable", Item.ip, peerIsAvailable)
         if(peerIsAvailable == 1) {
-          log("peerIsAvailable", Item.ip, peerIsAvailable)
           await getPeersAndInsertDb(Item.ip);
         }
       })
@@ -2083,19 +2087,21 @@
     if(AddressInfor) {
       const ProfileTxId = AddressInfor.profile;
       const TxIdFilter = filterString(ProfileTxId)
-      const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxIdFilter);
-      const {FileName, ContentType, FileContent} = await getTxData(TxIdFilter);
-      const FileContentJson = FileContent.toString('utf-8');
-      RS['id'] = Address
-      RS['Profile'] = FileContentJson ? JSON.parse(FileContentJson) : {}
-      RS['Address'] = Address
-      RS['TxId'] = ProfileTxId
-      RS['BundleId'] = getTxInforByIdFromDbValue.bundleid
-      RS['Block'] = getTxInforByIdFromDbValue.block_height
-      RS['AgentLevel'] = AddressInfor.agent
-      RS['Balance'] = AddressInfor.balance
-      RS['Referee'] = AddressInfor.referee
-      RS['LastTxAction'] = AddressInfor.last_tx_action
+      if(TxIdFilter && TxIdFilter!=undefined) {
+        const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxIdFilter);
+        const {FileName, ContentType, FileContent} = await getTxData(TxIdFilter);
+        const FileContentJson = FileContent.toString('utf-8');
+        RS['id'] = Address
+        RS['Profile'] = FileContentJson ? JSON.parse(FileContentJson) : {}
+        RS['Address'] = Address
+        RS['TxId'] = ProfileTxId
+        RS['BundleId'] = getTxInforByIdFromDbValue.bundleid
+        RS['Block'] = {height: getTxInforByIdFromDbValue.block_height, indep_hash:getTxInforByIdFromDbValue.block_indep_hash, timestamp:getTxInforByIdFromDbValue.timestamp}
+        RS['AgentLevel'] = AddressInfor.agent
+        RS['Balance'] = AddressInfor.balance
+        RS['Referee'] = AddressInfor.referee
+        RS['LastTxAction'] = AddressInfor.last_tx_action
+      }
     }
     return RS
   }
@@ -2137,7 +2143,7 @@
             RSItem['Address'] = AddressInfor.id
             RSItem['TxId'] = ProfileTxId
             RSItem['BundleId'] = getTxInforByIdFromDbValue.bundleid
-            RSItem['Block'] = getTxInforByIdFromDbValue.block_height
+            RSItem['Block'] = {height: getTxInforByIdFromDbValue.block_height, indep_hash:getTxInforByIdFromDbValue.block_indep_hash, timestamp:getTxInforByIdFromDbValue.timestamp}
             RSItem['AgentLevel'] = AddressInfor.agent
             RSItem['Balance'] = AddressInfor.balance
             RSItem['Referee'] = AddressInfor.referee
@@ -2145,7 +2151,6 @@
             return RSItem
           })
       );
-      
       log("RSDATA", RSDATA)
     }
     const RS = {};
@@ -2438,6 +2443,22 @@
     }
   }
 
+  async function convertVideoFirstScreenToImage(inputFilePath, outputFilePath) {
+    let command = `${__dirname}/../../app.asar.unpacked/lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe -y -i ${inputFilePath} -vframes 1 -q:v 2 ${outputFilePath}`;
+    if(isFile(`${__dirname}/../lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe`)) {
+      command = `${__dirname}/../lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe -y -i ${inputFilePath} -vframes 1 -q:v 2 ${outputFilePath}`;
+    }
+    try {
+      log('convertVideoFirstScreenToImage try execSync ****** ', outputFilePath, command);
+      execSync(command);
+      log('convertVideoFirstScreenToImage File Generated Successfully', outputFilePath, command);
+      return true;
+    } catch (error) {
+      console.error('执行命令时发生错误:', error.message, command);
+      return false;
+    }
+  }
+
   async function htmlToImage(html, outputPath) {
     const browser = await puppeteer.launch({headless: 'new',});
     const page = await browser.newPage();
@@ -2576,6 +2597,22 @@
         //printer(inputFilePath).then(log);
         log("outputFilePath", outputFilePath + '/' + TxId + '.png')
       }
+      else if(fileTypeSuffix == "video")    {
+        if(isFile(outputFilePath + '/' + TxId + '.png')) {
+          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+          return {FileName, ContentType:"image/png", FileContent};
+        }
+        else {
+          const convertVideoFirstScreenToImageValue = await convertVideoFirstScreenToImage(inputFilePath, outputFilePath + '/' + TxId + '.png');
+          if(convertVideoFirstScreenToImageValue) {
+            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+            return {FileName, ContentType:"image/png", FileContent};
+          }
+          log("convertVideoFirstScreenToImageValue", convertVideoFirstScreenToImageValue);
+        }
+        //printer(inputFilePath).then(log);
+        log("outputFilePath", outputFilePath + '/' + TxId + '.png')
+      }
       else if(fileTypeSuffix == "docx" || fileTypeSuffix == "doc")    {
         if(isFile(outputFilePath + '/' + TxId + '.png')) {
           const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
@@ -2705,6 +2742,7 @@
     getTxPendingRecord,
     getTxAnchor,
     getPrice,
+    getPriceAddress,
     postTx,
     postChunk,
     getTxStatusById,
