@@ -13,10 +13,10 @@
   import util from 'util';
   import puppeteer from 'puppeteer';
   import PDFServicesSdk  from '@adobe/pdfservices-node-sdk';
+  import isDev from 'electron-is-dev';
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
-  log("__dirname", __dirname)
 
   const DataDir = "D:/GitHub/ChivesweaveDataDir";
   const BlackListTxs = [];
@@ -2413,7 +2413,7 @@
 
   async function convertPdfFirstPageToImage(inputFilePath, outputFilePath) {
     let command = `${__dirname}/../../app.asar.unpacked/lib/poppler-23.11.0/Library/bin/pdfimages.exe -png -f 0 ${inputFilePath} ${outputFilePath}`;
-    if(isFile(`${__dirname}/../lib/poppler-23.11.0/Library/bin/pdfimages.exe`)) {
+    if(isDev==true) {
       command = `${__dirname}/../lib/poppler-23.11.0/Library/bin/pdfimages.exe -png -f 0 ${inputFilePath} ${outputFilePath}`;
     }
     try {
@@ -2445,7 +2445,7 @@
 
   async function convertVideoFirstScreenToImage(inputFilePath, outputFilePath) {
     let command = `${__dirname}/../../app.asar.unpacked/lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe -y -i ${inputFilePath} -vframes 1 -q:v 2 ${outputFilePath}`;
-    if(isFile(`${__dirname}/../lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe`)) {
+    if(isDev==true) {
       command = `${__dirname}/../lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe -y -i ${inputFilePath} -vframes 1 -q:v 2 ${outputFilePath}`;
     }
     try {
