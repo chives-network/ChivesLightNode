@@ -13,10 +13,8 @@
   import { execSync } from 'child_process';
   import * as mammoth from 'mammoth';
   import xlsx from 'xlsx';
-  import pptx2html from 'pptx2html';
   import util from 'util';
   import puppeteer from 'puppeteer';
-  import officegen from 'officegen';
   import PDFServicesSdk  from '@adobe/pdfservices-node-sdk';
 
   const __filename = fileURLToPath(import.meta.url);
