@@ -27,7 +27,7 @@ expressApp.use(cors());
 expressApp.get('/syncing', async (req, res) => {
   //await syncing.deleteBlackTxsAndAddress();
   //await syncing.calculatePeers();
-  await syncing.syncingBlockAndTxStatAllDates();
+  await syncing.syncingBlockAndTxStatAllDates(80);
   //await syncing.syncingBlockMissing();
   //35753 43355 
   //await syncing.syncingBlockPromiseAll(30);

@@ -7,9 +7,6 @@
   import Arweave from 'arweave'
   import { fileURLToPath } from 'url'
   import { dirname, join } from 'path'
-  import { exit } from 'process'
-  //const imagemin = require('imagemin')
-  //const optipng = require('imagemin-optipng')
   import { execSync } from 'child_process';
   import * as mammoth from 'mammoth';
   import xlsx from 'xlsx';
@@ -19,7 +16,7 @@
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
-  console.log("__dirname", __dirname)
+  log("__dirname", __dirname)
 
   const DataDir = "D:/GitHub/ChivesweaveDataDir";
   const BlackListTxs = [];
@@ -44,12 +41,12 @@
 
   async function syncingTxParseBundle(TxCount = 30) {
     const getTxsNotSyncingList = await getTxsBundleNotSyncing(TxCount)
-    console.log("syncingTxParseBundle Count: ", getTxsNotSyncingList.length)
+    log("syncingTxParseBundle Count: ", getTxsNotSyncingList.length)
     try {
       const result = [];
       for (const TxList of getTxsNotSyncingList) {
         const TxInfor = await syncingTxParseBundleById(TxList);
-        console.log("syncingTxParseBundle TxInfor: ", TxList.id, TxList.block_height)
+        log("syncingTxParseBundle TxInfor: ", TxList.id, TxList.block_height)
         result.push(TxList.id)
       }
       return result;
@@ -62,12 +59,12 @@
 
   async function syncingTx(TxCount = 30) {
     const getTxsNotSyncingList = await getTxsNotSyncing(TxCount)
-    console.log("syncingTx Count: ", getTxsNotSyncingList.length)
+    log("syncingTx Count: ", getTxsNotSyncingList.length)
     try {
       const result = [];
       for (const TxList of getTxsNotSyncingList) {
         const TxInfor = await syncingTxById(TxList.id, TxList.block_height);
-        console.log("syncingTx TxInfor: ", TxList.id, TxInfor.id)
+        log("syncingTx TxInfor: ", TxList.id, TxInfor.id)
         result.push(TxInfor)
       }
       return result;
@@ -81,13 +78,13 @@
   async function syncingTxPromiseAll(TxCount = 30) {
     try {
       const getTxsNotSyncingList = await getTxsNotSyncing(TxCount);
-      console.log("syncingTxPromiseAll Count: ", getTxsNotSyncingList.length);
+      log("syncingTxPromiseAll Count: ", getTxsNotSyncingList.length);
   
       const result = await Promise.all(
         getTxsNotSyncingList.map(async (TxList) => {
           try {
             const TxInfor = await syncingTxById(TxList.id, TxList.block_height);
-            console.log("syncingTxPromiseAll TxInfor: ", TxList.id, TxInfor.id);
+            log("syncingTxPromiseAll TxInfor: ", TxList.id, TxInfor.id);
             return TxInfor;
           } 
           catch (error) {
@@ -131,7 +128,7 @@
 
   async function syncingChunks(TxCount = 5) {
     const getTxsHaveChunksList = await getTxsHaveChunks(TxCount)
-    console.log("syncingChunks Count: ", getTxsHaveChunksList.length)
+    log("syncingChunks Count: ", getTxsHaveChunksList.length)
     try {
       const result = [];
       for (const TxList of getTxsHaveChunksList) {
@@ -155,7 +152,7 @@
   async function syncingChunksPromiseAll(TxCount = 5) {
     try {
       const getTxsHaveChunksList = await getTxsHaveChunks(TxCount);
-      console.log("syncingChunks Count: ", getTxsHaveChunksList.length);
+      log("syncingChunks Count: ", getTxsHaveChunksList.length);
   
       const result = await Promise.all(
         getTxsHaveChunksList.map(async (TxList) => {
@@ -194,18 +191,18 @@
     let TxInfor = null
     let writeFileStatus = false
     const TxJsonFilePath = DataDir + "/txs/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId + ".json";
-    //console.log("TxInfor TxJsonFilePath",TxJsonFilePath)
+    //log("TxInfor TxJsonFilePath",TxJsonFilePath)
     if(isFile(TxJsonFilePath)) {
       //Nothing to do
       const TxContent = getTxInforById(TxId);
       TxInfor = JSON.parse(TxContent)
-      console.log("syncingTxById Read Tx From Json File",TxInfor.id)
+      log("syncingTxById Read Tx From Json File",TxInfor.id)
       writeFileStatus = true
-      console.log("TxInfor TagsMap",TxInfor.id)
+      log("TxInfor TagsMap",TxInfor.id)
       if(TxInfor==undefined || TxInfor.id==undefined) {
         try {
           fs.unlinkSync(TxJsonFilePath);
-          console.log('File deleted successfully', TxJsonFilePath);
+          log('File deleted successfully', TxJsonFilePath);
         } 
         catch (err) {
           console.error('Error deleting file:', TxJsonFilePath, err);
@@ -216,7 +213,7 @@
     else {
       const result = await axios.get(NodeApi + '/tx/' + TxId, {});
       TxInfor = result.data
-      console.log("syncingTxById From Remote Node",TxId)
+      log("syncingTxById From Remote Node",TxId)
       //Write Tx File
       writeFileStatus = writeFile('txs/' + TxId.substring(0, 2).toLowerCase(), TxId + ".json", JSON.stringify(TxInfor), "syncingTxById")
     }
@@ -232,7 +229,7 @@
         insertTag.finalize();
       })
     
-      //console.log("TxInfor TagsMap",TxInfor)
+      //log("TxInfor TagsMap",TxInfor)
       //Tags Data
       const newTags = []
       const TagsMap = {}
@@ -243,7 +240,7 @@
         })
         TxInfor.owner = TxInfor.owner.key
         TxInfor.quantity = TxInfor.quantity.winston
-        //console.log("TxInfor TagsMap",TagsMap)
+        //log("TxInfor TagsMap",TagsMap)
       }
       else {
         TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
@@ -252,14 +249,14 @@
           TagsMap[TagName] = TagValue;
           newTags.push({'name':TagName, 'value':TagValue})
         })
-        //console.log("TxInfor TagsMap",TagsMap)
+        //log("TxInfor TagsMap",TagsMap)
       }
-      //console.log("TxInfor TagsMap",TxInfor)
+      //log("TxInfor TagsMap",TxInfor)
       
       //Update Tx
       const updateTx = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, signature = ?, reward = ?, data_size = ?, data_root = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
       let from_address = '';
-      //console.log("TxInfor TagsMap",TxInfor)
+      //log("TxInfor TagsMap",TxInfor)
       if(TxInfor.owner && TxInfor.owner.address) {
         from_address = TxInfor.owner.address;
         TxInfor.owner = TxInfor.owner.key
@@ -300,7 +297,7 @@
       updateTx.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.signature, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
       updateTx.finalize();
 
-      console.log("TxInfor from_address: ", from_address)
+      log("TxInfor from_address: ", from_address)
 
       //Insert Address
       const BlockInfor = await getBlockInforByHeightFromDb(Height);
@@ -310,12 +307,12 @@
       //Update Address
       let AddressBalance = 0
       AddressBalance = await getWalletAddressBalanceFromDb(from_address)
-      //console.log("getWalletAddressBalanceFromDb", AddressBalance)
+      //log("getWalletAddressBalanceFromDb", AddressBalance)
       if(AddressBalance == 0 || AddressBalance == undefined) {
         AddressBalance = await axios.get(NodeApi + "/wallet/" + from_address + "/balance", {}).then((res)=>{return res.data});
-        //console.log("AddressBalanceNodeApi", AddressBalance)
+        //log("AddressBalanceNodeApi", AddressBalance)
       }
-      //console.log("AddressBalance", AddressBalance)
+      //log("AddressBalance", AddressBalance)
       const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
       updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, from_address);
       updateAddress.finalize();
@@ -326,12 +323,12 @@
         //Update Address
         let AddressBalance = 0
         AddressBalance = await getWalletAddressBalanceFromDb(TxInfor.target)
-        //console.log("getWalletAddressBalanceFromDb", AddressBalance)
+        //log("getWalletAddressBalanceFromDb", AddressBalance)
         if(AddressBalance == 0 || AddressBalance == undefined) {
           AddressBalance = await axios.get(NodeApi + "/wallet/" + TxInfor.target + "/balance", {}).then((res)=>{return res.data});
-          //console.log("AddressBalanceNodeApi", AddressBalance)
+          //log("AddressBalanceNodeApi", AddressBalance)
         }
-        //console.log("AddressBalance", AddressBalance)
+        //log("AddressBalance", AddressBalance)
         const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
         updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, TxInfor.target);
         updateAddress.finalize();
@@ -340,8 +337,8 @@
       //Download Chunk
       const data_root = TxInfor.data_root
       if(data_root && data_root.length && data_root.length == 43) {
-          console.log("TxInfor data_root: ______________________________________________________________", data_root)
-          console.log("TxInfor entity_type: ______________________________________________________________", entity_type)
+          log("TxInfor data_root: ______________________________________________________________", data_root)
+          log("TxInfor entity_type: ______________________________________________________________", entity_type)
       }
     }
     else {
@@ -383,17 +380,17 @@
       }
       if( isFile(BundlePath) == false ) {
         await syncingTxChunksById(TxId);
-        console.log("syncingTxParseBundleById unBundleItem id",BundlePath)
+        log("syncingTxParseBundleById unBundleItem id",BundlePath)
       }
       if( isFile(BundlePath) ) {
-          console.log("syncingTxParseBundleById Exist", BundlePath)  
+          log("syncingTxParseBundleById Exist", BundlePath)  
           try {
               //const TxInfor = await getTxInforByIdFromDb(TxId);
-              //console.log("syncingTxParseBundleById TxInfor",TxInfor)
+              //log("syncingTxParseBundleById TxInfor",TxInfor)
               const FileContent = fs.readFileSync(BundlePath);
               try {
                   const unbundleItems = unbundleData(FileContent);
-                  //console.log("syncingTxParseBundleById unbundleItems",unbundleItems)
+                  //log("syncingTxParseBundleById unbundleItems",unbundleItems)
                   unbundleItems.items.map(async (Item) => {
                       //Tags Data
                       const TagsMap = {}
@@ -404,15 +401,15 @@
                         //Not Need Parse File
                       }
                       else {
-                        console.log("unbundleItems",Item)
-                        console.log("unbundleItems id", Item.id, Item.tags)
-                        //console.log("unBundleItem tags",Item.tags)
-                        //console.log("unBundleItem owner",Item.owner)
-                        //console.log("unBundleItem anchor",Item.anchor)
-                        //console.log("unBundleItem target",Item.target)
-                        //console.log("unBundleItem signature",Item.signature)
-                        //console.log("unBundleItem signatureType",Item.signatureType)
-                        //console.log("unBundleItem data",Item.data)
+                        log("unbundleItems",Item)
+                        log("unbundleItems id", Item.id, Item.tags)
+                        //log("unBundleItem tags",Item.tags)
+                        //log("unBundleItem owner",Item.owner)
+                        //log("unBundleItem anchor",Item.anchor)
+                        //log("unBundleItem target",Item.target)
+                        //log("unBundleItem signature",Item.signature)
+                        //log("unBundleItem signatureType",Item.signatureType)
+                        //log("unBundleItem data",Item.data)
                         //Update Chunks Status IGNORE
                         const insertTxBundleItem = db.prepare('INSERT OR IGNORE INTO tx (id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,tags, tx_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
                         const id = Item.id
@@ -485,7 +482,7 @@
                         ItemJson.signature = Item.signature
                         ItemJson.signatureType = Item.signatureType
                         ItemJson.bundleid = TxId
-                        //console.log("ItemJson", JSON.stringify(ItemJson))
+                        //log("ItemJson", JSON.stringify(ItemJson))
                         writeFile('txs/' + Item.id.substring(0, 2).toLowerCase(), Item.id + '.json', JSON.stringify(ItemJson), "syncingTxParseBundleById")
 
                         //Update Tx Status
@@ -495,7 +492,7 @@
                         const EntityTarget  = TagsMap['Entity-Target'];
                         const LastTxChange  = TagsMap['Last-Tx-Change'];
                         if(EntityType == "Action") {
-                            console.log("Action TxInfor EntityAction: ______________________________________________________________", EntityAction)
+                            log("Action TxInfor EntityAction: ______________________________________________________________", EntityAction)
                             switch(EntityAction) {
                                 case 'Label':
                                     //EntityTarget, BlockTimestamp, BlockHeight, FileTxId, LastTxChange
@@ -503,7 +500,7 @@
                                       const updateBundleLabel = db.prepare('update tx set item_label = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
                                       updateBundleLabel.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                       updateBundleLabel.finalize();
-                                      console.log("Action Label", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      log("Action Label", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                     }
                                     break;
                                 case 'Star':
@@ -512,7 +509,7 @@
                                       const updateBundleStar = db.prepare('update tx set item_star = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
                                       updateBundleStar.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                       updateBundleStar.finalize();
-                                      console.log("Action Star", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      log("Action Star", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                     }
                                     break;
                                 case 'Folder':
@@ -521,7 +518,7 @@
                                       const updateBundleFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
                                       updateBundleFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                       updateBundleFolder.finalize();
-                                      console.log("Action Folder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      log("Action Folder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                     }
                                     break;
                                 case 'Public':
@@ -530,7 +527,7 @@
                                       const updateBundlePublic = db.prepare('update tx set is_public = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
                                       updateBundlePublic.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                       updateBundlePublic.finalize();
-                                      console.log("Action Public", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      log("Action Public", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                     }
                                     break;
                                 case 'RenameFolder':
@@ -539,7 +536,7 @@
                                       const updateBundleRenameFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
                                       updateBundleRenameFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                       updateBundleRenameFolder.finalize();
-                                      console.log("Action RenameFolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      log("Action RenameFolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                     }
                                     break;
                                 case 'DeleteFolder':
@@ -548,7 +545,7 @@
                                       const updateBundleDeleteFolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
                                       updateBundleDeleteFolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                       updateBundleDeleteFolder.finalize();
-                                      console.log("Action DeleteFolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      log("Action DeleteFolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                     }
                                     break;
                                 case 'Restorefolder':
@@ -557,7 +554,7 @@
                                       const updateBundleRestorefolder = db.prepare('update tx set item_parent = ?, timestamp = ?, last_tx_action = ? where (id = last_tx_action and id = ?) or (id != last_tx_action and id = ? and last_tx_action = ?)');
                                       updateBundleRestorefolder.run(EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                       updateBundleRestorefolder.finalize();
-                                      console.log("Action Restorefolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
+                                      log("Action Restorefolder", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange);
                                     }
                                     break;
                                 case 'Profile':
@@ -565,8 +562,8 @@
                                     const updateBundleAddressProfile = db.prepare('update address set profile = ?, timestamp = ?, last_tx_action = ? where (last_tx_action is null and id = ?) or (id = ? and last_tx_action = ?)');
                                     updateBundleAddressProfile.run(Item.id, timestamp, block_height, from_address, from_address, LastTxChange==undefined?'':LastTxChange);
                                     updateBundleAddressProfile.finalize();
-                                    //console.log("LastTxChange", LastTxChange)
-                                    console.log("Action Profile", Item.id, timestamp, block_height, from_address, from_address, LastTxChange);
+                                    //log("LastTxChange", LastTxChange)
+                                    log("Action Profile", Item.id, timestamp, block_height, from_address, from_address, LastTxChange);
                                     break;
                                 case 'Agent':
                                     //EntityTarget, FromAddress, BlockTimestamp
@@ -574,7 +571,7 @@
                                       const updateBundleAddressAgent = db.prepare("update address set Agent = ?, timestamp = ? where id = ? and Agent = '0'");
                                       updateBundleAddressAgent.run('1', timestamp, from_address);
                                       updateBundleAddressAgent.finalize();
-                                      console.log("Action Agent", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange==undefined?'':LastTxChange);
+                                      log("Action Agent", EntityTarget, timestamp, block_height, FileTxId, FileTxId, LastTxChange==undefined?'':LastTxChange);
                                     }
                                     break;
                                 case 'Referee':
@@ -583,13 +580,13 @@
                                       const updateBundleAddressReferee = db.prepare("update address set referee = ? where id = ?");
                                       updateBundleAddressReferee.run(EntityTarget, from_address);
                                       updateBundleAddressReferee.finalize();
-                                      console.log("Action Referee", EntityTarget, timestamp, block_height, from_address);
+                                      log("Action Referee", EntityTarget, timestamp, block_height, from_address);
                                     }
                                     break;
                             }
                         }
                         if(EntityType == "Folder") {
-                          console.log("Folder TxInfor EntityAction: ______________________________________________________________", EntityAction)
+                          log("Folder TxInfor EntityAction: ______________________________________________________________", EntityAction)
                           switch(EntityAction) {
                             case 'CreateFolder':
                               const EntityActionSql = db.prepare("update tx set entity_type = ? where id = ?");
@@ -617,7 +614,7 @@
           
       }
       else {
-          console.log("syncingTxParseBundleById Not Exist:", BundlePath)
+          log("syncingTxParseBundleById Not Exist:", BundlePath)
       }
     }
   }
@@ -628,13 +625,13 @@
     try {
         const arrayBuffer = await fetch(NodeApi + '/' + TxId).then(res => res.arrayBuffer()).catch(() => {})
         //Write Chunks File
-        console.log("syncingTxChunksById arrayBuffer:", TxId, arrayBuffer)
+        log("syncingTxChunksById arrayBuffer:", TxId, arrayBuffer)
         if(arrayBuffer && arrayBuffer.byteLength && arrayBuffer.byteLength > 0) {
             const FileBuffer = Buffer.from(arrayBuffer);
             data_root_status = 200
             const FileContentString = FileBuffer.toString('utf-8')
             if(arrayBuffer.byteLength<10000 && FileContentString.includes("This page cannot be found, yet.")) {
-              console.log("arrayBuffer.byteLength--------------------------------------", arrayBuffer.byteLength)
+              log("arrayBuffer.byteLength--------------------------------------", arrayBuffer.byteLength)
             }
             else {
               writeFile('files/' + TxId.substring(0, 2).toLowerCase(), TxId, FileBuffer, "syncingTxChunksById")
@@ -652,11 +649,11 @@
               const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
               TagsMap[TagName] = TagValue;
             })
-            console.log("syncingTxChunksById Error:", data_root_status, TxId, TagsMap['Content-Type'], TagsMap['File-Name'])
+            log("syncingTxChunksById Error:", data_root_status, TxId, TagsMap['Content-Type'], TagsMap['File-Name'])
         }
     } 
     catch (error) {
-        console.log("syncingTxChunksById Error:", error)
+        log("syncingTxChunksById Error:", error)
         data_root_status = 404
     }
     //Update Chunks Status
@@ -744,13 +741,13 @@
   async function syncingBlock(EveryTimeDealBlockCount = 5) {
     const getBlockHeightFromDbValue = await getBlockHeightFromDb()
     const BeginHeight = getBlockHeightFromDbValue + 1;
-    console.log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
+    log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
     try {
       const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
       const MaxHeight = MinerNodeStatus.height;
       const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight)
       const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
-      console.log("BlockHeightRange:", BlockHeightRange);
+      log("BlockHeightRange:", BlockHeightRange);
       const result = [];
       for (const Height of BlockHeightRange) {
         const BlockInfor = await syncingBlockByHeight(Height);
@@ -783,14 +780,14 @@
                                   }
                                 });
                               });
-      //console.log("GetExistBlocks:", GetExistBlocks);
+      //log("GetExistBlocks:", GetExistBlocks);
       const result = [];
       const BlockTimestamp = {}
       const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
       updateBlockMinedTime.run(60, 1);
       updateBlockMinedTime.finalize();
       for (const BlockInfor of GetExistBlocks) {
-        //console.log("syncingBlockMinedTime BlockInfor:", BlockInfor);
+        //log("syncingBlockMinedTime BlockInfor:", BlockInfor);
         BlockTimestamp[Number(BlockInfor.id)] = BlockInfor.timestamp
         if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] == undefined) {
           const previousBlock = await getBlockInforByHeightFromDb(Number(BlockInfor.id)-1);
@@ -798,7 +795,7 @@
         }
         if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] ) {
           const MinedTime = BlockInfor.timestamp - BlockTimestamp[Number(BlockInfor.id)-1]
-          console.log("MinedTime", BlockInfor.id, MinedTime)
+          log("MinedTime", BlockInfor.id, MinedTime)
           const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
           updateBlockMinedTime.run(MinedTime, BlockInfor.id);
           updateBlockMinedTime.finalize();
@@ -837,12 +834,12 @@
           GetExistBlocksIds.push(Item.id)
         })
       }
-      //console.log("GetExistBlocksIds:", GetExistBlocksIds);
+      //log("GetExistBlocksIds:", GetExistBlocksIds);
       const getMissingBlockIds = arrayDifference(BlockHeightRange, GetExistBlocksIds)
-      console.log("getMissingBlockIds:", getMissingBlockIds);
+      log("getMissingBlockIds:", getMissingBlockIds);
       const result = [];
       for (const Height of getMissingBlockIds) {
-        console.log("Height:", Height);
+        log("Height:", Height);
         const BlockInfor = await syncingBlockByHeight(Height);
         result.push(BlockInfor.height)
       }
@@ -859,13 +856,13 @@
     try {
       const getBlockHeightFromDbValue = await getBlockHeightFromDb();
       const BeginHeight = getBlockHeightFromDbValue + 1;
-      console.log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
+      log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
   
       const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
       const MaxHeight = MinerNodeStatus.height;
       const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight + 1)
       const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
-      console.log("BlockHeightRange:", BlockHeightRange);
+      log("BlockHeightRange:", BlockHeightRange);
       
       const result = await Promise.all(
         BlockHeightRange.map(async (Height) => {
@@ -941,7 +938,7 @@
       //Nothing to do
       const BlockContent = getBlockInforByHeight(currentHeight);
       BlockInfor = JSON.parse(BlockContent)
-      console.log("syncingBlockByHeight Read Block From Json File",BlockInfor.reward_addr, currentHeight)
+      log("syncingBlockByHeight Read Block From Json File",BlockInfor.reward_addr, currentHeight)
     }
     else {
       const result = await axios.get(NodeApi + '/block/height/' + currentHeight, {
@@ -949,7 +946,7 @@
         params: {}
       });
       BlockInfor = result.data
-      console.log("syncingBlockByHeight Get Block From Remote Node",BlockInfor.reward_addr, currentHeight)
+      log("syncingBlockByHeight Get Block From Remote Node",BlockInfor.reward_addr, currentHeight)
     }
     
     // Begin a transaction
@@ -963,12 +960,12 @@
       //Update Address
       let AddressBalance = 0
       AddressBalance = await getWalletAddressBalanceFromDb(BlockInfor.reward_addr)
-      //console.log("getWalletAddressBalanceFromDb", AddressBalance)
+      //log("getWalletAddressBalanceFromDb", AddressBalance)
       if(AddressBalance == 0 || AddressBalance == undefined) {
         AddressBalance = await axios.get(NodeApi + "/wallet/" + BlockInfor.reward_addr + "/balance", {}).then((res)=>{return res.data});
-        //console.log("AddressBalanceNodeApi", AddressBalance)
+        //log("AddressBalanceNodeApi", AddressBalance)
       }
-      //console.log("AddressBalance", AddressBalance)
+      //log("AddressBalance", AddressBalance)
       const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
       updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, BlockInfor.reward_addr);
       updateAddress.finalize();
@@ -1013,8 +1010,19 @@
       day.setDate(today.getDate() - i);
       const block_date = day.toISOString().slice(0, 10)
       await syncingBlockAndTxStat(block_date);
+      recent30Days.push(block_date)
     }
-    console.log("recent30Days", recent30Days)
+    log("recent30Days", recent30Days)
+  }
+
+  async function log(Action1, Action2='', Action3='', Action4='', Action5='', Action6='', Action7='', Action8='', Action9='', Action10='') {
+    const currentDate = new Date();
+    const currentDateTime = currentDate.toLocaleString();
+    const content = Action1 +" "+ JSON.stringify(Action2) +" "+ JSON.stringify(Action3) +" "+ JSON.stringify(Action4) +" "+ JSON.stringify(Action5) +" "+ JSON.stringify(Action6) +" "+ JSON.stringify(Action7) +" "+ JSON.stringify(Action8) +" "+ JSON.stringify(Action9) +" "+ JSON.stringify(Action10);
+    const insertStat = db.prepare('INSERT OR REPLACE INTO log (datetime,content) VALUES (?,?)');
+    insertStat.run(currentDateTime, content);
+    insertStat.finalize();
+    console.log(Action1, Action2, Action3, Action4, Action5, Action6, Action7, Action8, Action9, Action10)
   }
 
   async function syncingBlockAndTxStat(block_date)  {
@@ -1027,7 +1035,7 @@
         }
       });
     });
-    console.log("BlockStat", BlockStat)
+    log("BlockStat", BlockStat)
     if(BlockStat && BlockStat.reward) {
 
       const TxStat = await new Promise((resolve, reject) => {
@@ -1057,7 +1065,7 @@
       txs_item_map['pptx'] = 0;
       txs_item_map['audio'] = 0;
       txs_item_map['stl'] = 0;
-      console.log("TxStat", TxStat)
+      log("TxStat", TxStat)
       TxStat && TxStat.map((Item)=>{
         txs_item += Item.item_type_count
         txs_item_map[Item.item_type] = Item.item_type_count
@@ -1289,7 +1297,7 @@
     const txArray = TxRowToJsonFormat([getTxInforByIdFromDbValue]);
     getTxBundleItemPageJsonValue['tx'] = txArray[0];
     getTxBundleItemPageJsonValue['txs'] = getTxBundleItemPageJsonValue['data'];
-    //console.log("getTxBundleItemPageJsonValue", getTxBundleItemPageJsonValue);
+    //log("getTxBundleItemPageJsonValue", getTxBundleItemPageJsonValue);
     return getTxBundleItemPageJsonValue;
   }
 
@@ -1316,7 +1324,7 @@
   async function postTx(Payload) {
     try {
       const response = await axios.post(NodeApi + '/tx', Payload);
-      console.log('postTx:', response.data);
+      log('postTx:', response.data);
       if(response.data != "OK") {
         await axios.post(NodeApi + '/tx', Payload);
       }
@@ -1338,7 +1346,7 @@
           if(result) {
             result.map((item)=>{
               axios.post("http://"+item.ip + '/tx', Payload).then(res =>{
-                  console.log('postTxForwarding postTx:', item.ip, res.data);              
+                  log('postTxForwarding postTx:', item.ip, res.data);              
                 })
                 .catch(error => {
                   console.error('postchunkForwarding Error:', item.ip, "Failed ******");
@@ -1357,7 +1365,7 @@
   async function postChunk(Payload) {
     try {
       const response = await axios.post(NodeApi + '/chunk', Payload);
-      console.log('postChunk:', response.data);
+      log('postChunk:', response.data);
       if(response.data != "OK") {
         await axios.post(NodeApi + '/chunk', Payload);
       }
@@ -1379,7 +1387,7 @@
           if(result) {
             result.map((item)=>{
               axios.post("http://"+item.ip + '/chunk', Payload).then(res =>{
-                  console.log('postchunkForwarding postchunk:', item.ip, res.data);              
+                  log('postchunkForwarding postchunk:', item.ip, res.data);              
                 })
                 .catch(error => {
                   console.error('postchunkForwarding Error:', item.ip, "Failed ******");
@@ -1505,7 +1513,7 @@
 
   async function getWalletTxJson(TxId) {
     const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxId);
-    console.log("getTxInforByIdFromDbValue", getTxInforByIdFromDbValue)
+    log("getTxInforByIdFromDbValue", getTxInforByIdFromDbValue)
     return TxRowToJsonFormat([getTxInforByIdFromDbValue])[0];
   }
 
@@ -1875,10 +1883,10 @@
       const response = await axios.head(url);
   
       if (response.status === 200 || response.status === 204) {
-        //console.log(`URL ${url} is reachable.`);
+        //log(`URL ${url} is reachable.`);
         return 1;
       } else {
-        //console.log(`URL ${url} returned an unexpected status code: ${response.status}`);
+        //log(`URL ${url} returned an unexpected status code: ${response.status}`);
         return -1;
       }
     } catch (error) {
@@ -1901,7 +1909,7 @@
         updatePeerAvailable.run(peerIsAvailable, Item.ip);
         updatePeerAvailable.finalize();
         if(peerIsAvailable == 1) {
-          console.log("peerIsAvailable", Item.ip, peerIsAvailable)
+          log("peerIsAvailable", Item.ip, peerIsAvailable)
           await getPeersAndInsertDb(Item.ip);
         }
       })
@@ -1918,7 +1926,7 @@
             const insertTag = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
             insertTag.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code, peerIsAvailable);
             insertTag.finalize();
-            //console.log("IPJSON", IPJSON)
+            //log("IPJSON", IPJSON)
           }  
         })
       }
@@ -1934,7 +1942,7 @@
     try {
       const peersList = await axios.get("http://" + PeerUrl + '/peers', {}).then(res=>res.data);
       const HaveIpLocationPeersList = await getPeers();
-      //console.log("peersList", peersList)
+      //log("peersList", peersList)
       if(peersList && peersList.length > 0) {
         peersList.map(async (PeerAndPort)=>{
           if(!HaveIpLocationPeersList.includes(PeerAndPort)) {
@@ -1946,7 +1954,7 @@
             const insertTag = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
             insertTag.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code, peerIsAvailable);
             insertTag.finalize();
-            console.log("getPeersAndInsertDb", PeerAndPort)
+            log("getPeersAndInsertDb", PeerAndPort)
           }  
         })
       }
@@ -2138,7 +2146,7 @@
           })
       );
       
-      console.log("RSDATA", RSDATA)
+      log("RSDATA", RSDATA)
     }
     const RS = {};
     RS['allpages'] = Math.ceil(AgentTotal/pagesizeFiler);
@@ -2198,7 +2206,7 @@
           })
       );
       
-      console.log("RSDATA", RSDATA)
+      log("RSDATA", RSDATA)
     }
     const RS = {};
     RS['allpages'] = Math.ceil(AgentTotal/pagesizeFiler);
@@ -2278,7 +2286,7 @@
   async function getLightNodeStatus() {
     const getBlockHeightFromDbValue = await getBlockHeightFromDb();
     const BlockInfor = await getBlockInforByHeightFromDb(getBlockHeightFromDbValue);
-    //console.log("BlockInfor", BlockInfor)
+    //log("BlockInfor", BlockInfor)
     const LightNodeStatus = {}
     if(BlockInfor)  {
       const getPeersList = await getPeers();
@@ -2325,7 +2333,7 @@
     }
     const FileName = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['item_name'] ? getTxInforByIdFromDbValue['item_name'] : TxId;
     const ContentType = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['content_type'] ? getTxInforByIdFromDbValue['content_type'] : "";
-    console.log("FileContent", FileContent)
+    log("FileContent", FileContent)
     return {FileName, ContentType, FileContent};
   }
 
@@ -2344,7 +2352,7 @@
   function readFile(Dir, FileName, Mark, OpenFormat) {
     const filePath = DataDir + '/' + Dir + '/' + FileName;
     if(isFile(filePath)) {
-      console.log("filePath", filePath)
+      log("filePath", filePath)
       const data = fs.readFileSync(filePath, OpenFormat);
       return data;
     }
@@ -2376,7 +2384,7 @@
   }
 
   function filterString(input) {
-    console.log("filterString input:", input)
+    log("filterString input:", input)
     if(input) {
       const sanitizedInput = input?.replace(/[^a-zA-Z0-9_\-@. ]/g, '');
       return sanitizedInput;
@@ -2390,7 +2398,7 @@
     try {
       const content = fs.readFileSync(source);
       fs.writeFileSync(destination, content);
-      console.log('File copied successfully!');
+      log('File copied successfully!');
       return true;
     } catch (error) {
       console.error('Error copying file:', error);
@@ -2399,8 +2407,12 @@
   }
 
   async function convertPdfFirstPageToImage(inputFilePath, outputFilePath) {
-    const command = `${__dirname}/../lib/poppler-23.11.0/Library/bin/pdfimages -png -f 0 ${inputFilePath} ${outputFilePath}`;
+    let command = `${__dirname}/../../app.asar.unpacked/lib/poppler-23.11.0/Library/bin/pdfimages.exe -png -f 0 ${inputFilePath} ${outputFilePath}`;
+    if(isFile(`${__dirname}/../lib/poppler-23.11.0/Library/bin/pdfimages.exe`)) {
+      command = `${__dirname}/../lib/poppler-23.11.0/Library/bin/pdfimages.exe -png -f 0 ${inputFilePath} ${outputFilePath}`;
+    }
     try {
+      log('convertPdfFirstPageToImage try execSync ****** ', outputFilePath, command);
       const output = execSync(command);
       if(output.toString() == "") {
         try {
@@ -2408,16 +2420,20 @@
           fs.unlinkSync(outputFilePath+"-001.png");
           fs.unlinkSync(outputFilePath+"-002.png");
           fs.unlinkSync(outputFilePath+"-003.png");
-          console.log('convertPdfFirstPageToImage File Deleted Successfully', outputFilePath);
+          log('convertPdfFirstPageToImage File Generated Successfully', outputFilePath, command);
           return true;
         } 
         catch (err) {
-          console.error('convertPdfFirstPageToImage Error Deleting File:', outputFilePath, err);
+          console.error('convertPdfFirstPageToImage Error Deleting File:', outputFilePath, err, command);
           return false;
         }
       }
+      else {
+        console.error('convertPdfFirstPageToImage Error Output:', output, command);
+        return false;
+      }
     } catch (error) {
-      console.error('执行命令时发生错误:', error.message);
+      console.error('执行命令时发生错误:', error.message, command);
       return false;
     }
   }
@@ -2477,14 +2493,14 @@
             .catch(err => {
                 if(err instanceof PDFServicesSdk.Error.ServiceApiError
                     || err instanceof PDFServicesSdk.Error.ServiceUsageError) {
-                    console.log('Exception encountered while executing operation', err);
+                    log('Exception encountered while executing operation', err);
                 } else {
-                    console.log('Exception encountered while executing operation', err);
+                    log('Exception encountered while executing operation', err);
                 }
             });
     
     } catch (err) {
-        console.log('Exception encountered while executing operation', err);
+        log('Exception encountered while executing operation', err);
     }
   }
   
@@ -2492,7 +2508,7 @@
     mkdirForData();
     const TxContent = readFile("txs/" + OriginalTxId.substring(0, 2).toLowerCase(), OriginalTxId + '.json', "getTxDataThumbnail", 'utf-8');
     const TxInfor = JSON.parse(TxContent);
-    //console.log("TxInfor", TxInfor);
+    //log("TxInfor", TxInfor);
     
     const TagsMap = {}
     TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
@@ -2506,15 +2522,15 @@
     const FileName = TagsMap['File-Name'] || "Unknown"
     const ContentType = TagsMap['Content-Type']
     const TxId = TagsMap['File-TxId'] ? TagsMap['File-TxId'] : OriginalTxId
-    console.log("TxId OriginalTxId", TxId, OriginalTxId);
+    log("TxId OriginalTxId", TxId, OriginalTxId);
     
     const inputFilePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
-    console.log("inputFilePath", inputFilePath)
+    log("inputFilePath", inputFilePath)
     if(isFile(inputFilePath)) {
       //Thumbnail Exist
       const compressFilePath = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
       if(isFile(compressFilePath)) {
-        console.log("compressFilePath", compressFilePath)
+        log("compressFilePath", compressFilePath)
         const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
         return {FileName, ContentType, FileContent};
       }
@@ -2524,24 +2540,24 @@
       enableDir(outputFilePath)
       const fileType = getContentTypeAbbreviation(ContentType);
       const fileTypeSuffix = String(fileType).toLowerCase();
-      console.log("fileTypeSuffix", fileTypeSuffix)
+      log("fileTypeSuffix", fileTypeSuffix)
       if(fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") {
           sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
               if (err) {
-                console.log("getTxDataThumbnail sharp err:", TxId, err, info)
+                log("getTxDataThumbnail sharp err:", TxId, err, info)
               } else {
-                console.log("getTxDataThumbnail sharp info:", info);
+                log("getTxDataThumbnail sharp info:", info);
               }
           });
       }
       else if(fileTypeSuffix == "png") {
         sharp(inputFilePath).png({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
-          console.log("getTxDataThumbnail sharp:", TxId, err, info)
+          log("getTxDataThumbnail sharp:", TxId, err, info)
         });
       }
       else if(fileTypeSuffix == "gif") {
         sharp(inputFilePath).gif({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
-          console.log("getTxDataThumbnail sharp:", TxId, err, info)
+          log("getTxDataThumbnail sharp:", TxId, err, info)
         });
       }
       else if(fileTypeSuffix == "pdf")    {
@@ -2555,10 +2571,10 @@
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
             return {FileName, ContentType:"image/png", FileContent};
           }
-          console.log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
+          log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
         }
-        //printer(inputFilePath).then(console.log);
-        console.log("outputFilePath", outputFilePath + '/' + TxId + '.png')
+        //printer(inputFilePath).then(log);
+        log("outputFilePath", outputFilePath + '/' + TxId + '.png')
       }
       else if(fileTypeSuffix == "docx" || fileTypeSuffix == "doc")    {
         if(isFile(outputFilePath + '/' + TxId + '.png')) {
@@ -2600,14 +2616,14 @@
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
             return {FileName, ContentType:"image/png", FileContent};
           }
-          console.log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
+          log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
         }
       }
       
       //Thumbnail Exist
       const compressFilePath2 = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
       if(isFile(compressFilePath2)) {
-        console.log("compressFilePath2", compressFilePath2)
+        log("compressFilePath2", compressFilePath2)
         const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
         return {FileName, ContentType, FileContent};
       }
@@ -2622,7 +2638,7 @@
           FileContent = Buffer.from(TxInfor.data, 'base64');
       }
       else {
-          console.log("inputFilePath Not Exist:", inputFilePath)
+          log("inputFilePath Not Exist:", inputFilePath)
       }
       return {FileName, ContentType, FileContent};
     }

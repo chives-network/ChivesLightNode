@@ -87,6 +87,7 @@ async function intervalTask() {
       syncing.syncingTxPromiseAll(10),
       syncing.syncingChunksPromiseAll(5),
       syncing.syncingTxParseBundle(1),
+      //syncing.syncingBlockAndTxStatAllDates(),
       //syncing.deleteBlackTxsAndAddress()
     ]);
     const executionTime = Date.now() - startTime;

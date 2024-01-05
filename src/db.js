@@ -148,7 +148,14 @@ db.serialize(() => {
             txs_task_item INTEGER default 0,
             txs_task_reward INTEGER default 0
         );
-    `);
+    `);    
+    db.run(`
+        CREATE TABLE IF NOT EXISTS log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            datetime TEXT,
+            content TEXT
+        );
+    `); 
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_id ON block (id);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_height ON block (height);`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_block_indep_hash ON block (indep_hash);`);
