@@ -1,6 +1,7 @@
   // blockRoutes.js
 
   import express from 'express';
+  import syncing from '../syncing.js';
   import { dirname, join } from 'path';
   import { fileURLToPath } from 'url';
 
@@ -52,22 +53,22 @@
     res.status(200).end();
   });
 
-  router.get('/addresses', (req, res) => { res.sendFile(join(__dirname, '../../html/addresses', 'index.html')); });
-  router.get('/addressfiles', (req, res) => { res.sendFile(join(__dirname, '../../html/addressfiles', 'index.html')); });
-  router.get('/agent', (req, res) => { res.sendFile(join(__dirname, '../../html/agent', 'index.html')); });
-  router.get('/blocks', (req, res) => { res.sendFile(join(__dirname, '../../html/blocks', 'index.html')); });
-  router.get('/drive', (req, res) => { res.sendFile(join(__dirname, '../../html/drive', 'index.html')); });
-  router.get('/files', (req, res) => { res.sendFile(join(__dirname, '../../html/files', 'index.html')); });
-  router.get('/images', (req, res) => { res.sendFile(join(__dirname, '../../html/images', 'index.html')); });
-  router.get('/locales', (req, res) => { res.sendFile(join(__dirname, '../../html/locales', 'index.html')); });
-  router.get('/mywallets', (req, res) => { res.sendFile(join(__dirname, '../../html/mywallets', 'index.html')); });
-  router.get('/nodes', (req, res) => { res.sendFile(join(__dirname, '../../html/nodes', 'index.html')); });
-  router.get('/overview', (req, res) => { res.sendFile(join(__dirname, '../../html/overview', 'index.html')); });
-  router.get('/profile', (req, res) => { res.sendFile(join(__dirname, '../../html/profile', 'index.html')); });
-  router.get('/task', (req, res) => { res.sendFile(join(__dirname, '../../html/task', 'index.html')); });
-  router.get('/txs', (req, res) => { res.sendFile(join(__dirname, '../../html/txs', 'index.html')); });
-  router.get('/user', (req, res) => { res.sendFile(join(__dirname, '../../html/user', 'index.html')); });
-  router.get('/wallet', (req, res) => { res.sendFile(join(__dirname, '../../html/wallet', 'index.html')); });
+  router.get('/addresses', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/addresses', 'index.html')); });
+  router.get('/addressfiles', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/addressfiles', 'index.html')); });
+  router.get('/agent', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/agent', 'index.html')); });
+  router.get('/blocks', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/blocks', 'index.html')); });
+  router.get('/drive', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/drive', 'index.html')); });
+  router.get('/files', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/files', 'index.html')); });
+  router.get('/images', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/images', 'index.html')); });
+  router.get('/locales', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/locales', 'index.html')); });
+  router.get('/mywallets', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/mywallets', 'index.html')); });
+  router.get('/nodes', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/nodes', 'index.html')); });
+  router.get('/overview', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/overview', 'index.html')); });
+  router.get('/profile', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/profile', 'index.html')); });
+  router.get('/task', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/task', 'index.html')); });
+  router.get('/txs', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/txs', 'index.html')); });
+  router.get('/user', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/user', 'index.html')); });
+  router.get('/wallet', syncing.restrictToLocalhost, (req, res) => { res.sendFile(join(__dirname, '../../html/wallet', 'index.html')); });
 
 
   

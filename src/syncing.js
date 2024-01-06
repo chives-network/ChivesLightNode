@@ -14,8 +14,8 @@
   import sqlite3 from 'sqlite3';
   const sqlite3Verbose = sqlite3.verbose();
 
-  import isDev from 'electron-is-dev';
-
+  //import isDev from 'electron-is-dev';
+  
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
 
@@ -23,6 +23,10 @@
   let DataDir = null;
   let arweave = null;
   let db = null;
+
+  //Only for Dev
+  const isDev = false;
+  initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"D:\\GitHub\\ChivesweaveDataDir"});
   
   const BlackListTxs = [];
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
@@ -251,6 +255,49 @@
 
     });
 
+  }
+
+  async function chivesLightNodeStatus(TxCount) {
+    const getBlockHeightFromDbValue = await getBlockHeightFromDb();
+    const BlockInfor = await getBlockInforByHeightFromDb(getBlockHeightFromDbValue);
+    const NotSyncingTxCount = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM from tx where from_address is null", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : null);
+        }
+      });
+    });
+    const NotSyncingChunksCount = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM from tx where data_root != '' and data_root is not null and data_root_status is null", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : null);
+        }
+      });
+    });
+    const NotSyncingBundleTxParseCount = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) AS NUM from tx where entity_type = 'Bundle' and bundleTxParse is null", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : null);
+        }
+      });
+    });
+    const LightNodeStatus = {}
+    const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
+    LightNodeStatus['network'] = "chivesweave.mainnet";
+    LightNodeStatus['height'] = MinerNodeStatus.height;
+    LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
+    LightNodeStatus['NotSyncingTxCount'] = NotSyncingTxCount;
+    LightNodeStatus['NotSyncingChunksCount'] = NotSyncingChunksCount;
+    LightNodeStatus['NotSyncingBundleTxParseCount'] = NotSyncingBundleTxParseCount;
+    LightNodeStatus['NodeApi'] = NodeApi;
+    LightNodeStatus['DataDir'] = DataDir;
+    return LightNodeStatus;    
   }
 
   async function ownerToAddress(owner) {
@@ -2947,8 +2994,21 @@
     DeleteBlackListTxs.finalize(); 
   }
 
+  const restrictToLocalhost = (req, res, next) => {
+    // Check if the request is coming from localhost (127.0.0.1 or ::1)
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    if (ipAddress === '127.0.0.1' || ipAddress === '::1') {
+      // Allow the request to proceed
+      next();
+    } else {
+      // Respond with a 403 Forbidden status for requests from other IP addresses
+      res.status(403).send('Forbidden: Access allowed only from localhost.');
+    }
+  };
+
   export default {
     initChivesLightNode,
+    chivesLightNodeStatus,
     syncingBlock,
     syncingBlockPromiseAll,
     syncingBlockMissing,
@@ -3023,5 +3083,6 @@
     filterString,
     compressImage,
     mkdirForData,
-    deleteBlackTxsAndAddress
+    deleteBlackTxsAndAddress,
+    restrictToLocalhost
   };

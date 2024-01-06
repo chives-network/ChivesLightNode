@@ -19,10 +19,10 @@
 
   router.get('/info', async (req, res) => {
     const getLightNodeStatusValue = await syncing.getLightNodeStatus();
-    res.json(getLightNodeStatusValue);
+    res.json(getLightNodeStatusValue).end();
   });
   router.get('/queue', async (req, res) => {
-    res.json([]);
+    res.json([]).end();
   });
 
   export default router;

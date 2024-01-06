@@ -13,6 +13,7 @@ import peerRoutes from './src/router/peer.js'
 import priceRoutes from './src/router/price.js'
 import statRoutes from './src/router/stat.js'
 import agentRoutes from './src/router/agent.js'
+import lightNodeRoutes from './src/router/lightnode.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -41,6 +42,7 @@ expressApp.get('/syncing', async (req, res) => {
 
 
 
+expressApp.use('/', lightNodeRoutes);
 expressApp.use('/', agentRoutes);
 expressApp.use('/', statRoutes);
 expressApp.use('/', htmlRoutes);
@@ -80,11 +82,26 @@ chunk2
 
 */
 
+// Middleware to conditionally serve static files based on the request's IP
+const serveStaticLocally = (req, res, next) => {
+  // Check if the request is coming from localhost (127.0.0.1 or ::1)
+  const ipAddress = req.ip || req.connection.remoteAddress;
+  if (ipAddress === '127.0.0.1' || ipAddress === '::1') {
+    // Serve static files only for requests from localhost
+    express.static(join(__dirname, 'html'))(req, res, next);
+  } else {
+    // Proceed to the next middleware for requests from other IP addresses
+    next();
+  }
+};
+expressApp.use(serveStaticLocally);
 
-expressApp.use(express.static(join(__dirname, 'html')));
 
+expressApp.get('/', syncing.restrictToLocalhost, (req, res) => {
+  res.sendFile(join(__dirname, 'html', 'index.html'));
+});
 
-expressApp.get('*', (req, res) => {
+expressApp.get('*', syncing.restrictToLocalhost, (req, res) => {
   res.sendFile(join(__dirname, 'html', 'index.html'));
 });
 

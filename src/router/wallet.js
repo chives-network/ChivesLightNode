@@ -5,8 +5,6 @@
 
   const router = express.Router();
 
-
-    
   router.get('/wallet/:id/balance', async (req, res) => {
     const { id } = req.params;
     const AddressBalance = await syncing.getAddressBalance(id);
