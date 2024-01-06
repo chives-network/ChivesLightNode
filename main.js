@@ -1,23 +1,35 @@
-import { app, BrowserWindow, Menu } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain, dialog } from 'electron';
 import isDev from 'electron-is-dev'
 import { server, getPort } from './expressApp.js';
 import syncing from './src/syncing.js';
+import settings from 'electron-settings';
 
-// 启动 Express 服务器
 const PORT = getPort();
 
 let mainWindow;
 
-function createWindow() {
+function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 800,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false,
     },
   });
 
-  mainWindow.loadURL('http://localhost:' + PORT);
+  //Start Setting Page
+  mainWindow.loadFile('src/settings/index.html');
+
+  //Start Chives Light Node
+  ipcMain.on('start-chives-light-node', async (event, data) => {
+    const ChivesLightNodeSetting = await settings.get('chives-light-node');
+    console.log("ChivesLightNodeSetting main.js", ChivesLightNodeSetting)
+    syncing.initChivesLightNode(ChivesLightNodeSetting);
+    mainWindow.loadURL('http://localhost:' + PORT);
+    setTimeout(intervalTaskShortTime, 10 * 1000);
+    setTimeout(intervalTaskLongTime, 1800 * 1000);
+  });
 
   const template = [
     {
@@ -90,9 +102,9 @@ async function intervalTaskShortTime() {
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
     console.log('Resuming interval tasks.');
     const nextInterval = 10 * 1000;
-    setTimeout(intervalTask, nextInterval);
+    setTimeout(intervalTaskShortTime, nextInterval);
   } catch (error) {
-    console.error('Error in intervalTask:', error);
+    console.error('Error in intervalTaskShortTime:', error);
   }
 }
 
@@ -110,21 +122,19 @@ async function intervalTaskLongTime() {
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
     console.log('Resuming interval tasks.');
     const nextInterval = 1800 * 1000;
-    setTimeout(intervalTask, nextInterval);
+    setTimeout(intervalTaskLongTime, nextInterval);
   } catch (error) {
-    console.error('Error in intervalTask:', error);
+    console.error('Error in intervalTaskLongTime:', error);
   }
 }
 
 app.whenReady().then(()=>{
-  setTimeout(intervalTaskShortTime, 10 * 1000);
-  setTimeout(intervalTaskLongTime, 1800 * 1000);
-  createWindow();
+  createMainWindow();
 });
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    createMainWindow();
   }
 });
 
@@ -133,4 +143,25 @@ app.on('window-all-closed', () => {
     server.close();
     app.quit();
   }
+});
+
+ipcMain.on('open-folder-dialog', async (event) => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+  });
+  if (!result.canceled && result.filePaths.length > 0) {
+    event.reply('selected-folder', result.filePaths[0]);
+  }
+});
+
+ipcMain.on('save-chives-light-node', async (event, data) => {
+  await settings.set('chives-light-node', data);
+  console.log("save-chives-light-node", data);
+  mainWindow.webContents.send('data-chives-light-node', data);
+});
+
+ipcMain.on('get-chives-light-node', async (event) => {
+  const data = await settings.get('chives-light-node');
+  console.log("get-chives-light-node", data);
+  event.reply('data-chives-light-node', data);
 });

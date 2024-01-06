@@ -1,9 +1,12 @@
+import settings from 'electron-settings';
 import sqlite3 from 'sqlite3';
 const sqlite3Verbose = sqlite3.verbose();
 
-const DataDir = "D:/GitHub/ChivesweaveDataDir";
+const ChivesLightNodeSetting = await settings.get('chives-light-node');
+console.log("ChivesLightNodeSetting db", ChivesLightNodeSetting)
+const DataDir = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeStorageDirectory ? ChivesLightNodeSetting.NodeStorageDirectory : "D:\\";
 
-const db = new sqlite3Verbose.Database(DataDir + '/chiveslightnode.db'); // or provide a file path for persistent storage
+const db = new sqlite3Verbose.Database(DataDir + '/chiveslightnode.db');
 
 db.serialize(() => {
     db.run(`

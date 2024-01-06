@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chives Light Node</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    button {
+      background-color: #4caf50;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    label {
+      display: block;
+      margin: 10px 0;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      box-sizing: border-box;
+    }
+    .flex-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .flex-item-left {
+      width: 35%; /* Adjust the width as needed */
+      margin-bottom: 10px;
+    }
+    .flex-item-right {
+      width: 65%; /* Adjust the width as needed */
+      margin-bottom: 10px;
+      text-align: left;
+    }
+  </style>
+  <link rel="stylesheet" href="notyf.min.css">
+  <script src="notyf.min.js"></script>
+
+</head>
+
+<body>
+  <h1>Chives Light Node</h1>
+  
+  <div class="flex-container">
+    <div class="flex-item-left">
+      <label for="NodeName">Choose Folder:</label>
+    </div>
+    <div class="flex-item-right">
+      <button onclick="openFolderDialog()">Choose Folder Dialog</button>
+    </div>
+
+    <div class="flex-item-left">
+      <label for="NodeName">Have Choose:</label>
+    </div>
+    <div class="flex-item-right">
+      <input type="text" id="NodeStorageDirectory" placeholder="Pls choose a folder as the data dir" readonly disabled>
+    </div>
+
+    <div class="flex-item-left">
+      <label for="NodeName">Node Name:</label>
+    </div>
+    <div class="flex-item-right">
+      <input type="text" id="NodeName" placeholder="Enter node name">
+    </div>
+
+    <div class="flex-item-left">
+      <label for="NodeName">Node 1:</label>
+    </div>
+    <div class="flex-item-right">
+      <input type="text" id="NodeApi1" placeholder="Enter node 1">
+    </div>
+
+    <div class="flex-item-left">
+      <label for="NodeName">Node 2:</label>
+    </div>
+    <div class="flex-item-right">
+      <input type="text" id="NodeApi2" placeholder="Enter node 2">
+    </div>
+
+    <div class="flex-item-left">
+      <label for="NodeName">Node 3:</label>
+    </div>
+    <div class="flex-item-right">
+      <input type="text" id="NodeApi3" placeholder="Enter node 3">
+    </div>
+  </div>
+
+  <button onclick="saveData()">Save Settings</button>
+  <button onclick="startChivesLightNode()">Start Chives Light Node</button>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const fs = require('fs');
+    const os = require('os');
+
+    function openFolderDialog() {
+      ipcRenderer.send('open-folder-dialog');
+    }
+
+    ipcRenderer.on('selected-folder', (event, folderPath) => {
+      document.getElementById('NodeStorageDirectory').value = folderPath;
+    });
+
+    function startChivesLightNode() {
+      const NodeApi1 = document.getElementById('NodeApi1').value;
+      const NodeStorageDirectory = document.getElementById('NodeStorageDirectory').value || '';
+      if (!NodeStorageDirectory || NodeStorageDirectory=='') {
+        const notyf = new Notyf({ position: { x: 'right', y: 'top' } });
+        notyf.error('data folder must be filled!');
+        return;
+      }
+      if (!NodeApi1 || NodeApi1=='') {
+        const notyf = new Notyf({ position: { x: 'right', y: 'top' } });
+        notyf.error('Node Api 1 must be filled!');
+        return;
+      }
+
+      ipcRenderer.send('start-chives-light-node');
+    }
+    
+    function saveData() {
+      const NodeName = document.getElementById('NodeName').value;
+      const NodeApi1 = document.getElementById('NodeApi1').value;
+      const NodeApi2 = document.getElementById('NodeApi2').value;
+      const NodeApi3 = document.getElementById('NodeApi3').value;
+      const NodeStorageDirectory = document.getElementById('NodeStorageDirectory').value || '';
+
+      if (!NodeName || NodeName=='') {
+        const notyf = new Notyf({ position: { x: 'right', y: 'top' } });
+        notyf.error('Node Name must be filled!');
+        return;
+      }
+
+      if (!NodeApi1 || NodeApi1=='') {
+        const notyf = new Notyf({ position: { x: 'right', y: 'top' } });
+        notyf.error('Node Api 1 must be filled!');
+        return;
+      }
+
+      if (!NodeStorageDirectory || NodeStorageDirectory=='') {
+        const notyf = new Notyf({ position: { x: 'right', y: 'top' } });
+        notyf.error('data folder must be filled!');
+        return;
+      }
+
+      ipcRenderer.send('save-chives-light-node', { NodeName, NodeApi1, NodeApi2, NodeApi3, NodeStorageDirectory });
+
+      const notyf = new Notyf({ position: { x: 'right', y: 'top' } });
+      notyf.success('Setting saved successfully!');
+    }
+
+    function loadData() {
+      ipcRenderer.send('get-chives-light-node');
+    }
+
+    ipcRenderer.on('data-chives-light-node', (event, data) => {
+      document.getElementById('NodeName').value = data.NodeName || 'Chives Light Node';
+      document.getElementById('NodeApi1').value = data.NodeApi1 || 'http://node1.chivesweave.net:1985';
+      document.getElementById('NodeApi2').value = data.NodeApi2 || 'http://node2.chivesweave.net:1985';
+      document.getElementById('NodeApi3').value = data.NodeApi3 || 'http://node3.chivesweave.net:1985';
+      document.getElementById('NodeStorageDirectory').value = data.NodeStorageDirectory || '';
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadData();
+    });
+  </script>
+</body>
+</html>
