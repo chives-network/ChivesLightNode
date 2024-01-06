@@ -4,6 +4,7 @@ import { server, getPort } from './expressApp.js';
 import syncing from './src/syncing.js';
 import settings from 'electron-settings';
 
+
 const PORT = getPort();
 
 let mainWindow;
@@ -27,8 +28,8 @@ function createMainWindow() {
     console.log("ChivesLightNodeSetting main.js", ChivesLightNodeSetting)
     syncing.initChivesLightNode(ChivesLightNodeSetting);
     mainWindow.loadURL('http://localhost:' + PORT);
-    setTimeout(intervalTaskShortTime, 10 * 1000);
-    setTimeout(intervalTaskLongTime, 1800 * 1000);
+    setTimeout(intervalTaskShortTime, 5 * 1000);
+    setTimeout(intervalTaskLongTime, 30 * 1000);
   });
 
   const template = [
@@ -101,7 +102,7 @@ async function intervalTaskShortTime() {
     const executionTime = Date.now() - startTime;
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
     console.log('Resuming interval tasks.');
-    const nextInterval = 10 * 1000;
+    const nextInterval = 5 * 1000;
     setTimeout(intervalTaskShortTime, nextInterval);
   } catch (error) {
     console.error('Error in intervalTaskShortTime:', error);
@@ -114,9 +115,9 @@ async function intervalTaskLongTime() {
     const startTime = Date.now();
     await Promise.all([
       //syncing.resetTx404(),
-      syncing.calculatePeers(),
       syncing.syncingBlockAndTxStatAllDates(),
-      syncing.deleteBlackTxsAndAddress()
+      syncing.deleteBlackTxsAndAddress(),
+      syncing.deleteLog()
     ]);
     const executionTime = Date.now() - startTime;
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
@@ -157,7 +158,7 @@ ipcMain.on('open-folder-dialog', async (event) => {
 ipcMain.on('save-chives-light-node', async (event, data) => {
   await settings.set('chives-light-node', data);
   console.log("save-chives-light-node", data);
-  mainWindow.webContents.send('data-chives-light-node', data);
+  //mainWindow.webContents.send('data-chives-light-node', data);
 });
 
 ipcMain.on('get-chives-light-node', async (event) => {

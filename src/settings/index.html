@@ -13,8 +13,8 @@
     h1 {
       color: #333;
     }
-    button {
-      background-color: #4caf50;
+    .buttonSave {
+      background-color: #8649f9;
       color: white;
       padding: 10px 20px;
       font-size: 16px;
@@ -22,8 +22,20 @@
       border: none;
       border-radius: 5px;
     }
-    button:hover {
-      background-color: #45a049;
+    .buttonSave:hover {
+      background-color: rgb(131, 66, 252)
+    }
+    .buttonStart {
+      background-color: rgb(22, 177, 255);
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+    }
+    .buttonStart:hover {
+      background-color: rgb(9, 169, 249);
     }
     label {
       display: block;
@@ -63,7 +75,7 @@
       <label for="NodeName">Choose Folder:</label>
     </div>
     <div class="flex-item-right">
-      <button onclick="openFolderDialog()">Choose Folder Dialog</button>
+      <button onclick="openFolderDialog()" class='buttonSave'>Choose Folder Dialog</button>
     </div>
 
     <div class="flex-item-left">
@@ -77,33 +89,33 @@
       <label for="NodeName">Node Name:</label>
     </div>
     <div class="flex-item-right">
-      <input type="text" id="NodeName" placeholder="Enter node name">
+      <input type="text" id="NodeName" placeholder="Enter node name" value='Chives Light Node'>
     </div>
 
     <div class="flex-item-left">
       <label for="NodeName">Node 1:</label>
     </div>
     <div class="flex-item-right">
-      <input type="text" id="NodeApi1" placeholder="Enter node 1">
+      <input type="text" id="NodeApi1" placeholder="Enter node 1" value='http://node1.chivesweave.net:1985'>
     </div>
 
     <div class="flex-item-left">
       <label for="NodeName">Node 2:</label>
     </div>
     <div class="flex-item-right">
-      <input type="text" id="NodeApi2" placeholder="Enter node 2">
+      <input type="text" id="NodeApi2" placeholder="Enter node 2" value='http://node2.chivesweave.net:1985'>
     </div>
 
     <div class="flex-item-left">
       <label for="NodeName">Node 3:</label>
     </div>
     <div class="flex-item-right">
-      <input type="text" id="NodeApi3" placeholder="Enter node 3">
+      <input type="text" id="NodeApi3" placeholder="Enter node 3" value='http://node3.chivesweave.net:1985'>
     </div>
   </div>
 
-  <button onclick="saveData()">Save Settings</button>
-  <button onclick="startChivesLightNode()">Start Chives Light Node</button>
+  <button class='buttonSave' onclick="saveData()">Save Settings</button>
+  <button class='buttonStart' onclick="startChivesLightNode()">Start Chives Light Node</button>
 
   <script>
     const { ipcRenderer } = require('electron');

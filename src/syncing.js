@@ -50,7 +50,7 @@
                 location TEXT not null,
                 area_code TEXT not null,
                 country_code TEXT not null,
-                status TEXT not null
+                status INTEGER DEFAULT 0
             );
         `);
         db.run(`
@@ -1250,6 +1250,22 @@
     console.log(Action1, Action2, Action3, Action4, Action5, Action6, Action7, Action8, Action9, Action10)
   }
 
+  async function deleteLog() {
+    const MaxId = await new Promise((resolve, reject) => {
+      db.get("SELECT MAX(id) AS NUM FROM log", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : null);
+        }
+      });
+    });
+    const DeleteId = MaxId - 1000;
+    const DeleteLog = db.prepare("delete from log where id < ?");
+    DeleteLog.run(DeleteId);
+    DeleteLog.finalize();
+  }
+
   async function syncingBlockAndTxStat(block_date)  {
     const BlockStat = await new Promise((resolve, reject) => {
       db.get("SELECT SUM(block_size/1048576) AS block_size, SUM(mining_time) AS mining_time, SUM(reward/1000000000000) AS reward, SUM(txs_length) AS txs_length, MAX(weave_size/1048576) AS weave_size, MAX(cumulative_diff/1024) AS cumulative_diff, SUM(reward_pool/1000000000000) AS reward_pool, COUNT(*) AS block_count FROM block where block_date='"+filterString(block_date)+"'", (err, result) => {
@@ -2110,10 +2126,15 @@
 
   async function checkPeer(url) {
     try {
-      const response = await axios.head(url);  
+      const response = await axios.get(url);  
       if (response.status === 200) {
         //log(`URL ${url} is reachable.`);
-        return 1;
+        if(response.data && response.data.type && response.data.type == "lightnode") {
+          return 2;
+        }
+        else {
+          return 1;
+        }
       } else {
         //log(`URL ${url} returned an unexpected status code: ${response.status}`);
         return -1;
@@ -2995,6 +3016,7 @@
     getWalletAddressProfile,
     getAgentList,
     getAddressReferee,
+    deleteLog,
     isFile,
     readFile,
     writeFile,
