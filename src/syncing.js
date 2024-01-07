@@ -877,25 +877,6 @@
                                       log("Action Referee", EntityTarget, timestamp, block_height, from_address);
                                     }
                                     break;
-                                case 'RegisterChivesLightNode':
-                                    //EntityTarget, FromAddress, BlockTimestamp
-                                    const EntityAddress = TagsMap['Entity-Address'];
-                                    const EntityNodeApi = TagsMap['Entity-NodeApi'];
-                                    if(EntityNodeApi != undefined && EntityAddress == from_address)  {
-                                      const updateBundleAddressReferee = db.prepare("update address set chivesLightNodeUrl = ?, chivesLightNodeRegisterHeight = ? where id = ? and chivesLightNodeUrl is null");
-                                      updateBundleAddressReferee.run(EntityNodeApi, block_height, EntityAddress);
-                                      updateBundleAddressReferee.finalize();
-                                      log("Action RegisterChivesLightNode", EntityNodeApi, timestamp, block_height, from_address);
-                                    }
-                                    break;
-                                case 'HeartBeatChivesLightNode':
-                                    if(true)  {
-                                      const updateBundleAddressReferee = db.prepare("update address set chivesLightNodeStatus += 1 where id = ?");
-                                      updateBundleAddressReferee.run(from_address);
-                                      updateBundleAddressReferee.finalize();
-                                      log("Action HeartBeatChivesLightNode", timestamp, block_height, from_address);
-                                    }
-                                    break;
                             }
                         }
                         if(EntityType == "Folder") {
@@ -973,12 +954,12 @@
                       const changes = this.changes;              
                       if (changes > 0) {
                           const updateTxEntityTypeReferee = db.prepare("update tx set entity_type = ? where id = ?");
-                          updateTxEntityTypeReferee.run("Action", Item.id);
+                          updateTxEntityTypeReferee.run("ChivesLightNodeHeartBeat", Item.id);
                           updateTxEntityTypeReferee.finalize();
                       } 
                       else {
                           const updateTxEntityTypeReferee = db.prepare("update tx set entity_type = ? where id = ?");
-                          updateTxEntityTypeReferee.run("Action", Item.id);
+                          updateTxEntityTypeReferee.run("ChivesLightNodeHeartBeat", Item.id);
                           updateTxEntityTypeReferee.finalize();
                           console.log('updateBundleAddressReferee SQL executed, but no rows were affected.');
                       }
@@ -1000,12 +981,12 @@
                       const changes = this.changes;              
                       if (changes > 0) {
                           const updateTxEntityTypeReferee = db.prepare("update tx set entity_type = ? where id = ?");
-                          updateTxEntityTypeReferee.run("Action", Item.id);
+                          updateTxEntityTypeReferee.run("ChivesLightNodeHeartBeat", Item.id);
                           updateTxEntityTypeReferee.finalize();
                       } 
                       else {
                           const updateTxEntityTypeReferee = db.prepare("update tx set entity_type = ? where id = ?");
-                          updateTxEntityTypeReferee.run("Action", Item.id);
+                          updateTxEntityTypeReferee.run("ChivesLightNodeHeartBeat", Item.id);
                           updateTxEntityTypeReferee.finalize();
                           console.log('updateBundleAddressReferee SQL executed, but no rows were affected.');
                       }
@@ -1576,7 +1557,7 @@
   async function getBlockPageJson(pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
+    const From = pageidFiler * pagesizeFiler;
     const getBlockCountValue = await getBlockCount();
     const getBlockPageValue = await getBlockPage(pageidFiler, pagesizeFiler);
     const RS = {};
@@ -1616,7 +1597,7 @@
     const heightFiler = Number(height) < 0 ? 1 : Number(height);
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
+    const From = pageidFiler * pagesizeFiler;
     const getTxCountValue = await getTxCount(heightFiler);
     const getTxPageValue = await getTxPage(heightFiler, pageidFiler, pagesizeFiler);
     const BlockInfor = await getBlockInforByHeightFromDb(heightFiler);
@@ -1657,7 +1638,7 @@
   async function getAllTxPageJson(pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
+    const From = pageidFiler * pagesizeFiler;
     const getTxCountValue = await getAllTxCount();
     const getTxPageValue = await getAllTxPage(pageidFiler, pagesizeFiler);
     const RS = {};
@@ -1696,7 +1677,7 @@
   async function getTxBundleItemPageJson(txid, pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
+    const From = pageidFiler * pagesizeFiler;
     const getTxCountValue = await getTxBundleItemCount(txid);
     const getTxPageValue = await getTxBundleItemPage(txid, pageidFiler, pagesizeFiler);
     const RS = {};
@@ -1863,7 +1844,7 @@
   async function getAllAddressPageJson(pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
+    const From = pageidFiler * pagesizeFiler;
     const getAddressCountValue = await getAllAddressCount();
     const getAddressPageValue = await getAllAddressPage(pageidFiler, pagesizeFiler);
     const RS = {};
@@ -1922,7 +1903,7 @@
   async function getAllFileTypePageJson(FileType, pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
+    const From = pageidFiler * pagesizeFiler;
     const getAddressCountValue = await getAllFileTypeCount(FileType);
     const getAddressPageValue = await getAllFileTypePage(FileType, pageidFiler, pagesizeFiler);
     const RS = {};
@@ -1967,9 +1948,9 @@
   async function getAllFileTypeAddressPageJson(FileType, Address, pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
-    const FileTypeFilter = filterString(FileType)
-    const AddressFilter = filterString(Address)
+    const From = pageidFiler * pagesizeFiler;
+    const FileTypeFilter = filterString(FileType);
+    const AddressFilter = filterString(Address);
     const getAddressCountValue = await getAllFileTypeAddressCount(FileTypeFilter, AddressFilter);
     const getAddressPageValue = await getAllFileTypeAddressPage(FileTypeFilter, AddressFilter, pageidFiler, pagesizeFiler);
     const RS = {};
@@ -2009,9 +1990,9 @@
   async function getAllFileFolderAddressPageJson(Folder, Address, pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
+    const From = pageidFiler * pagesizeFiler;
     const FolderFilter = filterString(Folder)
-    const AddressFilter = filterString(Address)
+    const AddressFilter = filterString(Address);
     const getAddressCountValue = await getAllFileFolderAddressCount(FolderFilter, AddressFilter);
     const getAddressPageValue = await getAllFileFolderAddressPage(FolderFilter, AddressFilter, pageidFiler, pagesizeFiler);
     const RS = {};
@@ -2050,9 +2031,9 @@
   async function getAllFileStarAddressPageJson(Star, Address, pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
+    const From = pageidFiler * pagesizeFiler;
     const StarFilter = filterString(Star)
-    const AddressFilter = filterString(Address)
+    const AddressFilter = filterString(Address);
     const getAddressCountValue = await getAllFileStarAddressCount(StarFilter, AddressFilter);
     const getAddressPageValue = await getAllFileStarAddressPage(StarFilter, AddressFilter, pageidFiler, pagesizeFiler);
     const RS = {};
@@ -2091,9 +2072,9 @@
   async function getAllFileLabelAddressPageJson(Label, Address, pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
-    const LabelFilter = filterString(Label)
-    const AddressFilter = filterString(Address)
+    const From = pageidFiler * pagesizeFiler;
+    const LabelFilter = filterString(Label);
+    const AddressFilter = filterString(Address);
     const getAddressCountValue = await getAllFileLabelAddressCount(LabelFilter, AddressFilter);
     const getAddressPageValue = await getAllFileLabelAddressPage(LabelFilter, AddressFilter, pageidFiler, pagesizeFiler);
     const RS = {};
@@ -2107,7 +2088,7 @@
   }
 
   async function getAllFileLabelGroup(Address) {
-    const AddressFilter = filterString(Address)
+    const AddressFilter = filterString(Address);
     return new Promise((resolve, reject) => {
       db.all("SELECT item_label, COUNT(*) AS NUM FROM tx where is_encrypt = '' and entity_type = 'File' and from_address = '"+AddressFilter+"' group by item_label", (err, result) => {
         if (err) {
@@ -2120,7 +2101,7 @@
   }
 
   async function getAllFileFolder(Address) {
-    const AddressFilter = filterString(Address)
+    const AddressFilter = filterString(Address);
     return new Promise((resolve, reject) => {
       db.all("SELECT * FROM tx where is_encrypt = '' and entity_type = 'Folder' and from_address = '"+AddressFilter+"' order by block_height desc", (err, result) => {
         if (err) {
@@ -2159,8 +2140,8 @@
   async function getWalletTxsAllPageJson(Address, pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
-    const AddressFilter = filterString(Address)
+    const From = pageidFiler * pagesizeFiler;
+    const AddressFilter = filterString(Address);
     const getAddressCountValue = await getWalletTxsAllCount(AddressFilter);
     const getAddressPageValue = await getWalletTxsAllPage(AddressFilter, pageidFiler, pagesizeFiler);
     const RS = {};
@@ -2199,8 +2180,8 @@
   async function getWalletTxsSentPageJson(Address, pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
-    const AddressFilter = filterString(Address)
+    const From = pageidFiler * pagesizeFiler;
+    const AddressFilter = filterString(Address);
     const getAddressCountValue = await getWalletTxsSentCount(AddressFilter);
     const getAddressPageValue = await getWalletTxsSentPage(AddressFilter, pageidFiler, pagesizeFiler);
     const RS = {};
@@ -2239,8 +2220,8 @@
   async function getWalletTxsReceivedPageJson(Address, pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
-    const AddressFilter = filterString(Address)
+    const From = pageidFiler * pagesizeFiler;
+    const AddressFilter = filterString(Address);
     const getAddressCountValue = await getWalletTxsReceivedCount(AddressFilter);
     const getAddressPageValue = await getWalletTxsReceivedPage(AddressFilter, pageidFiler, pagesizeFiler);
     const RS = {};
@@ -2279,8 +2260,8 @@
   async function getWalletTxsFilesPageJson(Address, pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
-    const AddressFilter = filterString(Address)
+    const From = pageidFiler * pagesizeFiler;
+    const AddressFilter = filterString(Address);
     const getAddressCountValue = await getWalletTxsFilesCount(AddressFilter);
     const getAddressPageValue = await getWalletTxsFilesPage(AddressFilter, pageidFiler, pagesizeFiler);
     const RS = {};
@@ -2533,7 +2514,7 @@
   async function getAgentList(pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
+    const From = pageidFiler * pagesizeFiler;
     const AgentTotal = await new Promise((resolve, reject) => {
       db.get("SELECT COUNT(*) AS NUM from address where agent>'0'", (err, result) => {
         if (err) {
@@ -2590,7 +2571,7 @@
   async function getAddressReferee(Address, pageid, pagesize) {
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
-    const From = pageidFiler * pagesizeFiler
+    const From = pageidFiler * pagesizeFiler;
     const AgentTotal = await new Promise((resolve, reject) => {
       db.get("SELECT COUNT(*) AS NUM from address where referee='"+Address+"'", (err, result) => {
         if (err) {
@@ -2647,6 +2628,70 @@
     return RS;
   }
 
+  async function getChivesLightNodeHeartBeat(from_address, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler;
+    const ChivesLightNodeHeartBeatTotal = await new Promise((resolve, reject) => {
+                                            db.get("SELECT COUNT(*) AS NUM from tx where entity_type='ChivesLightNodeHeartBeat' and from_address='"+from_address+"'", (err, result) => {
+                                              if (err) {
+                                                reject(err);
+                                              } else {
+                                                resolve(result ? result.NUM : null);
+                                              }
+                                            });
+                                          });
+    const ChivesLightNodeHeartBeatAll = await new Promise((resolve, reject) => {
+                                          db.all("SELECT * from tx where entity_type='ChivesLightNodeHeartBeat' and from_address='"+from_address+"' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+                                            if (err) {
+                                              reject(err);
+                                            } else {
+                                              resolve(result ? result : null);
+                                            }
+                                          });
+                                        });
+    const RS = {};
+    RS['allpages'] = Math.ceil(ChivesLightNodeHeartBeatTotal/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(ChivesLightNodeHeartBeatAll);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = ChivesLightNodeHeartBeatTotal;
+    return RS;
+  }
+
+  async function getChivesLightNodeReward(from_address, pageid, pagesize) {
+    const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
+    const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
+    const From = pageidFiler * pagesizeFiler;
+    const ChivesLightNodeHeartBeatTotal = await new Promise((resolve, reject) => {
+                                            db.get("SELECT COUNT(*) AS NUM from tx where entity_type='ChivesLightNodeReward' and from_address='"+from_address+"'", (err, result) => {
+                                              if (err) {
+                                                reject(err);
+                                              } else {
+                                                resolve(result ? result.NUM : null);
+                                              }
+                                            });
+                                          });
+    const ChivesLightNodeHeartBeatAll = await new Promise((resolve, reject) => {
+                                          db.all("SELECT * from tx where entity_type='ChivesLightNodeReward' and from_address='"+from_address+"' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+                                            if (err) {
+                                              reject(err);
+                                            } else {
+                                              resolve(result ? result : null);
+                                            }
+                                          });
+                                        });
+    const RS = {};
+    RS['allpages'] = Math.ceil(ChivesLightNodeHeartBeatTotal/pagesizeFiler);
+    RS['data'] = TxRowToJsonFormat(ChivesLightNodeHeartBeatAll);
+    RS['from'] = From;
+    RS['pageid'] = pageidFiler;
+    RS['pagesize'] = pagesizeFiler;
+    RS['total'] = ChivesLightNodeHeartBeatTotal;
+    return RS;
+  }
+
   function TxRowToJsonFormat(getTxPageValue) {
     const RS = []
     getTxPageValue.map((Item) =>{
@@ -2684,9 +2729,6 @@
     return RS;
   }
 
-
-
-  
 
   async function getWalletAddressBalanceFromDb(Address) {
     return new Promise((resolve, reject) => {
@@ -2779,13 +2821,13 @@
   }
 
   async function getAddressBalance(Address) {
-    const AddressFilter = filterString(Address)
+    const AddressFilter = filterString(Address);
     const addressBalance = await axios.get(NodeApi + '/wallet/' + AddressFilter + '/balance', {}).then(res=>res.data);
     return addressBalance;
   }
 
   async function getAddressBalanceMining(Address) {
-    const AddressFilter = filterString(Address)
+    const AddressFilter = filterString(Address);
     const addressBalance = await axios.get(NodeApi + '/wallet/' + AddressFilter + '/reserved_rewards_total', {}).then(res=>res.data);
     return addressBalance;
   }
@@ -3221,6 +3263,8 @@
     getWalletAddressProfile,
     getAgentList,
     getAddressReferee,
+    getChivesLightNodeHeartBeat,
+    getChivesLightNodeReward,
     deleteLog,
     isFile,
     readFile,
