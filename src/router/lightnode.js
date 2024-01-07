@@ -10,4 +10,10 @@
     res.status(200).json(getLightNodeStatusValue).end();
   });
 
+  router.get('/lightnode/nodeurl/:address', syncing.restrictToLocalhost, async (req, res) => {
+    const { address } = req.params;
+    const getLightNodeStatusValue = await syncing.chivesLightNodeUrl(address);
+    res.status(200).json(getLightNodeStatusValue).end();
+  });
+
   export default router;

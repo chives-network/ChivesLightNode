@@ -73,6 +73,8 @@
                 chivesMessage INTEGER DEFAULT 0,
                 chivesForum INTEGER DEFAULT 0,
                 chivesDb INTEGER DEFAULT 0,
+                chivesLightNodeUrl TEXT,
+                chivesLightNodeStatus INTEGER DEFAULT 0,
                 agent INTEGER DEFAULT 0,        
                 referee TEXT not null,
                 last_tx_action TEXT not null
@@ -248,16 +250,30 @@
         db.run(`CREATE INDEX IF NOT EXISTS idx_address_chivesMessage ON address (chivesMessage);`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_address_chivesForum ON address (chivesForum);`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_address_chivesDb ON address (chivesDb);`);
+        db.run(`CREATE INDEX IF NOT EXISTS idx_address_chivesLightNodeUrl ON address (chivesLightNodeUrl);`);
+        db.run(`CREATE INDEX IF NOT EXISTS idx_address_chivesLightNodeStatus ON address (chivesLightNodeStatus);`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_address_agent ON address (agent);`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_address_referee ON address (referee);`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_address_last_tx_action ON address (last_tx_action);`);
-
 
     });
 
   }
 
-  async function chivesLightNodeStatus(TxCount) {
+  
+  async function chivesLightNodeUrl(Address) {
+    return new Promise((resolve, reject) => {
+      db.get("SELECT * from address where id='"+filterString(Address)+"'", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+
+  async function chivesLightNodeStatus() {
     const getBlockHeightFromDbValue = await getBlockHeightFromDb();
     const BlockInfor = await getBlockInforByHeightFromDb(getBlockHeightFromDbValue);
     const NotSyncingTxCount = await new Promise((resolve, reject) => {
@@ -557,6 +573,11 @@
       if(BundleFormat == "binary") {
           entity_type = "Bundle";
       }
+      else if(TagsMap['Entity-Type'] && TagsMap['Entity-Type'] == "Action" && 
+        (TagsMap['Entity-Action'] == "RegisterChivesLightNode" || TagsMap['Entity-Action'] == "HeartBeatChivesLightNode") 
+        ) {
+          entity_type = "WaitDoingAction";
+      }
       else if(TagsMap['Entity-Type'] && TagsMap['Entity-Type'] != "") {
           entity_type = TagsMap['Entity-Type'];
       }
@@ -565,7 +586,7 @@
       }
       else {
           entity_type = "Tx";
-      }    
+      }
       updateTx.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.signature, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
       updateTx.finalize();
 
@@ -855,6 +876,25 @@
                                       log("Action Referee", EntityTarget, timestamp, block_height, from_address);
                                     }
                                     break;
+                                case 'RegisterChivesLightNode':
+                                    //EntityTarget, FromAddress, BlockTimestamp
+                                    const EntityAddress = TagsMap['Entity-Address'];
+                                    const EntityNodeApi = TagsMap['Entity-NodeApi'];
+                                    if(EntityNodeApi != undefined && EntityAddress == from_address)  {
+                                      const updateBundleAddressReferee = db.prepare("update address set chivesLightNodeUrl = ? where id = ? and chivesLightNodeUrl is null");
+                                      updateBundleAddressReferee.run(EntityNodeApi, EntityAddress);
+                                      updateBundleAddressReferee.finalize();
+                                      log("Action RegisterChivesLightNode", EntityNodeApi, timestamp, block_height, from_address);
+                                    }
+                                    break;
+                                case 'HeartBeatChivesLightNode':
+                                    if(true)  {
+                                      const updateBundleAddressReferee = db.prepare("update address set chivesLightNodeStatus += 1 where id = ?");
+                                      updateBundleAddressReferee.run(from_address);
+                                      updateBundleAddressReferee.finalize();
+                                      log("Action HeartBeatChivesLightNode", timestamp, block_height, from_address);
+                                    }
+                                    break;
                             }
                         }
                         if(EntityType == "Folder") {
@@ -889,6 +929,95 @@
           log("syncingTxParseBundleById Not Exist:", BundlePath)
       }
     }
+  }
+  
+  async function syncingTxWaitDoingAction(Index=10) {
+    const GetTxWaitDoingAction = await new Promise((resolve, reject) => {
+      db.all("SELECT * FROM tx where entity_type = 'WaitDoingAction' order by block_height asc limit " + Number(Index), (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+    GetTxWaitDoingAction && GetTxWaitDoingAction.map((Item)=>{
+      //Tags Data
+      const TagsMap = {}
+      if(Item && Item.tags) {
+        const tags = JSON.parse(Item.tags)
+        tags && tags.length > 0 && tags.map( (Tag) => {
+          TagsMap[Tag.name] = Tag.value;
+        })
+      }
+      console.log("TagsMap", TagsMap)
+      
+      const from_address = Item.from_address
+      //Update Tx Status
+      const EntityType    = TagsMap['Entity-Type'];
+      const EntityAction  = TagsMap['Entity-Action'];
+      if(EntityType == "Action") {
+          switch(EntityAction) {            
+            case 'RegisterChivesLightNode':
+              //EntityTarget, FromAddress, BlockTimestamp
+              const EntityAddress = TagsMap['Entity-Address'];
+              const EntityNodeApi = TagsMap['Entity-NodeApi'];
+              if(EntityNodeApi != undefined && EntityAddress == from_address)  {
+                const updateBundleAddressReferee = db.prepare("update address set chivesLightNodeUrl = ? where id = ? and chivesLightNodeUrl is null");
+                updateBundleAddressReferee.run(EntityNodeApi, EntityAddress, function(err) {
+                  if (err) {
+                      console.error('updateBundleAddressReferee SQL execution error:', err);
+                  } 
+                  else {
+                      const changes = this.changes;              
+                      if (changes > 0) {
+                          const updateTxEntityTypeReferee = db.prepare("update tx set entity_type = ? where id = ?");
+                          updateTxEntityTypeReferee.run("Action", Item.id);
+                          updateTxEntityTypeReferee.finalize();
+                      } 
+                      else {
+                          const updateTxEntityTypeReferee = db.prepare("update tx set entity_type = ? where id = ?");
+                          updateTxEntityTypeReferee.run("Action", Item.id);
+                          updateTxEntityTypeReferee.finalize();
+                          console.log('updateBundleAddressReferee SQL executed, but no rows were affected.');
+                      }
+                  }
+                  updateBundleAddressReferee.finalize();
+                });
+                log("syncingTxWaitDoingAction RegisterChivesLightNode", EntityNodeApi, from_address);
+              }
+              break;
+          case 'HeartBeatChivesLightNode':
+              if(true)  {
+                const updateBundleAddressReferee = db.prepare("update address set chivesLightNodeStatus = chivesLightNodeStatus + 1 where id = ?");
+                updateBundleAddressReferee.run(from_address);
+                updateBundleAddressReferee.run(from_address, function(err) {
+                  if (err) {
+                      console.error('updateBundleAddressReferee SQL execution error:', err);
+                  } 
+                  else {
+                      const changes = this.changes;              
+                      if (changes > 0) {
+                          const updateTxEntityTypeReferee = db.prepare("update tx set entity_type = ? where id = ?");
+                          updateTxEntityTypeReferee.run("Action", Item.id);
+                          updateTxEntityTypeReferee.finalize();
+                      } 
+                      else {
+                          const updateTxEntityTypeReferee = db.prepare("update tx set entity_type = ? where id = ?");
+                          updateTxEntityTypeReferee.run("Action", Item.id);
+                          updateTxEntityTypeReferee.finalize();
+                          console.log('updateBundleAddressReferee SQL executed, but no rows were affected.');
+                      }
+                  }
+                  updateBundleAddressReferee.finalize();
+                });
+                log("syncingTxWaitDoingAction HeartBeatChivesLightNode", from_address);
+              }
+              break;
+          }
+        }
+
+    })
   }
 
   async function syncingTxChunksById(TxId) {
@@ -3009,6 +3138,7 @@
   export default {
     initChivesLightNode,
     chivesLightNodeStatus,
+    chivesLightNodeUrl,
     syncingBlock,
     syncingBlockPromiseAll,
     syncingBlockMissing,
@@ -3024,6 +3154,7 @@
     syncingTxParseBundle,
     syncingTxParseBundleById,
     syncingTxChunksById,
+    syncingTxWaitDoingAction,
     resetTx404,
     getTxsNotSyncing,
     getTxsHaveChunks,
