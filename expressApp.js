@@ -18,7 +18,7 @@ import lightNodeRoutes from './src/router/lightnode.js'
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const PORT = process.env.PORT || 3030;
+const PORT = process.env.PORT || 1985;
 
 const expressApp = express();
 

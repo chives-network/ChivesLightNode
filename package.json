@@ -54,6 +54,7 @@
   "build": {
     "appId": "org.chivesweave.lightnode",
     "productName": "Chives Light Node",
+    "copyright": "Chives Network",
     "directories": {
       "output": "dist"
     },
@@ -61,7 +62,15 @@
       "icon": "public/chives.png"
     },
     "win": {
-      "icon": "public/chives.png"
+      "icon": "public/chives.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
     },
     "asarUnpack": [
       "lib"
