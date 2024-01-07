@@ -22,4 +22,10 @@
     res.status(200).json(getChivesLightNodeHeartBeatValue).end();
   });
 
+  router.get('/lightnode/reward/:address/:pageid/:pagesize', syncing.restrictToLocalhost, async (req, res) => {
+    const { address, pageid, pagesize } = req.params;
+    const getChivesLightNodeRewardValue = await syncing.getChivesLightNodeReward(address, pageid, pagesize);
+    res.status(200).json(getChivesLightNodeRewardValue).end();
+  });
+
   export default router;
