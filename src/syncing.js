@@ -14,7 +14,7 @@
   import sqlite3 from 'sqlite3';
   const sqlite3Verbose = sqlite3.verbose();
 
-  //import isDev from 'electron-is-dev';
+  import isDev from 'electron-is-dev';
   
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
@@ -25,8 +25,8 @@
   let db = null;
 
   //Only for Dev
-  const isDev = false;
-  initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"D:\\GitHub\\ChivesweaveDataDir"});
+  //const isDev = false;
+  //initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"D:\\GitHub\\ChivesweaveDataDir"});
   
   const BlackListTxs = [];
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
@@ -74,6 +74,7 @@
                 chivesForum INTEGER DEFAULT 0,
                 chivesDb INTEGER DEFAULT 0,
                 chivesLightNodeUrl TEXT,
+                chivesLightNodeRegisterHeight INTEGER DEFAULT 0,
                 chivesLightNodeStatus INTEGER DEFAULT 0,
                 agent INTEGER DEFAULT 0,        
                 referee TEXT not null,
@@ -881,8 +882,8 @@
                                     const EntityAddress = TagsMap['Entity-Address'];
                                     const EntityNodeApi = TagsMap['Entity-NodeApi'];
                                     if(EntityNodeApi != undefined && EntityAddress == from_address)  {
-                                      const updateBundleAddressReferee = db.prepare("update address set chivesLightNodeUrl = ? where id = ? and chivesLightNodeUrl is null");
-                                      updateBundleAddressReferee.run(EntityNodeApi, EntityAddress);
+                                      const updateBundleAddressReferee = db.prepare("update address set chivesLightNodeUrl = ?, chivesLightNodeRegisterHeight = ? where id = ? and chivesLightNodeUrl is null");
+                                      updateBundleAddressReferee.run(EntityNodeApi, block_height, EntityAddress);
                                       updateBundleAddressReferee.finalize();
                                       log("Action RegisterChivesLightNode", EntityNodeApi, timestamp, block_height, from_address);
                                     }
@@ -963,8 +964,8 @@
               const EntityAddress = TagsMap['Entity-Address'];
               const EntityNodeApi = TagsMap['Entity-NodeApi'];
               if(EntityNodeApi != undefined && EntityAddress == from_address)  {
-                const updateBundleAddressReferee = db.prepare("update address set chivesLightNodeUrl = ? where id = ? and chivesLightNodeUrl is null");
-                updateBundleAddressReferee.run(EntityNodeApi, EntityAddress, function(err) {
+                const updateBundleAddressReferee = db.prepare("update address set chivesLightNodeUrl = ?, chivesLightNodeRegisterHeight = ? where id = ? and chivesLightNodeUrl is null");
+                updateBundleAddressReferee.run(EntityNodeApi, Item.block_height, EntityAddress, function(err) {
                   if (err) {
                       console.error('updateBundleAddressReferee SQL execution error:', err);
                   } 
@@ -1513,6 +1514,7 @@
   }
 
   async function getTxInforByIdFromDb(TxId) {
+    if(db == null) return
     return new Promise((resolve, reject) => {
       db.get("SELECT * FROM tx where id = '"+ TxId +"'", (err, result) => {
         if (err) {
@@ -2727,6 +2729,18 @@
       LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
       LightNodeStatus['peers'] = getPeersList.length || 1;
       LightNodeStatus['time'] = BlockInfor.timestamp;
+      LightNodeStatus['type'] = "lightnode";
+    }
+    else {
+      LightNodeStatus['network'] = "chivesweave.mainnet";
+      LightNodeStatus['version'] = 5;
+      LightNodeStatus['release'] = 66;
+      LightNodeStatus['height'] = 0;
+      LightNodeStatus['current'] = '';
+      LightNodeStatus['weave_size'] = 0;
+      LightNodeStatus['blocks'] = 0;
+      LightNodeStatus['peers'] = 1;
+      LightNodeStatus['time'] = 0;
       LightNodeStatus['type'] = "lightnode";
     }
     return LightNodeStatus;

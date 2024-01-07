@@ -103,7 +103,7 @@ async function intervalTaskShortTime() {
     const executionTime = Date.now() - startTime;
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
     console.log('Resuming interval tasks.');
-    const nextInterval = 5 * 1000;
+    const nextInterval = 10 * 1000;
     setTimeout(intervalTaskShortTime, nextInterval);
   } catch (error) {
     console.error('Error in intervalTaskShortTime:', error);
