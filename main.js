@@ -115,7 +115,7 @@ async function intervalTaskLongTime() {
     console.log('Executing intervalTaskLongTime tasks...');
     const startTime = Date.now();
     await Promise.all([
-      //syncing.resetTx404(),
+      syncing.resetTx404(),
       syncing.syncingBlockAndTxStatAllDates(),
       syncing.deleteBlackTxsAndAddress(),
       syncing.deleteLog()
