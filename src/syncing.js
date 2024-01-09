@@ -2766,8 +2766,9 @@
       LightNodeStatus['version'] = 5;
       LightNodeStatus['release'] = 66;
       LightNodeStatus['height'] = MinerNodeStatus.height;
-      LightNodeStatus['current'] = BlockInfor.indep_hash;
+      LightNodeStatus['current'] = MinerNodeStatus.current;
       LightNodeStatus['weave_size'] = BlockInfor.weave_size;
+      LightNodeStatus['diff'] = MinerNodeStatus.diff;
       LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
       LightNodeStatus['peers'] = getPeersList.length || 1;
       LightNodeStatus['time'] = BlockInfor.timestamp;
@@ -2779,6 +2780,7 @@
       LightNodeStatus['release'] = 66;
       LightNodeStatus['height'] = 0;
       LightNodeStatus['current'] = '';
+      LightNodeStatus['diff'] = '';
       LightNodeStatus['weave_size'] = 0;
       LightNodeStatus['blocks'] = 0;
       LightNodeStatus['peers'] = 1;

@@ -1,6 +1,6 @@
 {
   "name": "chives-light-node",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Chivesweave Light Node",
   "main": "main.js",
   "type": "module",
