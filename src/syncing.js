@@ -28,7 +28,6 @@
   //const isDev = false;
   //initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"D:\\GitHub\\ChivesweaveDataDir"});
   
-  const BlackListTxs = [];
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
 
   function initChivesLightNode(ChivesLightNodeSetting) {
@@ -305,7 +304,7 @@
       });
     });
     const LightNodeStatus = {}
-    const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
+    const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
     LightNodeStatus['network'] = "chivesweave.mainnet";
     LightNodeStatus['height'] = MinerNodeStatus.height;
     LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
@@ -433,6 +432,9 @@
   }
 
   async function resetTx404() {
+    const updateDataRootTypeStatus = db.prepare("update tx set data_root_status = ? where data_root_status = ? and entity_type = ?");
+    updateDataRootTypeStatus.run('200', '404', 'ChivesLightNodeHeartBeat');
+    updateDataRootTypeStatus.finalize();
     const updateDataRootStatus = db.prepare("update tx set data_root_status = ? where data_root_status = ?");
     updateDataRootStatus.run('', '404');
     updateDataRootStatus.finalize();
@@ -500,7 +502,7 @@
       }
     }
     else {
-      const result = await axios.get(NodeApi + '/tx/' + TxId, {});
+      const result = await axios.get(NodeApi + '/tx/' + TxId, {}).catch(() => {});
       TxInfor = result.data
       log("syncingTxById From Remote Node",TxId)
       //Write Tx File
@@ -599,14 +601,7 @@
       insertAddress.run(from_address, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
       insertAddress.finalize();
       //Update Address
-      let AddressBalance = 0
-      AddressBalance = await getWalletAddressBalanceFromDb(from_address)
-      //log("getWalletAddressBalanceFromDb", AddressBalance)
-      if(AddressBalance == 0 || AddressBalance == undefined) {
-        AddressBalance = await axios.get(NodeApi + "/wallet/" + from_address + "/balance", {}).then((res)=>{return res.data});
-        //log("AddressBalanceNodeApi", AddressBalance)
-      }
-      //log("AddressBalance", AddressBalance)
+      const AddressBalance = await axios.get(NodeApi + "/wallet/" + from_address + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
       const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
       updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, from_address);
       updateAddress.finalize();
@@ -615,16 +610,11 @@
         insertAddress.run(TxInfor.target, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
         insertAddress.finalize();
         //Update Address
-        let AddressBalance = 0
-        AddressBalance = await getWalletAddressBalanceFromDb(TxInfor.target)
-        //log("getWalletAddressBalanceFromDb", AddressBalance)
-        if(AddressBalance == 0 || AddressBalance == undefined) {
-          AddressBalance = await axios.get(NodeApi + "/wallet/" + TxInfor.target + "/balance", {}).then((res)=>{return res.data});
-          //log("AddressBalanceNodeApi", AddressBalance)
-        }
-        //log("AddressBalance", AddressBalance)
+        const AddressBalanceTarget = await axios.get(NodeApi + "/wallet/" + TxInfor.target + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
+        log("TxInfor.target", TxInfor.target)
+        log("AddressBalanceTarget", AddressBalanceTarget)
         const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
-        updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, TxInfor.target);
+        updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalanceTarget, TxInfor.target);
         updateAddress.finalize();
       }
 
@@ -1126,7 +1116,7 @@
     const BeginHeight = getBlockHeightFromDbValue + 1;
     log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
     try {
-      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
+      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
       const MaxHeight = MinerNodeStatus.height;
       const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight)
       const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
@@ -1198,7 +1188,7 @@
     const BeginHeight = Index * 100000 + 1;
     const EndHeight = (Index + 1) * 100000;
     try {
-      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
+      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
       const MaxHeight = MinerNodeStatus.height;
       const EndHeightFinal = (MaxHeight - EndHeight) > 0 ? EndHeight : MaxHeight
       const BlockHeightRange = generateSequence(BeginHeight, EndHeightFinal);
@@ -1241,7 +1231,7 @@
       const BeginHeight = getBlockHeightFromDbValue + 1;
       log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
   
-      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
+      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
       const MaxHeight = MinerNodeStatus.height;
       const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight + 1)
       const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
@@ -1324,11 +1314,10 @@
       log("syncingBlockByHeight Read Block From Json File",BlockInfor.reward_addr, currentHeight)
     }
     else {
-      const result = await axios.get(NodeApi + '/block/height/' + currentHeight, {
+      BlockInfor = await axios.get(NodeApi + '/block/height/' + currentHeight, {
         headers: {},
         params: {}
-      });
-      BlockInfor = result.data
+      }).then(res=>res.data).catch(() => {});
       log("syncingBlockByHeight Get Block From Remote Node",BlockInfor.reward_addr, currentHeight)
     }
     
@@ -1345,7 +1334,7 @@
       AddressBalance = await getWalletAddressBalanceFromDb(BlockInfor.reward_addr)
       //log("getWalletAddressBalanceFromDb", AddressBalance)
       if(AddressBalance == 0 || AddressBalance == undefined) {
-        AddressBalance = await axios.get(NodeApi + "/wallet/" + BlockInfor.reward_addr + "/balance", {}).then((res)=>{return res.data});
+        AddressBalance = await axios.get(NodeApi + "/wallet/" + BlockInfor.reward_addr + "/balance", {}).then((res)=>{return res.data}).catch(() => {});;
         //log("AddressBalanceNodeApi", AddressBalance)
       }
       //log("AddressBalance", AddressBalance)
@@ -1702,27 +1691,27 @@
   }
 
   async function getTxPending() {
-    const TxPending = await axios.get(NodeApi + '/tx/pending', {}).then(res=>res.data);
+    const TxPending = await axios.get(NodeApi + '/tx/pending', {}).then(res=>res.data).catch(() => {});
     return TxPending;
   }
 
   async function getTxPendingRecord() {
-    const TxPending = await axios.get(NodeApi + '/tx/pending/record', {}).then(res=>res.data);
+    const TxPending = await axios.get(NodeApi + '/tx/pending/record', {}).then(res=>res.data).catch(() => {});
     return TxPending;
   }
   
   async function getTxAnchor() {
-    const TxAnchor = await axios.get(NodeApi + '/tx_anchor', {}).then(res=>res.data);
+    const TxAnchor = await axios.get(NodeApi + '/tx_anchor', {}).then(res=>res.data).catch(() => {});
     return TxAnchor;
   }
 
   async function getPrice(datasize) {
-    const Price = await axios.get(NodeApi + '/price/' + datasize, {}).then(res=>res.data);
+    const Price = await axios.get(NodeApi + '/price/' + datasize, {}).then(res=>res.data).catch(() => {});
     return String(Price);
   }
 
   async function getPriceAddress(datasize, Address) {
-    const Price = await axios.get(NodeApi + '/price/' + datasize + '/' + Address, {}).then(res=>res.data);
+    const Price = await axios.get(NodeApi + '/price/' + datasize + '/' + Address, {}).then(res=>res.data).catch(() => {});
     return String(Price);
   }
 
@@ -1731,7 +1720,7 @@
       const response = await axios.post(NodeApi + '/tx', Payload);
       log('postTx:', response.data);
       if(response.data != "OK") {
-        await axios.post(NodeApi + '/tx', Payload);
+        await axios.post(NodeApi + '/tx', Payload).catch(() => {});
       }
       postTxForwarding(Payload);
       return response.data;
@@ -1772,7 +1761,7 @@
       const response = await axios.post(NodeApi + '/chunk', Payload);
       log('postChunk:', response.data);
       if(response.data != "OK") {
-        await axios.post(NodeApi + '/chunk', Payload);
+        await axios.post(NodeApi + '/chunk', Payload).catch(() => {});
       }
       postChunkForwarding(Payload)
       return response.data;
@@ -1809,12 +1798,12 @@
   }
   
   async function getTxStatusById(TxId) {
-    const TxStatus = await axios.get(NodeApi + '/tx/'+TxId+'/status', {}).then(res=>res.data);
+    const TxStatus = await axios.get(NodeApi + '/tx/'+TxId+'/status', {}).then(res=>res.data).catch(() => {});
     return TxStatus;
   }
 
   async function getTxUnconfirmed(TxId) {
-    const TxStatus = await axios.get(NodeApi + '/unconfirmed_tx/'+TxId, {}).then(res=>res.data);
+    const TxStatus = await axios.get(NodeApi + '/unconfirmed_tx/'+TxId, {}).then(res=>res.data).catch(() => {});
     return TxStatus;
   }
 
@@ -2285,7 +2274,7 @@
 
   async function checkPeer(url) {
     try {
-      const response = await axios.get(url);  
+      const response = await axios.get(url).catch(() => {});  
       if (response.status === 200) {
         //log(`URL ${url} is reachable.`);
         if(response.data && response.data.type && response.data.type == "lightnode") {
@@ -2322,7 +2311,7 @@
           await getPeersAndInsertDb(Item.ip);
         }
       })
-      const peersList = await axios.get(NodeApi + '/peers', {}).then(res=>res.data);
+      const peersList = await axios.get(NodeApi + '/peers', {}).then(res=>res.data).catch(() => {});
       const HaveIpLocationPeersList = await getPeers();
       if(peersList && peersList.length > 0) {
         peersList.map(async (PeerAndPort)=>{
@@ -2331,7 +2320,7 @@
             const PeerAndPortArray = PeerAndPort.split(':');
             const ip = PeerAndPortArray[0];
             const url = `https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data&ip=${ip}`;
-            const IPJSON = await axios.get(url, {}).then(res=>res.data);  
+            const IPJSON = await axios.get(url, {}).then(res=>res.data).catch(() => {});  
             const insertTag = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
             insertTag.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code, peerIsAvailable);
             insertTag.finalize();
@@ -2349,7 +2338,7 @@
 
   async function getPeersAndInsertDb(PeerUrl) {
     try {
-      const peersList = await axios.get("http://" + PeerUrl + '/peers', {}).then(res=>res.data);
+      const peersList = await axios.get("http://" + PeerUrl + '/peers', {}).then(res=>res.data).catch(() => {});
       const HaveIpLocationPeersList = await getPeers();
       //log("peersList", peersList)
       if(peersList && peersList.length > 0) {
@@ -2359,7 +2348,7 @@
             const PeerAndPortArray = PeerAndPort.split(':');
             const ip = PeerAndPortArray[0];
             const url = `https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data&ip=${ip}`;
-            const IPJSON = await axios.get(url, {}).then(res=>res.data);  
+            const IPJSON = await axios.get(url, {}).then(res=>res.data).catch(() => {});  
             const insertTag = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
             insertTag.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code, peerIsAvailable);
             insertTag.finalize();
@@ -2761,7 +2750,7 @@
     const LightNodeStatus = {}
     if(BlockInfor)  {
       const getPeersList = await getPeers();
-      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data);
+      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
       LightNodeStatus['network'] = "chivesweave.mainnet";
       LightNodeStatus['version'] = 5;
       LightNodeStatus['release'] = 66;
@@ -2824,13 +2813,13 @@
 
   async function getAddressBalance(Address) {
     const AddressFilter = filterString(Address);
-    const addressBalance = await axios.get(NodeApi + '/wallet/' + AddressFilter + '/balance', {}).then(res=>res.data);
+    const addressBalance = await axios.get(NodeApi + '/wallet/' + AddressFilter + '/balance', {}).then(res=>res.data).catch(() => {});
     return addressBalance;
   }
 
   async function getAddressBalanceMining(Address) {
     const AddressFilter = filterString(Address);
-    const addressBalance = await axios.get(NodeApi + '/wallet/' + AddressFilter + '/reserved_rewards_total', {}).then(res=>res.data);
+    const addressBalance = await axios.get(NodeApi + '/wallet/' + AddressFilter + '/reserved_rewards_total', {}).then(res=>res.data).catch(() => {});
     return addressBalance;
   }
   
@@ -3171,11 +3160,14 @@
       DeleteAddress.run(Address);
     })
     DeleteAddress.finalize();
+
     const DeleteTxs = db.prepare("delete from tx where id = ?");
+    const BlackListTxs = await axios.get('https://faucet.chivesweave.org/xwe_tx_blacklist.php', {}).then(res=>res.data).catch(() => {});
     BlackListTxs.map((Address)=>{
       DeleteTxs.run(Address);
     })
     DeleteTxs.finalize();    
+
     const DeleteBlackListTxs = db.prepare("DELETE FROM tx WHERE id IN (SELECT id FROM blacklist)");
     DeleteBlackListTxs.run();
     DeleteBlackListTxs.finalize(); 

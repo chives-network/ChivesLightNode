@@ -118,7 +118,8 @@ async function intervalTaskLongTime() {
       syncing.resetTx404(),
       syncing.syncingBlockAndTxStatAllDates(),
       syncing.deleteBlackTxsAndAddress(),
-      syncing.deleteLog()
+      syncing.deleteLog(),
+      syncing.calculatePeers()
     ]);
     const executionTime = Date.now() - startTime;
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
