@@ -2702,6 +2702,11 @@
       ItemJson.data = {}
       ItemJson.data.size = Item.data_size
       ItemJson.data.type = contentTypeToFileType(Item.content_type)
+      ItemJson.data.content = ""
+      if(ItemJson.data.type == "" && ItemJson.data.size > 0 && Item.id && Item.id.length == 43) {        
+        const FileContentBuffer = readFile("files/" + Item.id.substring(0, 2).toLowerCase(), Item.id, "getTxData", null);
+        ItemJson.data.content = FileContentBuffer.toString('utf-8');
+      }      
       ItemJson.fee = {}
       ItemJson.fee.winston = Item.reward
       ItemJson.fee.xwe = String(Item.reward/1000000000000)
