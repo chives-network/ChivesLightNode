@@ -584,7 +584,7 @@
       else if(TagsMap['Entity-Type'] && TagsMap['Entity-Type'] != "") {
           entity_type = TagsMap['Entity-Type'];
       }
-      else if(TxInfor.data_size > 0) {
+      else if(TxInfor.data_size > 0 && item_type !="" && item_name != "") {
           entity_type = "File";
       }
       else {
