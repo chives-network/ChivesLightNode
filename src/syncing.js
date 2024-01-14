@@ -634,10 +634,13 @@
 
   function isFile(filePath) {
     try {
-      fs.accessSync(filePath, fs.constants.F_OK);
-      return true;
-    } 
-    catch (err) {
+      const stats = fs.statSync(filePath);
+      if (stats.isFile() && stats.size > 0) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (err) {
       return false;
     }
   }
@@ -1153,7 +1156,7 @@
                                   }
                                 });
                               });
-      //log("GetExistBlocks:", GetExistBlocks);
+      log("syncingBlockMinedTime GetExistBlocks:", GetExistBlocks);
       const result = [];
       const BlockTimestamp = {}
       const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
@@ -1164,22 +1167,24 @@
         BlockTimestamp[Number(BlockInfor.id)] = BlockInfor.timestamp
         if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] == undefined) {
           const previousBlock = await getBlockInforByHeightFromDb(Number(BlockInfor.id)-1);
+          log("syncingBlockMinedTime previousBlock", Number(BlockInfor.id))
           BlockTimestamp[Number(BlockInfor.id)-1] = previousBlock.timestamp;
         }
         if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] ) {
           const MinedTime = BlockInfor.timestamp - BlockTimestamp[Number(BlockInfor.id)-1]
-          log("MinedTime", BlockInfor.id, MinedTime)
+          const MinedTimeValue = MinedTime > 0 ? MinedTime : 1
           const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
-          updateBlockMinedTime.run(MinedTime, BlockInfor.id);
+          updateBlockMinedTime.run(MinedTimeValue, BlockInfor.id);
           updateBlockMinedTime.finalize();
         }
         result.push(BlockInfor.id)
       }
+      log("syncingBlockMinedTime Deal Block Count", GetExistBlocks.length)
       
       return result;
     } 
     catch (error) {
-      console.error("syncingBlock error fetching block data:", error.message);
+      console.error("syncingBlockMinedTime error fetching block data:", error.message);
       return { error: "Internal Server Error" };
     }
   }
@@ -1188,39 +1193,50 @@
     const BeginHeight = Index * 100000 + 1;
     const EndHeight = (Index + 1) * 100000;
     try {
+      const getBlockHeightFromDbValue = await getBlockHeightFromDb();
       const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
       const MaxHeight = MinerNodeStatus.height;
-      const EndHeightFinal = (MaxHeight - EndHeight) > 0 ? EndHeight : MaxHeight
-      const BlockHeightRange = generateSequence(BeginHeight, EndHeightFinal);
-      const GetExistBlocks = await new Promise((resolve, reject) => {
-                                db.all("SELECT id FROM block where id in ("+BlockHeightRange.join(',')+")", (err, result) => {
-                                  if (err) {
-                                    reject(err);
-                                  } else {
-                                    resolve(result ? result : null);
-                                  }
+      //Only do this operation when chain is synced
+      if(MaxHeight < (getBlockHeightFromDbValue + 100))  {
+        const EndHeightFinal = (MaxHeight - EndHeight) > 0 ? EndHeight : MaxHeight
+        const BlockHeightRange = generateSequence(BeginHeight, EndHeightFinal);
+        const GetExistBlocks = await new Promise((resolve, reject) => {
+                                  db.all("SELECT id FROM block where id in ("+BlockHeightRange.join(',')+")", (err, result) => {
+                                    if (err) {
+                                      reject(err);
+                                    } else {
+                                      resolve(result ? result : null);
+                                    }
+                                  });
                                 });
-                              });
-      const GetExistBlocksIds = []
-      if(GetExistBlocks) {
-        GetExistBlocks.map((Item)=>{
-          GetExistBlocksIds.push(Item.id)
-        })
+        const GetExistBlocksIds = []
+        if(GetExistBlocks) {
+          GetExistBlocks.map((Item)=>{
+            GetExistBlocksIds.push(Item.id)
+          })
+        }
+        //log("GetExistBlocksIds:", GetExistBlocksIds);
+        const getMissingBlockIds = arrayDifference(BlockHeightRange, GetExistBlocksIds)
+        log("getMissingBlockIds:", getMissingBlockIds);
+        const result = [];
+        for (const Height of getMissingBlockIds) {
+          log("syncingBlockMissing Height:", Height);
+          try {
+            const BlockInfor = await syncingBlockByHeight(Height);
+            result.push(BlockInfor.height)
+          }
+          catch (error) {
+            console.error("syncingBlockMissing error fetching block data:", error.message, Height);
+          }
+        }
+        return result;
       }
-      //log("GetExistBlocksIds:", GetExistBlocksIds);
-      const getMissingBlockIds = arrayDifference(BlockHeightRange, GetExistBlocksIds)
-      log("getMissingBlockIds:", getMissingBlockIds);
-      const result = [];
-      for (const Height of getMissingBlockIds) {
-        log("Height:", Height);
-        const BlockInfor = await syncingBlockByHeight(Height);
-        result.push(BlockInfor.height)
+      else {
+        return { error: "Not Finished Synced" };
       }
-      
-      return result;
     } 
     catch (error) {
-      console.error("syncingBlock error fetching block data:", error.message);
+      console.error("syncingBlockMissing error fetching block data:", error.message);
       return { error: "Internal Server Error" };
     }
   }

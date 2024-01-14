@@ -98,7 +98,8 @@ async function intervalTaskShortTime() {
       syncing.syncingTxPromiseAll(10),
       syncing.syncingChunksPromiseAll(5),
       syncing.syncingTxParseBundle(1),
-      syncing.syncingTxWaitDoingAction(10)
+      syncing.syncingTxWaitDoingAction(10),
+      syncing.syncingBlockMinedTime(100)
     ]);
     const executionTime = Date.now() - startTime;
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
@@ -119,7 +120,8 @@ async function intervalTaskLongTime() {
       syncing.syncingBlockAndTxStatAllDates(),
       syncing.deleteBlackTxsAndAddress(),
       syncing.deleteLog(),
-      syncing.calculatePeers()
+      syncing.calculatePeers(),
+      syncing.syncingBlockMissing(0)
     ]);
     const executionTime = Date.now() - startTime;
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
