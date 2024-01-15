@@ -2318,7 +2318,7 @@
     try {
       const getPeersAvailableList = await getPeersInfo()
       getPeersAvailableList.map(async (Item)=>{
-        const peerIsAvailable = await checkPeer("http://"+Item.ip)
+        const peerIsAvailable = await checkPeer("http://"+Item.ip+"/info")
         const updatePeerAvailable = db.prepare('update peers set status = ? where ip = ?');
         updatePeerAvailable.run(peerIsAvailable, Item.ip);
         updatePeerAvailable.finalize();
@@ -2332,7 +2332,7 @@
       if(peersList && peersList.length > 0) {
         peersList.map(async (PeerAndPort)=>{
           if(!HaveIpLocationPeersList.includes(PeerAndPort)) {
-            const peerIsAvailable = await checkPeer("http://"+PeerAndPort)
+            const peerIsAvailable = await checkPeer("http://"+PeerAndPort+"/info")
             const PeerAndPortArray = PeerAndPort.split(':');
             const ip = PeerAndPortArray[0];
             const url = `https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data&ip=${ip}`;
@@ -2360,7 +2360,7 @@
       if(peersList && peersList.length > 0) {
         peersList.map(async (PeerAndPort)=>{
           if(!HaveIpLocationPeersList.includes(PeerAndPort)) {
-            const peerIsAvailable = await checkPeer("http://" + PeerAndPort)
+            const peerIsAvailable = await checkPeer("http://" + PeerAndPort+"/info")
             const PeerAndPortArray = PeerAndPort.split(':');
             const ip = PeerAndPortArray[0];
             const url = `https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data&ip=${ip}`;
@@ -2382,7 +2382,7 @@
 
   async function getPeersInfo() {  
     return new Promise((resolve, reject) => {
-      db.all("SELECT * from peers where 1=1", (err, result) => {
+      db.all("SELECT * from peers where 1=1 order by status desc", (err, result) => {
         if (err) {
           reject(err);
         } else {
