@@ -8,6 +8,7 @@ import settings from 'electron-settings';
 const PORT = getPort();
 
 let mainWindow;
+let ChivesLightNodeSetting;
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -24,9 +25,9 @@ function createMainWindow() {
 
   //Start Chives Light Node
   ipcMain.on('start-chives-light-node', async (event, data) => {
-    const ChivesLightNodeSetting = await settings.get('chives-light-node');
+    ChivesLightNodeSetting = await settings.get('chives-light-node');
     console.log("ChivesLightNodeSetting main.js", ChivesLightNodeSetting)
-    syncing.initChivesLightNode(ChivesLightNodeSetting);
+    await syncing.initChivesLightNode(ChivesLightNodeSetting);
     mainWindow.loadURL('http://localhost:' + PORT);
     setTimeout(intervalTaskShortTime, 5 * 1000);
     setTimeout(intervalTaskLongTime, 30 * 1000);
@@ -116,6 +117,7 @@ async function intervalTaskLongTime() {
     console.log('Executing intervalTaskLongTime tasks...');
     const startTime = Date.now();
     await Promise.all([
+      syncing.refreshChivesLightNodeUrl(ChivesLightNodeSetting),
       syncing.resetTx404(),
       syncing.syncingBlockAndTxStatAllDates(),
       syncing.deleteBlackTxsAndAddress(),

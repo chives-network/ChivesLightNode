@@ -26,12 +26,24 @@
 
   //Only for Dev
   //const isDev = false;
-  //initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"D:\\GitHub\\ChivesweaveDataDir"});
+  //await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"D:\\GitHub\\ChivesweaveDataDir"});
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
 
-  function initChivesLightNode(ChivesLightNodeSetting) {
-    NodeApi = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi1 ? ChivesLightNodeSetting.NodeApi1 : "http://112.170.68.77:1985";
+  async function initChivesLightNode(ChivesLightNodeSetting) {
+    if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi1 && await checkPeer(ChivesLightNodeSetting.NodeApi1) > 0) {
+      NodeApi = ChivesLightNodeSetting.NodeApi1
+    }
+    else if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi2 && await checkPeer(ChivesLightNodeSetting.NodeApi2) > 0) {
+      NodeApi = ChivesLightNodeSetting.NodeApi2
+    }
+    else if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi3 && await checkPeer(ChivesLightNodeSetting.NodeApi3) > 0) {
+      NodeApi = ChivesLightNodeSetting.NodeApi3
+    }
+    else {
+      NodeApi = "http://112.170.68.77:1985"
+    }
+
     DataDir = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeStorageDirectory ? ChivesLightNodeSetting.NodeStorageDirectory : "D:\\";
     const parsedUrl = new URL(NodeApi);
     arweave = Arweave.init({
@@ -260,7 +272,32 @@
 
   }
 
-  
+  async function refreshChivesLightNodeUrl(ChivesLightNodeSetting) {
+    if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi1 && await checkPeer(ChivesLightNodeSetting.NodeApi1) > 0) {
+      NodeApi = ChivesLightNodeSetting.NodeApi1
+    }
+    else if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi2 && await checkPeer(ChivesLightNodeSetting.NodeApi2) > 0) {
+      NodeApi = ChivesLightNodeSetting.NodeApi2
+    }
+    else if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi3 && await checkPeer(ChivesLightNodeSetting.NodeApi3) > 0) {
+      NodeApi = ChivesLightNodeSetting.NodeApi3
+    }
+    else {
+      NodeApi = "http://112.170.68.77:1985"
+    }
+
+    DataDir = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeStorageDirectory ? ChivesLightNodeSetting.NodeStorageDirectory : "D:\\";
+    const parsedUrl = new URL(NodeApi);
+    arweave = Arweave.init({
+      host: parsedUrl.hostname,
+      port: parsedUrl.port,
+      protocol: 'http',
+      timeout: 5000,
+      logging: false
+    })
+
+  }
+
   async function chivesLightNodeUrl(Address) {
     return new Promise((resolve, reject) => {
       db.get("SELECT * from address where id='"+filterString(Address)+"'", (err, result) => {
@@ -327,12 +364,12 @@
 
   async function syncingTxParseBundle(TxCount = 30) {
     const getTxsNotSyncingList = await getTxsBundleNotSyncing(TxCount)
-    log("syncingTxParseBundle Count: ", getTxsNotSyncingList.length)
+    log("syncingTxParseBundle getTxsNotSyncingList: ", getTxsNotSyncingList)
     try {
       const result = [];
       for (const TxList of getTxsNotSyncingList) {
         const TxInfor = await syncingTxParseBundleById(TxList);
-        log("syncingTxParseBundle TxInfor: ", TxList.id, TxList.block_height)
+        log("syncingTxParseBundle TxInfor: 11111111111111111111111111", TxList.id, TxList.block_height, "TxCount", TxCount)
         result.push(TxList.id)
       }
       return result;
@@ -1407,9 +1444,11 @@
     const currentDate = new Date();
     const currentDateTime = currentDate.toLocaleString();
     const content = Action1 +" "+ JSON.stringify(Action2) +" "+ JSON.stringify(Action3) +" "+ JSON.stringify(Action4) +" "+ JSON.stringify(Action5) +" "+ JSON.stringify(Action6) +" "+ JSON.stringify(Action7) +" "+ JSON.stringify(Action8) +" "+ JSON.stringify(Action9) +" "+ JSON.stringify(Action10);
-    const insertStat = db.prepare('INSERT OR REPLACE INTO log (datetime,content) VALUES (?,?)');
-    insertStat.run(currentDateTime, content);
-    insertStat.finalize();
+    if(db) {
+      const insertStat = db.prepare('INSERT OR REPLACE INTO log (datetime,content) VALUES (?,?)');
+      insertStat.run(currentDateTime, content);
+      insertStat.finalize();
+    }
     console.log(Action1, Action2, Action3, Action4, Action5, Action6, Action7, Action8, Action9, Action10)
   }
 
@@ -2772,17 +2811,32 @@
     if(BlockInfor)  {
       const getPeersList = await getPeers();
       const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      LightNodeStatus['network'] = "chivesweave.mainnet";
-      LightNodeStatus['version'] = 5;
-      LightNodeStatus['release'] = 66;
-      LightNodeStatus['height'] = MinerNodeStatus.height;
-      LightNodeStatus['current'] = MinerNodeStatus.current;
-      LightNodeStatus['weave_size'] = BlockInfor.weave_size;
-      LightNodeStatus['diff'] = MinerNodeStatus.diff;
-      LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
-      LightNodeStatus['peers'] = getPeersList.length || 1;
-      LightNodeStatus['time'] = BlockInfor.timestamp;
-      LightNodeStatus['type'] = "lightnode";
+      if(MinerNodeStatus && MinerNodeStatus.height)  {
+        LightNodeStatus['network'] = "chivesweave.mainnet";
+        LightNodeStatus['version'] = 5;
+        LightNodeStatus['release'] = 66;
+        LightNodeStatus['height'] = MinerNodeStatus.height;
+        LightNodeStatus['current'] = MinerNodeStatus.current;
+        LightNodeStatus['weave_size'] = BlockInfor.weave_size;
+        LightNodeStatus['diff'] = MinerNodeStatus.diff;
+        LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
+        LightNodeStatus['peers'] = getPeersList.length || 1;
+        LightNodeStatus['time'] = BlockInfor.timestamp;
+        LightNodeStatus['type'] = "lightnode";
+      }
+      else {
+        LightNodeStatus['network'] = "chivesweave.mainnet";
+        LightNodeStatus['version'] = 5;
+        LightNodeStatus['release'] = 66;
+        LightNodeStatus['height'] = 0;
+        LightNodeStatus['current'] = '';
+        LightNodeStatus['diff'] = '';
+        LightNodeStatus['weave_size'] = 0;
+        LightNodeStatus['blocks'] = 0;
+        LightNodeStatus['peers'] = 1;
+        LightNodeStatus['time'] = 0;
+        LightNodeStatus['type'] = "lightnode";
+      }
     }
     else {
       LightNodeStatus['network'] = "chivesweave.mainnet";
@@ -3208,6 +3262,7 @@
 
   export default {
     initChivesLightNode,
+    refreshChivesLightNodeUrl,
     chivesLightNodeStatus,
     chivesLightNodeUrl,
     syncingBlock,
