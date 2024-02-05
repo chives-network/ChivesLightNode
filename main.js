@@ -30,9 +30,10 @@ function createMainWindow() {
     await syncing.initChivesLightNode(ChivesLightNodeSetting);
     mainWindow.loadURL('http://localhost:' + PORT);
     setTimeout(intervalTaskShortTime, 5 * 1000);
-    setTimeout(intervalTaskLongTime, 30 * 1000);
+    setTimeout(intervalTaskLongTime, 10 * 1000);
+    setTimeout(intervalTaskLongTimeLog, 60 * 1000);
   });
-
+  
   const template = [
     {
       label: 'About',
@@ -121,7 +122,6 @@ async function intervalTaskLongTime() {
       syncing.resetTx404(),
       syncing.syncingBlockAndTxStatAllDates(),
       syncing.deleteBlackTxsAndAddress(),
-      syncing.deleteLog(),
       syncing.calculatePeers(),
       syncing.syncingBlockMissing(0)
     ]);
@@ -129,6 +129,23 @@ async function intervalTaskLongTime() {
     console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
     console.log('Resuming interval tasks.');
     const nextInterval = 1800 * 1000;
+    setTimeout(intervalTaskLongTime, nextInterval);
+  } catch (error) {
+    console.error('Error in intervalTaskLongTime:', error);
+  }
+}
+
+async function intervalTaskLongTimeLog() {
+  try {
+    console.log('Executing intervalTaskLongTimeLog tasks...');
+    const startTime = Date.now();
+    await Promise.all([
+      syncing.deleteLog()
+    ]);
+    const executionTime = Date.now() - startTime;
+    console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
+    console.log('Resuming interval tasks.');
+    const nextInterval = 3600 * 1000;
     setTimeout(intervalTaskLongTime, nextInterval);
   } catch (error) {
     console.error('Error in intervalTaskLongTime:', error);
