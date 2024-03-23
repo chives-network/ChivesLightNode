@@ -1611,7 +1611,7 @@
   async function getBlockCount() {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM block", (err, result) => {
         if (err) {
@@ -1656,7 +1656,7 @@
   async function getTxCount(Height) {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where from_address is not null and block_height ='"+ Number(Height) +"'", (err, result) => {
         if (err) {
@@ -1704,9 +1704,9 @@
   async function getAllTxCount() {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where from_address is not null", (err, result) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1721,7 +1721,7 @@
       if(db == null) {
         return null;
       }
-      db.all("SELECT * FROM tx where from_address is not null order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1749,7 +1749,7 @@
   async function getTxBundleItemCount(txid) {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where bundleid = '"+txid+"' and from_address is not null", (err, result) => {
         if (err) {
@@ -1922,7 +1922,7 @@
   async function getAllAddressCount() {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM address", (err, result) => {
         if (err) {
@@ -1974,7 +1974,7 @@
         ItemTypeSql = "item_type in ('ppt', 'pptx')";
       }
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where "+ ItemTypeSql +" and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
         if (err) {
@@ -2032,7 +2032,7 @@
   async function getAllFileTypeAddressCount(FileType, Address) {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where item_type = '"+FileType+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
         if (err) {
@@ -2080,7 +2080,7 @@
   async function getAllFileFolderAddressCount(Folder, Address) {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where item_parent = '"+Folder+"' and from_address = '"+Address+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') ", (err, result) => {
         if (err) {
@@ -2127,7 +2127,7 @@
   async function getAllFileStarAddressCount(Star, Address) {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where item_star = '"+Star+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
         if (err) {
@@ -2174,7 +2174,7 @@
   async function getAllFileLabelAddressCount(Label, Address) {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where item_label = '"+Label+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
         if (err) {
@@ -2254,7 +2254,7 @@
   async function getWalletTxsAllCount(Address) {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' ", (err, result) => {
         if (err) {
@@ -2300,7 +2300,7 @@
   async function getWalletTxsSentCount(Address) {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'Tx' ", (err, result) => {
         if (err) {
@@ -2346,7 +2346,7 @@
   async function getWalletTxsReceivedCount(Address) {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where target = '"+Address+"' and is_encrypt = '' ", (err, result) => {
         if (err) {
@@ -2392,7 +2392,7 @@
   async function getWalletTxsFilesCount(Address) {
     return new Promise((resolve, reject) => {
       if(db == null) {
-        return null;
+        return 0;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
         if (err) {
@@ -2923,7 +2923,9 @@
       ItemJson.data.content = ""
       if(ItemJson.data.type == "" && ItemJson.data.size > 0 && Item.id && Item.id.length == 43) {        
         const FileContentBuffer = readFile("files/" + Item.id.substring(0, 2).toLowerCase(), Item.id, "getTxData", null);
-        ItemJson.data.content = FileContentBuffer.toString('utf-8');
+        if(FileContentBuffer) {
+          ItemJson.data.content = FileContentBuffer.toString('utf-8');
+        }
       }      
       ItemJson.fee = {}
       ItemJson.fee.winston = Item.reward
@@ -3070,7 +3072,7 @@
   function readFile(Dir, FileName, Mark, OpenFormat) {
     const filePath = DataDir + '/' + Dir + '/' + FileName;
     if(isFile(filePath)) {
-      log("filePath", filePath)
+      //log("filePath", filePath)
       const data = fs.readFileSync(filePath, OpenFormat);
       return data;
     }
