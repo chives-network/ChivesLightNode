@@ -300,6 +300,9 @@
 
   async function chivesLightNodeUrl(Address) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT * from address where id='"+filterString(Address)+"'", (err, result) => {
         if (err) {
           reject(err);
@@ -314,6 +317,9 @@
     const getBlockHeightFromDbValue = await getBlockHeightFromDb();
     const BlockInfor = await getBlockInforByHeightFromDb(getBlockHeightFromDbValue);
     const NotSyncingTxCount = await new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM from tx where from_address is null", (err, result) => {
         if (err) {
           reject(err);
@@ -323,6 +329,9 @@
       });
     });
     const NotSyncingChunksCount = await new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM from tx where data_root != '' and data_root is not null and data_root_status is null", (err, result) => {
         if (err) {
           reject(err);
@@ -332,6 +341,9 @@
       });
     });
     const NotSyncingBundleTxParseCount = await new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM from tx where entity_type = 'Bundle' and bundleTxParse is null", (err, result) => {
         if (err) {
           reject(err);
@@ -1454,6 +1466,9 @@
 
   async function deleteLog() {
     const MaxId = await new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT MAX(id) AS NUM FROM log", (err, result) => {
         if (err) {
           reject(err);
@@ -1475,6 +1490,9 @@
 
   async function syncingBlockAndTxStat(block_date)  {
     const BlockStat = await new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT SUM(block_size/1048576) AS block_size, SUM(mining_time) AS mining_time, SUM(reward/1000000000000) AS reward, SUM(txs_length) AS txs_length, MAX(weave_size/1048576) AS weave_size, MAX(cumulative_diff/1024) AS cumulative_diff, SUM(reward_pool/1000000000000) AS reward_pool, COUNT(*) AS block_count FROM block where block_date='"+filterString(block_date)+"'", (err, result) => {
         if (err) {
           reject(err);
@@ -1546,6 +1564,9 @@
   async function getTxInforByIdFromDb(TxId) {
     if(db == null) return
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT * FROM tx where id = '"+ TxId +"'", (err, result) => {
         if (err) {
           reject(err);
@@ -1558,6 +1579,9 @@
 
   async function getBlockInforByHeightFromDb(Height) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT * FROM block where height = '"+ Number(Height) +"'", (err, result) => {
         if (err) {
           reject(err);
@@ -1570,6 +1594,9 @@
 
   async function getBlockInforByHashFromDb(Hash) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT * FROM block where indep_hash = '"+ filterString(Hash) +"'", (err, result) => {
         if (err) {
           reject(err);
@@ -1582,6 +1609,9 @@
 
   async function getBlockCount() {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM block", (err, result) => {
         if (err) {
           reject(err);
@@ -1594,6 +1624,9 @@
   async function getBlockPage(pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM block order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -1621,6 +1654,9 @@
 
   async function getTxCount(Height) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM tx where from_address is not null and block_height ='"+ Number(Height) +"'", (err, result) => {
         if (err) {
           reject(err);
@@ -1633,6 +1669,9 @@
   async function getTxPage(height, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where from_address is not null and block_height ='"+ Number(height) +"' order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -1663,6 +1702,9 @@
 
   async function getAllTxCount() {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM tx where from_address is not null", (err, result) => {
         if (err) {
           reject(err);
@@ -1675,6 +1717,9 @@
   async function getAllTxPage(pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where from_address is not null order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -1702,6 +1747,9 @@
 
   async function getTxBundleItemCount(txid) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM tx where bundleid = '"+txid+"' and from_address is not null", (err, result) => {
         if (err) {
           reject(err);
@@ -1714,6 +1762,9 @@
   async function getTxBundleItemPage(txid, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where bundleid = '"+txid+"' and from_address is not null order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -1869,6 +1920,9 @@
 
   async function getAllAddressCount() {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM address", (err, result) => {
         if (err) {
           reject(err);
@@ -1917,6 +1971,9 @@
       }
       else if(FileType == "pptx") {
         ItemTypeSql = "item_type in ('ppt', 'pptx')";
+      }
+      if(db == null) {
+        return null;
       }
       db.get("SELECT COUNT(*) AS NUM FROM tx where "+ ItemTypeSql +" and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
         if (err) {
@@ -1973,6 +2030,9 @@
 
   async function getAllFileTypeAddressCount(FileType, Address) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM tx where item_type = '"+FileType+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
         if (err) {
           reject(err);
@@ -1985,6 +2045,9 @@
   async function getAllFileTypeAddressPage(FileType, Address, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where item_type = '"+FileType+"' and from_address = '"+Address+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') order by entity_type desc, block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -2015,6 +2078,9 @@
 
   async function getAllFileFolderAddressCount(Folder, Address) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM tx where item_parent = '"+Folder+"' and from_address = '"+Address+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') ", (err, result) => {
         if (err) {
           reject(err);
@@ -2027,6 +2093,9 @@
   async function getAllFileFolderAddressPage(Folder, Address, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where item_parent = '"+Folder+"' and from_address = '"+Address+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') order by entity_type desc, block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -2056,6 +2125,9 @@
 
   async function getAllFileStarAddressCount(Star, Address) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM tx where item_star = '"+Star+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
         if (err) {
           reject(err);
@@ -2068,6 +2140,9 @@
   async function getAllFileStarAddressPage(Star, Address, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where item_star = '"+Star+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -2097,6 +2172,9 @@
 
   async function getAllFileLabelAddressCount(Label, Address) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM tx where item_label = '"+Label+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
         if (err) {
           reject(err);
@@ -2109,6 +2187,9 @@
   async function getAllFileLabelAddressPage(Label, Address, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where item_label = '"+Label+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -2139,6 +2220,9 @@
   async function getAllFileLabelGroup(Address) {
     const AddressFilter = filterString(Address);
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT item_label, COUNT(*) AS NUM FROM tx where is_encrypt = '' and entity_type = 'File' and from_address = '"+AddressFilter+"' group by item_label", (err, result) => {
         if (err) {
           reject(err);
@@ -2152,6 +2236,9 @@
   async function getAllFileFolder(Address) {
     const AddressFilter = filterString(Address);
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where is_encrypt = '' and entity_type = 'Folder' and from_address = '"+AddressFilter+"' order by block_height desc", (err, result) => {
         if (err) {
           reject(err);
@@ -2165,6 +2252,9 @@
 
   async function getWalletTxsAllCount(Address) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' ", (err, result) => {
         if (err) {
           reject(err);
@@ -2177,6 +2267,9 @@
   async function getWalletTxsAllPage(Address, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where from_address = '"+Address+"' and is_encrypt = '' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -2205,6 +2298,9 @@
 
   async function getWalletTxsSentCount(Address) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'Tx' ", (err, result) => {
         if (err) {
           reject(err);
@@ -2217,6 +2313,9 @@
   async function getWalletTxsSentPage(Address, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where from_address = '"+Address+"' and is_encrypt = '' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -2245,6 +2344,9 @@
 
   async function getWalletTxsReceivedCount(Address) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM tx where target = '"+Address+"' and is_encrypt = '' ", (err, result) => {
         if (err) {
           reject(err);
@@ -2257,6 +2359,9 @@
   async function getWalletTxsReceivedPage(Address, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where target = '"+Address+"' and is_encrypt = '' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -2285,6 +2390,9 @@
 
   async function getWalletTxsFilesCount(Address) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
         if (err) {
           reject(err);
@@ -2297,6 +2405,9 @@
   async function getWalletTxsFilesPage(Address, pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.all("SELECT * FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
@@ -2554,6 +2665,9 @@
 
   async function getWalletAddressProfile(Address) {
     const AddressInfor = await new Promise((resolve, reject) => {
+                            if(db == null) {
+                              return null;
+                            }
                             db.get("SELECT * from address where id='"+filterString(Address)+"'", (err, result) => {
                               if (err) {
                                 reject(err);
@@ -2590,6 +2704,9 @@
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
     const AgentTotal = await new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM from address where agent>'0'", (err, result) => {
         if (err) {
           reject(err);
@@ -2647,6 +2764,9 @@
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
     const AgentTotal = await new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT COUNT(*) AS NUM from address where referee='"+Address+"'", (err, result) => {
         if (err) {
           reject(err);
@@ -2707,6 +2827,9 @@
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
     const ChivesLightNodeHeartBeatTotal = await new Promise((resolve, reject) => {
+                                            if(db == null) {
+                                              return null;
+                                            }
                                             db.get("SELECT COUNT(*) AS NUM from tx where entity_type='ChivesLightNodeHeartBeat' and from_address='"+from_address+"'", (err, result) => {
                                               if (err) {
                                                 reject(err);
@@ -2716,6 +2839,9 @@
                                             });
                                           });
     const ChivesLightNodeHeartBeatAll = await new Promise((resolve, reject) => {
+                                          if(db == null) {
+                                            return null;
+                                          }
                                           db.all("SELECT * from tx where entity_type='ChivesLightNodeHeartBeat' and from_address='"+from_address+"' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
                                             if (err) {
                                               reject(err);
@@ -2739,6 +2865,9 @@
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
     const ChivesLightNodeHeartBeatTotal = await new Promise((resolve, reject) => {
+                                            if(db == null) {
+                                              return null;
+                                            }
                                             db.get("SELECT COUNT(*) AS NUM from tx where entity_type='ChivesLightNodeReward' and from_address='"+from_address+"'", (err, result) => {
                                               if (err) {
                                                 reject(err);
@@ -2748,6 +2877,9 @@
                                             });
                                           });
     const ChivesLightNodeHeartBeatAll = await new Promise((resolve, reject) => {
+                                          if(db == null) {
+                                            return null;
+                                          }
                                           db.all("SELECT * from tx where entity_type='ChivesLightNodeReward' and from_address='"+from_address+"' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
                                             if (err) {
                                               reject(err);
@@ -2811,6 +2943,9 @@
 
   async function getWalletAddressBalanceFromDb(Address) {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT balance FROM address where id = '"+ Address +"'", (err, result) => {
         if (err) {
           reject(err);
@@ -2823,6 +2958,9 @@
   
   async function getBlockHeightFromDb() {
     return new Promise((resolve, reject) => {
+      if(db == null) {
+        return null;
+      }
       db.get("SELECT MAX(height) AS NUM FROM block", (err, result) => {
         if (err) {
           reject(err);

@@ -28,20 +28,19 @@ expressApp.use(cors());
 expressApp.get('/syncing', async (req, res) => {
   //await syncing.resetTx404();
   //await syncing.deleteBlackTxsAndAddress();
-  //await syncing.calculatePeers();
+  await syncing.calculatePeers();
   //syncing.syncingTxWaitDoingAction(10);
   //await syncing.syncingBlockAndTxStatAllDates(80);
   //await syncing.syncingBlockMissing();
   //35753 43355 
   //await syncing.syncingBlockPromiseAll(30);
-  //await syncing.syncingBlock(1);
-  //await syncing.syncingTx(5);
-  //await syncing.syncingChunksPromiseAll(10);
-  //await syncing.syncingTxParseBundle(1);
+  await syncing.syncingBlock(10);
+  await syncing.syncingTx(50);
+  await syncing.syncingChunksPromiseAll(10);
+  await syncing.syncingTxParseBundle(1);
   await syncing.syncingBlockMinedTime(10000);
   res.json({});
 });
-
 
 
 expressApp.use('/', lightNodeRoutes);
@@ -57,6 +56,10 @@ expressApp.use('/', priceRoutes);
 //PUT THE LAST LOCATION
 expressApp.use('/', txRoutes);
 
+expressApp.use((err, req, res, next) => {
+  console.error("Error occurred:", err);
+  res.status(500).json({ error: "Internal server error" }); // 发送适当的错误响应给客户端
+});
 
 /*
 [<<"wallet">>, Addr, <<"last_tx">>]
