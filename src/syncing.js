@@ -14,7 +14,6 @@
   import sqlite3 from 'sqlite3';
   const sqlite3Verbose = sqlite3.verbose();
 
-  import isDev from 'electron-is-dev';
   
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
@@ -25,8 +24,10 @@
   let db = null;
 
   //Only for Dev
-  //const isDev = false;
-  //await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"D:\\GitHub\\ChivesweaveDataDir"});
+
+  //import isDev from 'electron-is-dev';
+  const isDev = false;
+  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"E:\\ChivesWeaveData"});
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
 
