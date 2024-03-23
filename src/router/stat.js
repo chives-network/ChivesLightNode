@@ -7,7 +7,7 @@
 
   router.get('/statistics_block', async (req, res) => {
     const getStatisticsBlock = await syncing.getStatisticsBlock(15);
-    console.log("getStatisticsBlock getStatisticsBlock", getStatisticsBlock)
+    //console.log("getStatisticsBlock getStatisticsBlock", getStatisticsBlock)
     res.status(200).json(getStatisticsBlock).end();  
   });
 
