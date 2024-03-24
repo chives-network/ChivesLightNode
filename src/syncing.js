@@ -360,7 +360,7 @@
     const LightNodeStatus = {}
     const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
     LightNodeStatus['network'] = "chivesweave.mainnet";
-    LightNodeStatus['height'] = MinerNodeStatus.height;
+    LightNodeStatus['height'] = MinerNodeStatus?.height;
     LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
     LightNodeStatus['NotSyncingTxCount'] = NotSyncingTxCount;
     LightNodeStatus['NotSyncingChunksCount'] = NotSyncingChunksCount;
