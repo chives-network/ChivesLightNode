@@ -37,7 +37,13 @@
     const { Folder, address, pageid, pagesize } = req.params;
     const getAllFileFolderAddressPageJson = await syncing.getAllFileFolderAddressPageJson(Folder, address, pageid, pagesize);
     console.log("getAllFileFolderAddressPageJson", getAllFileFolderAddressPageJson)
-    res.status(200).json(getAllFileFolderAddressPageJson).end();  
+    //res.status(200).json(getAllFileFolderAddressPageJson).end();  
+    try{
+      res.status(200).json(getAllFileFolderAddressPageJson).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
   
   router.get('/file/star/:Star/:address/:pageid/:pagesize', async (req, res) => {
