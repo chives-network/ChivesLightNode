@@ -119,14 +119,24 @@
     const { txid, pageid, pagesize } = req.params;
     const getTxBundleItemsInUnbundle = await syncing.getTxBundleItemsInUnbundle(txid, pageid, pagesize);
     //console.log("getTxBundleItemsInUnbundle", getTxBundleItemsInUnbundle)
-    res.status(200).json(getTxBundleItemsInUnbundle).end();  
+    try{
+      res.status(200).json(getTxBundleItemsInUnbundle).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
   
   router.get('/transaction/:pageid/:pagesize', async (req, res) => {
     const { pageid, pagesize } = req.params;
     const getAllTxPageJson = await syncing.getAllTxPageJson(pageid, pagesize);
     //console.log("getAllTxPageJson", getAllTxPageJson)
-    res.status(200).json(getAllTxPageJson).end();  
+    try{
+      res.status(200).json(getAllTxPageJson).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   export default router;
