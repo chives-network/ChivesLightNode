@@ -1731,12 +1731,13 @@
   }
   async function getAllTxPage(pageid, pagesize) {
     const From = Number(pagesize) * Number(pageid)
+    console.log("getAllTxPage", pagesize, pageid);
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx  limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
