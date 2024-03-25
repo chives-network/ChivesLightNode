@@ -28,49 +28,80 @@
     }
     catch(error) {
       res.status(200).json([]).end(); 
-    } 
+    }
   });
 
   router.get('/wallet/:txid/txrecord', async (req, res) => {
     const { txid, pageid, pagesize } = req.params;
     const getWalletTxJson = await syncing.getWalletTxJson(txid, pageid, pagesize);
     //console.log("getWalletTxJson", getWalletTxJson)
-    res.status(200).json(getWalletTxJson).end();  
+    //res.status(200).json(getWalletTxJson).end();  
+    try{
+      res.status(200).json(getWalletTxJson).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   router.get('/wallet/:address/sent/:pageid/:pagesize', async (req, res) => {
     const { address, pageid, pagesize } = req.params;
     const getWalletTxsSentPageJson = await syncing.getWalletTxsSentPageJson(address, pageid, pagesize);
     //console.log("getWalletTxsSentPageJson", getWalletTxsSentPageJson)
-    res.status(200).json(getWalletTxsSentPageJson).end();  
+    try{
+      res.status(200).json(getWalletTxsSentPageJson).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   router.get('/wallet/:address/send/:pageid/:pagesize', async (req, res) => {
     const { address, pageid, pagesize } = req.params;
     const getWalletTxsSentPageJson = await syncing.getWalletTxsSentPageJson(address, pageid, pagesize);
     //console.log("getWalletTxsSentPageJson", getWalletTxsSentPageJson)
-    res.status(200).json(getWalletTxsSentPageJson).end();  
+    try{
+      res.status(200).json(getWalletTxsSentPageJson).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   router.get('/wallet/:address/received/:pageid/:pagesize', async (req, res) => {
     const { address, pageid, pagesize } = req.params;
     const getWalletTxsReceivedPageJson = await syncing.getWalletTxsReceivedPageJson(address, pageid, pagesize);
     //console.log("getWalletTxsReceivedPageJson", getWalletTxsReceivedPageJson)
-    res.status(200).json(getWalletTxsReceivedPageJson).end();  
+    try{
+      res.status(200).json(getWalletTxsReceivedPageJson).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   router.get('/wallet/:address/deposits/:pageid/:pagesize', async (req, res) => {
     const { address, pageid, pagesize } = req.params;
     const getWalletTxsReceivedPageJson = await syncing.getWalletTxsReceivedPageJson(address, pageid, pagesize);
     //console.log("getWalletTxsReceivedPageJson", getWalletTxsReceivedPageJson)
-    res.status(200).json(getWalletTxsReceivedPageJson).end();  
+    try{
+      res.status(200).json(getWalletTxsReceivedPageJson).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   router.get('/wallet/:address/datarecord/:pageid/:pagesize', async (req, res) => {
     const { address, pageid, pagesize } = req.params;
     const getWalletTxsFilesPageJson = await syncing.getWalletTxsFilesPageJson(address, pageid, pagesize);
     //console.log("getWalletTxsFilesPageJson", getWalletTxsFilesPageJson)
-    res.status(200).json(getWalletTxsFilesPageJson).end();  
+    try{
+      res.status(200).json(getWalletTxsFilesPageJson).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    } 
   });
 
   export default router;
