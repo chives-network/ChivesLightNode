@@ -23,7 +23,12 @@
     const { address, pageid, pagesize } = req.params;
     const getWalletTxsAllPageJson = await syncing.getWalletTxsAllPageJson(address, pageid, pagesize);
     //console.log("getWalletTxsAllPageJson", getWalletTxsAllPageJson)
-    res.status(200).json(getWalletTxsAllPageJson).end();  
+    try{
+      res.status(200).json(getWalletTxsAllPageJson).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    } 
   });
 
   router.get('/wallet/:txid/txrecord', async (req, res) => {
