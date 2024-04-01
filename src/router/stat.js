@@ -8,7 +8,12 @@
   router.get('/statistics_block', async (req, res) => {
     const getStatisticsBlock = await syncing.getStatisticsBlock(15);
     //console.log("getStatisticsBlock getStatisticsBlock", getStatisticsBlock)
-    res.status(200).json(getStatisticsBlock).end();  
+    try{
+      res.status(200).json(getStatisticsBlock).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   export default router;

@@ -8,19 +8,35 @@
   router.get('/peers', async (req, res) => {
     const getPeers = await syncing.getPeers();
     console.log("getPeers", getPeers)
-    res.status(200).json(getPeers).end();  
+    try{
+      res.status(200).json(getPeers).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
   
   router.get('/peersinfo', async (req, res) => {
     const getPeersInfo = await syncing.getPeersInfo();
     //console.log("getPeersInfo", getPeersInfo)
-    res.status(200).json(getPeersInfo).end();  
+    try{
+      res.status(200).json(getPeersInfo).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   router.get('/info', async (req, res) => {
     const getLightNodeStatusValue = await syncing.getLightNodeStatus();
-    res.json(getLightNodeStatusValue).end();
+    try{
+      res.status(200).json(getLightNodeStatusValue).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
+
   router.get('/queue', async (req, res) => {
     res.json([]).end();
   });

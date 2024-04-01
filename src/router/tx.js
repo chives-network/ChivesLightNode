@@ -25,13 +25,23 @@
   router.get('/tx/pending', async (req, res) => {
     const getTxPending = await syncing.getTxPending();
     //console.log("/tx/pending:", getTxPending);
-    res.json(getTxPending).end();
+    try{
+      res.status(200).json(getTxPending).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
   
   router.get('/tx/pending/record', async (req, res) => {
     const getTxPendingRecord = await syncing.getTxPendingRecord();
     //console.log("/tx/pending:", getTxPending);
-    res.json(getTxPendingRecord).end();
+    try{
+      res.status(200).json(getTxPendingRecord).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   router.get('/tx_anchor', async (req, res) => {
@@ -44,27 +54,47 @@
   router.get('/tx/:id/status', async (req, res) => {
     const { id } = req.params;
     const TxInfor = await syncing.getTxStatusById(id);
-    res.json(TxInfor).end();
+    try{
+      res.status(200).json(TxInfor).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   router.get('/unconfirmed_tx/:id', async (req, res) => {
     const { id } = req.params;
     const TxInfor = await syncing.getTxUnconfirmed(id);
-    res.json(TxInfor).end();
+    try{
+      res.status(200).json(TxInfor).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   //Binary Format
   router.get('/unconfirmed_tx2/:id', async (req, res) => {
     const { id } = req.params;
     const TxInfor = await syncing.getTxUnconfirmed(id);
-    res.json(TxInfor).end();
+    try{
+      res.status(200).json(TxInfor).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   router.get('/tx/:id', async (req, res) => {
     const { id } = req.params;
     const TxInfor = syncing.getTxInforById(id);
     //console.log("/tx/:id:", id);
-    res.json(JSON.parse(TxInfor)).end();
+    try{
+      res.status(200).json(JSON.parse(TxInfor)).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   //Binary Format
@@ -72,7 +102,12 @@
     const { id } = req.params;
     const TxInfor = syncing.getTxInforById(id);
     //console.log("/tx/:id:", id);
-    res.json(JSON.parse(TxInfor)).end();
+    try{
+      res.status(200).json(JSON.parse(TxInfor)).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
   });
 
   router.get('/:id', async (req, res) => {
