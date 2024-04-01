@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "npm run electron",
-    "electron": "electron --max-old-space-size=4096  main.js",
+    "electron": "electron --max-old-space-size=8096  main.js",
     "express": "nodemon expressApp.js",
     "build": "electron-builder"
   },
