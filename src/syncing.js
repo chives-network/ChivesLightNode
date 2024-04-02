@@ -1686,7 +1686,7 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where from_address is not null and block_height ='"+ Number(height) +"' order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx where block_height ='"+ Number(height) +"' and from_address is not null limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1729,15 +1729,15 @@
       });
     });
   }
-  async function getAllTxPage(pageid, pagesize) {
-    const From = Number(pagesize) * Number(pageid)
+  async function getAllTxPage(pageid, pagesize, getTxCountValue) {
+    const From = getTxCountValue - Number(pagesize) * Number(pageid + 1)
     console.log("getAllTxPage", pagesize, pageid);
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx  limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -1751,7 +1751,7 @@
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
     const getTxCountValue = await getAllTxCount();
-    const getTxPageValue = await getAllTxPage(pageidFiler, pagesizeFiler);
+    const getTxPageValue = await getAllTxPage(pageidFiler, pagesizeFiler, getTxCountValue);
     const RS = {};
     RS['allpages'] = Math.ceil(getTxCountValue/pagesizeFiler);
     RS['data'] = TxRowToJsonFormat(getTxPageValue);
