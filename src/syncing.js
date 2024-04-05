@@ -486,12 +486,17 @@
   }
 
   async function resetTx404() {
-    const updateDataRootTypeStatus = db.prepare("update tx set data_root_status = ? where data_root_status = ? and entity_type = ?");
-    updateDataRootTypeStatus.run('200', '404', 'ChivesLightNodeHeartBeat');
-    updateDataRootTypeStatus.finalize();
-    const updateDataRootStatus = db.prepare("update tx set data_root_status = ? where data_root_status = ?");
-    updateDataRootStatus.run('', '404');
-    updateDataRootStatus.finalize();
+    try {
+      const updateDataRootTypeStatus = db.prepare("update tx set data_root_status = ? where data_root_status = ? and entity_type = ?");
+      updateDataRootTypeStatus.run('200', '404', 'ChivesLightNodeHeartBeat');
+      updateDataRootTypeStatus.finalize();
+      const updateDataRootStatus = db.prepare("update tx set data_root_status = ? where data_root_status = ?");
+      updateDataRootStatus.run('', '404');
+      updateDataRootStatus.finalize();
+    } 
+    catch (error) {
+      console.error("resetTx404", error.message);
+    }
   }
 
   async function syncingChunksPromiseAll(TxCount = 5) {
@@ -1450,8 +1455,13 @@
     for (let i = AllDates; i > 0; i--) {
       const day = new Date(today);
       day.setDate(today.getDate() - i);
-      const block_date = day.toISOString().slice(0, 10)
-      await syncingBlockAndTxStat(block_date);
+      const block_date = day.toISOString().slice(0, 10);
+      try {
+        await syncingBlockAndTxStat(block_date);
+      } 
+      catch (error) {
+        console.error("syncingBlockAndTxStatAllDates", error.message);
+      }
       recent30Days.push(block_date)
     }
     log("recent30Days", recent30Days)
@@ -1565,9 +1575,14 @@
       const txs_task_item = 0
       const txs_task_reward = 0
       //Insert Stat
-      const insertStat = db.prepare('INSERT OR REPLACE INTO stat (block_date,block_size,mining_time,reward,txs_length,weave_size,cumulative_diff,reward_pool,block_count,txs_item,txs_image,txs_video,txs_audio,txs_pdf,txs_word,txs_excel,txs_ppt,txs_stl,txs_text,txs_exe,txs_zip,txs_action,txs_profile,txs_agent,txs_referee,txs_task_item,txs_task_reward) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-      insertStat.run(block_date,BlockStat.block_size,BlockStat.mining_time,BlockStat.reward,BlockStat.txs_length,BlockStat.weave_size,BlockStat.cumulative_diff,BlockStat.reward_pool,BlockStat.block_count,txs_item,txs_image,txs_video,txs_audio,txs_pdf,txs_word,txs_excel,txs_ppt,txs_stl,txs_text,txs_exe,txs_zip,txs_action,txs_profile,txs_agent,txs_referee,txs_task_item,txs_task_reward);
-      insertStat.finalize();
+      try {
+        const insertStat = db.prepare('INSERT OR REPLACE INTO stat (block_date,block_size,mining_time,reward,txs_length,weave_size,cumulative_diff,reward_pool,block_count,txs_item,txs_image,txs_video,txs_audio,txs_pdf,txs_word,txs_excel,txs_ppt,txs_stl,txs_text,txs_exe,txs_zip,txs_action,txs_profile,txs_agent,txs_referee,txs_task_item,txs_task_reward) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        insertStat.run(block_date,BlockStat.block_size,BlockStat.mining_time,BlockStat.reward,BlockStat.txs_length,BlockStat.weave_size,BlockStat.cumulative_diff,BlockStat.reward_pool,BlockStat.block_count,txs_item,txs_image,txs_video,txs_audio,txs_pdf,txs_word,txs_excel,txs_ppt,txs_stl,txs_text,txs_exe,txs_zip,txs_action,txs_profile,txs_agent,txs_referee,txs_task_item,txs_task_reward);
+        insertStat.finalize();
+      } 
+      catch (error) {
+        console.error("syncingBlockAndTxStat", error.message);
+      }
     }
 
   }
