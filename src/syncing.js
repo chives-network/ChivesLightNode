@@ -1460,11 +1460,15 @@
   async function log(Action1, Action2='', Action3='', Action4='', Action5='', Action6='', Action7='', Action8='', Action9='', Action10='') {
     const currentDate = new Date();
     const currentDateTime = currentDate.toLocaleString();
-    const content = Action1 +" "+ JSON.stringify(Action2) +" "+ JSON.stringify(Action3) +" "+ JSON.stringify(Action4) +" "+ JSON.stringify(Action5) +" "+ JSON.stringify(Action6) +" "+ JSON.stringify(Action7) +" "+ JSON.stringify(Action8) +" "+ JSON.stringify(Action9) +" "+ JSON.stringify(Action10);
     if(db) {
-      const insertStat = db.prepare('INSERT OR REPLACE INTO log (datetime,content) VALUES (?,?)');
-      insertStat.run(currentDateTime, content);
-      insertStat.finalize();
+      try{
+        const content = Action1 +" "+ JSON.stringify(Action2) +" "+ JSON.stringify(Action3) +" "+ JSON.stringify(Action4) +" "+ JSON.stringify(Action5) +" "+ JSON.stringify(Action6) +" "+ JSON.stringify(Action7) +" "+ JSON.stringify(Action8) +" "+ JSON.stringify(Action9) +" "+ JSON.stringify(Action10);
+        const insertStat = db.prepare('INSERT OR REPLACE INTO log (datetime,content) VALUES (?,?)');
+        insertStat.run(currentDateTime, content);
+        insertStat.finalize();
+      }
+      catch (error) {
+      }
     }
     console.log(Action1, Action2, Action3, Action4, Action5, Action6, Action7, Action8, Action9, Action10)
   }
