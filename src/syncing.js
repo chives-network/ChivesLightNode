@@ -1841,19 +1841,19 @@
 
   async function getPrice(datasize) {
     const Price = await axios.get(NodeApi + '/price/' + datasize, {}).then(res=>res.data).catch(() => {});
-    return String(Price);
+    return Price ? String(Price) : '0';
   }
 
   async function getPriceAddress(datasize, Address) {
     const Price = await axios.get(NodeApi + '/price/' + datasize + '/' + Address, {}).then(res=>res.data).catch(() => {});
-    return String(Price);
+    return Price ? String(Price) : '0';
   }
 
   async function postTx(Payload) {
     try {
       const response = await axios.post(NodeApi + '/tx', Payload);
       log('postTx:', response.data);
-      if(response.data != "OK") {
+      if(response && response.data != "OK") {
         await axios.post(NodeApi + '/tx', Payload).catch(() => {});
       }
       postTxForwarding(Payload);

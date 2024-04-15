@@ -34,7 +34,7 @@ expressApp.get('/syncing', async (req, res) => {
   //await syncing.syncingBlockMissing();
   //35753 43355 
   //await syncing.syncingBlockPromiseAll(30);
-  await syncing.syncingBlock(50);
+  await syncing.syncingBlock(500);
   await syncing.syncingTx(50);
   await syncing.syncingChunksPromiseAll(10);
   await syncing.syncingTxParseBundle(10);
