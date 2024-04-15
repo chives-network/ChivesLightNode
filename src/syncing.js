@@ -1,5 +1,6 @@
   import axios from 'axios'
   import fs from 'fs'
+  import zlib from 'zlib'
   import sharp from 'sharp'
   import { unbundleData } from 'arbundles'
   import Arweave from 'arweave'
@@ -1503,9 +1504,9 @@
     DeleteLog.finalize();
 
     //Delete nodes not online 4 days
-    //const DeletePeers = db.prepare("delete from peers where status < ? or status = ?");
-    //DeletePeers.run(-200, -1);
-    //DeletePeers.finalize();
+    const DeletePeers = db.prepare("delete from peers where status < ?");
+    DeletePeers.run(-100);
+    DeletePeers.finalize();
   }
 
   async function syncingBlockAndTxStat(block_date)  {
@@ -2576,10 +2577,11 @@
             const ip = PeerAndPortArray[0];
             const url = `https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data&ip=${ip}`;
             const IPJSON = await axios.get(url, {}).then(res=>res.data).catch(() => {});  
-            const insertPeers = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-            insertPeers.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code);
-            insertPeers.finalize();
-
+            if(IPJSON && IPJSON.isp) {
+              const insertPeers = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+              insertPeers.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code, 0);
+              insertPeers.finalize();
+            }
             if(peerIsAvailable == -1)  {
               const updatePeersStatus = db.prepare("update peers set status = status - 1 where ip = ? ");
               updatePeersStatus.run(PeerAndPort);
@@ -3169,6 +3171,22 @@
       console.error("[" + Mark + "] Error writing to file:", err);
       return false;
     }
+  }
+
+  function compressToFile(inputFile, outputFile) {
+    const gzip = zlib.createGzip();
+    const inputStream = fs.createReadStream(inputFile);
+    const outputStream = fs.createWriteStream(outputFile + '.gz');
+    inputStream.pipe(gzip).pipe(outputStream);
+    console.log('File compressed successfully.');
+  }
+
+  function deompressToJson(inputFile, outputFile) {
+    const gunzip = zlib.createGunzip();
+    const inputStream = fs.createReadStream(inputFile);
+    const outputStream = fs.createWriteStream(outputFile);
+    inputStream.pipe(gunzip).pipe(outputStream);
+    console.log('File decompressed successfully.');
   }
 
   function mkdirForData() {
