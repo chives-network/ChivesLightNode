@@ -1841,17 +1841,17 @@
 
   async function getTxPending() {
     const TxPending = await axios.get(NodeApi + '/tx/pending', {}).then(res=>res.data).catch(() => {});
-    return TxPending;
+    return TxPending ? TxPending : [];
   }
 
   async function getTxPendingRecord() {
     const TxPending = await axios.get(NodeApi + '/tx/pending/record', {}).then(res=>res.data).catch(() => {});
-    return TxPending;
+    return TxPending ? TxPending : [];
   }
   
   async function getTxAnchor() {
     const TxAnchor = await axios.get(NodeApi + '/tx_anchor', {}).then(res=>res.data).catch(() => {});
-    return TxAnchor;
+    return TxAnchor ? String(TxAnchor) : '';
   }
 
   async function getPrice(datasize) {
@@ -1866,13 +1866,18 @@
 
   async function postTx(Payload) {
     try {
-      const response = await axios.post(NodeApi + '/tx', Payload);
+      let response = await axios.post(NodeApi + '/tx', Payload).catch(() => {});
       log('postTx:', response.data);
       if(response && response.data != "OK") {
-        await axios.post(NodeApi + '/tx', Payload).catch(() => {});
+        response = await axios.post(NodeApi + '/tx', Payload).catch(() => {});
       }
       postTxForwarding(Payload);
-      return response.data;
+      if(response && response.data) {
+        return response.data;
+      }
+      else {
+        return 'ERROR';
+      }
     }
     catch (error) {
       console.error('Error:', error.message);
@@ -1889,7 +1894,9 @@
           if(result) {
             result.map((item)=>{
               axios.post("http://"+item.ip + '/tx', Payload).then(res =>{
-                  log('postTxForwarding postTx:', item.ip, res.data);              
+                  if(res && res.data) {
+                    log('postTxForwarding postTx:', item.ip, res.data);              
+                  }
                 })
                 .catch(error => {
                   console.error('postchunkForwarding Error:', item.ip, "Failed ******");
@@ -1909,11 +1916,16 @@
     try {
       const response = await axios.post(NodeApi + '/chunk', Payload);
       log('postChunk:', response.data);
-      if(response.data != "OK") {
+      if(response && response.data != "OK") {
         await axios.post(NodeApi + '/chunk', Payload).catch(() => {});
       }
       postChunkForwarding(Payload)
-      return response.data;
+      if(response && response.data) {
+        return response.data;
+      }
+      else {
+        return 'ERROR';
+      }
     } 
     catch (error) {
       console.error('Error:', error.message);
@@ -1930,7 +1942,9 @@
           if(result) {
             result.map((item)=>{
               axios.post("http://"+item.ip + '/chunk', Payload).then(res =>{
-                  log('postchunkForwarding postchunk:', item.ip, res.data);              
+                  if(res && res.data) {
+                    log('postchunkForwarding postchunk:', item.ip, res.data);              
+                  }          
                 })
                 .catch(error => {
                   console.error('postchunkForwarding Error:', item.ip, "Failed ******");
