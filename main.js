@@ -29,9 +29,6 @@ function createMainWindow() {
     console.log("ChivesLightNodeSetting main.js", ChivesLightNodeSetting)
     await syncing.initChivesLightNode(ChivesLightNodeSetting);
     mainWindow.loadURL('http://localhost:' + PORT);
-    setTimeout(intervalTaskShortTime, 5 * 1000);
-    setTimeout(intervalTaskLongTime, 10 * 1000);
-    setTimeout(intervalTaskLongTimeLog, 60 * 1000);
   });
   
   const template = [
@@ -91,66 +88,6 @@ function openNewURL(url) {
   newWindow.loadURL(url);
 }
 
-async function intervalTaskShortTime() {
-  try {
-    console.log('Executing intervalTaskShortTime tasks...');
-    const startTime = Date.now();
-    await Promise.all([
-      syncing.syncingBlockPromiseAll(20),
-      syncing.syncingTxPromiseAll(10),
-      syncing.syncingChunksPromiseAll(5),
-      syncing.syncingTxParseBundle(1),
-      syncing.syncingTxWaitDoingAction(10),
-      syncing.syncingBlockMinedTime(100)
-    ]);
-    const executionTime = Date.now() - startTime;
-    console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
-    console.log('Resuming interval tasks.');
-    const nextInterval = 10 * 1000;
-    setTimeout(intervalTaskShortTime, nextInterval);
-  } catch (error) {
-    console.error('Error in intervalTaskShortTime:', error);
-  }
-}
-
-async function intervalTaskLongTime() {
-  try {
-    console.log('Executing intervalTaskLongTime tasks...');
-    const startTime = Date.now();
-    await Promise.all([
-      syncing.refreshChivesLightNodeUrl(ChivesLightNodeSetting),
-      syncing.resetTx404(),
-      syncing.syncingBlockAndTxStatAllDates(),
-      syncing.deleteBlackTxsAndAddress(),
-      syncing.calculatePeers(),
-      syncing.syncingBlockMissing(0)
-    ]);
-    const executionTime = Date.now() - startTime;
-    console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
-    console.log('Resuming interval tasks.');
-    const nextInterval = 1800 * 1000;
-    setTimeout(intervalTaskLongTime, nextInterval);
-  } catch (error) {
-    console.error('Error in intervalTaskLongTime:', error);
-  }
-}
-
-async function intervalTaskLongTimeLog() {
-  try {
-    console.log('Executing intervalTaskLongTimeLog tasks...');
-    const startTime = Date.now();
-    await Promise.all([
-      syncing.deleteLog()
-    ]);
-    const executionTime = Date.now() - startTime;
-    console.log(`All syncing tasks completed in ${executionTime} ms. Waiting for next interval...`);
-    console.log('Resuming interval tasks.');
-    const nextInterval = 3600 * 1000;
-    setTimeout(intervalTaskLongTime, nextInterval);
-  } catch (error) {
-    console.error('Error in intervalTaskLongTime:', error);
-  }
-}
 
 app.whenReady().then(()=>{
   createMainWindow();

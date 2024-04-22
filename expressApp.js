@@ -66,6 +66,10 @@ cron.schedule('*/17 * * * *', () => {
   syncing.syncingTxWaitDoingAction(10);
   syncing.syncingBlockAndTxStatAllDates(80);
 });
+cron.schedule('1 * * * *', () => {
+  console.log('schedule deleteLog Task Begin !');
+  syncing.deleteLog()
+});
 
 
 expressApp.use('/', lightNodeRoutes);
