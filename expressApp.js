@@ -4,6 +4,7 @@ import syncing from './src/syncing.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import cors from 'cors';
+import cron from 'node-cron';
 import htmlRoutes from './src/router/html.js'
 import blockRoutes from './src/router/block.js'
 import txRoutes from './src/router/tx.js'
@@ -40,6 +41,30 @@ expressApp.get('/syncing', async (req, res) => {
   await syncing.syncingTxParseBundle(10);
   await syncing.syncingBlockMinedTime(50);
   res.json({});
+});
+
+cron.schedule('*/1 * * * *', () => {
+  console.log('schedule syncingBlock Task Begin !');
+  syncing.syncingBlock(5);
+  syncing.syncingBlockMinedTime(5);
+});
+cron.schedule('*/5 * * * *', () => {
+  console.log('schedule syncingTx Task Begin !');
+  syncing.syncingTx(40);
+  syncing.syncingChunksPromiseAll(10);
+});
+cron.schedule('*/9 * * * *', () => {
+  console.log('schedule syncingTxParseBundle Task Begin !');
+  syncing.syncingTxParseBundle(50);
+});
+cron.schedule('*/17 * * * *', () => {
+  console.log('schedule resetTx404 Task Begin !');
+  syncing.resetTx404();
+  syncing.syncingBlockMissing();
+  syncing.deleteBlackTxsAndAddress();
+  syncing.calculatePeers();
+  syncing.syncingTxWaitDoingAction(10);
+  syncing.syncingBlockAndTxStatAllDates(80);
 });
 
 
