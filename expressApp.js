@@ -44,21 +44,21 @@ expressApp.get('/syncing', async (req, res) => {
 });
 
 cron.schedule('*/1 * * * *', () => {
-  console.log('schedule syncingBlock Task Begin !');
+  console.log('schedule syncingBlock Task Begin !!!');
   syncing.syncingBlock(5);
   syncing.syncingBlockMinedTime(5);
 });
 cron.schedule('*/5 * * * *', () => {
-  console.log('schedule syncingTx Task Begin !');
+  console.log('schedule syncingTx Task Begin !!!');
   syncing.syncingTx(40);
   syncing.syncingChunksPromiseAll(10);
 });
 cron.schedule('*/9 * * * *', () => {
-  console.log('schedule syncingTxParseBundle Task Begin !');
+  console.log('schedule syncingTxParseBundle Task Begin !!!');
   syncing.syncingTxParseBundle(50);
 });
 cron.schedule('*/17 * * * *', () => {
-  console.log('schedule resetTx404 Task Begin !');
+  console.log('schedule resetTx404 Task Begin !!!');
   syncing.resetTx404();
   syncing.syncingBlockMissing();
   syncing.deleteBlackTxsAndAddress();
@@ -67,7 +67,7 @@ cron.schedule('*/17 * * * *', () => {
   syncing.syncingBlockAndTxStatAllDates(80);
 });
 cron.schedule('1 * * * *', () => {
-  console.log('schedule deleteLog Task Begin !');
+  console.log('schedule deleteLog Task Begin !!!');
   syncing.deleteLog()
 });
 
