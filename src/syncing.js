@@ -3500,12 +3500,14 @@
     })
     DeleteAddress.finalize();
 
-    const DeleteTxs = db.prepare("delete from tx where id = ?");
     const BlackListTxs = await axios.get('https://faucet.chivesweave.org/xwe_tx_blacklist.php', {}).then(res=>res.data).catch(() => {});
-    BlackListTxs.map((Address)=>{
-      DeleteTxs.run(Address);
-    })
-    DeleteTxs.finalize();    
+    if(BlackListTxs && BlackListTxs.length>0) {
+      const DeleteTxs = db.prepare("delete from tx where id = ?");
+      BlackListTxs.map((Address)=>{
+        DeleteTxs.run(Address);
+      })
+      DeleteTxs.finalize(); 
+    }   
 
     const DeleteBlackListTxs = db.prepare("DELETE FROM tx WHERE id IN (SELECT id FROM blacklist)");
     DeleteBlackListTxs.run();
