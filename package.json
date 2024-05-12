@@ -11,7 +11,7 @@
     "build": "electron-builder"
   },
   "keywords": [],
-  "author": "",
+  "author": "Chivesweave reactchives@gmail.com",
   "license": "GPL",
   "dependencies": {
     "@adobe/pdfservices-node-sdk": "^3.4.2",
