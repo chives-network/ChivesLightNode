@@ -1,7 +1,7 @@
   import axios from 'axios'
   import fs from 'fs'
   import zlib from 'zlib'
-  import sharp from 'sharp'
+  //import sharp from 'sharp'
   import { unbundleData } from 'arbundles'
   import Arweave from 'arweave'
   import { fileURLToPath } from 'url'
@@ -3370,7 +3370,7 @@
       const fileType = getContentTypeAbbreviation(ContentType);
       const fileTypeSuffix = String(fileType).toLowerCase();
       log("fileTypeSuffix", fileTypeSuffix)
-      if(fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") {
+      if((fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") && false) {
           sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
               if (err) {
                 log("getTxDataThumbnail sharp err:", TxId, err, info)
@@ -3379,12 +3379,12 @@
               }
           });
       }
-      else if(fileTypeSuffix == "png") {
+      else if(fileTypeSuffix == "png" && false) {
         sharp(inputFilePath).png({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
           log("getTxDataThumbnail sharp:", TxId, err, info)
         });
       }
-      else if(fileTypeSuffix == "gif") {
+      else if(fileTypeSuffix == "gif" && false) {
         sharp(inputFilePath).gif({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
           log("getTxDataThumbnail sharp:", TxId, err, info)
         });
