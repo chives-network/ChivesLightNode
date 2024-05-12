@@ -28,7 +28,7 @@
 
   //import isDev from 'electron-is-dev';
   const isDev = false;
-  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"E:\\ChivesWeaveData"});
+  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"/home/ubuntu/data"});
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
 
