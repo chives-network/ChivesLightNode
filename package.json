@@ -1,6 +1,6 @@
 {
   "name": "chives-light-node",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Chivesweave Light Node",
   "email": "reactchives@gmail.com",
   "url": "https://github.com/chives-network/ChivesLightNode",
@@ -67,7 +67,9 @@
     },
     "linux": {
       "target": [
-        "deb"
+        "deb",
+        "rpm",
+        "AppImage"
       ],
       "category": "Network",
       "icon": "public/chives.png"
