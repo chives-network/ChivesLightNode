@@ -13,7 +13,7 @@
     "build": "electron-builder"
   },
   "keywords": [],
-  "author": "Chivesweave",
+  "author": "Chivesweave <reactchives@gmail.com> (https://github.com/chives-network/ChivesLightNode)",
   "license": "GPL",
   "dependencies": {
     "@adobe/pdfservices-node-sdk": "^3.4.2",
