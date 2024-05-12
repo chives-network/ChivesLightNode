@@ -2,6 +2,8 @@
   "name": "chives-light-node",
   "version": "0.1.5",
   "description": "Chivesweave Light Node",
+  "email": "reactchives@gmail.com",
+  "url": "https://github.com/chives-network/ChivesLightNode",
   "main": "main.js",
   "type": "module",
   "scripts": {
@@ -11,7 +13,7 @@
     "build": "electron-builder"
   },
   "keywords": [],
-  "author": "Chivesweave reactchives@gmail.com",
+  "author": "Chivesweave",
   "license": "GPL",
   "dependencies": {
     "@adobe/pdfservices-node-sdk": "^3.4.2",
