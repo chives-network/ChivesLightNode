@@ -28,7 +28,7 @@
 
   //import isDev from 'electron-is-dev';
   const isDev = false;
-  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"D:/GitHub/ChivesweaveDataDir"});
+  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"E:/ChivesweaveDataDir"});
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
 
@@ -1188,7 +1188,6 @@
       const result = [];
       for (const Height of BlockHeightRange) {
         const BlockInfor = await syncingBlockByHeight(Height);
-        console.error("syncingBlock syncingBlockByHeight:", Height, BlockInfor);
         result.push(BlockInfor.height)
       }
       return result;
