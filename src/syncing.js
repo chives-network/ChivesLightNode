@@ -2999,12 +2999,58 @@
       ItemJson.data.size = Item.data_size
       ItemJson.data.type = contentTypeToFileType(Item.content_type)
       ItemJson.data.content = ""
+      /*
       if(ItemJson.data.type == "" && ItemJson.data.size > 0 && Item.id && Item.id.length == 43) {        
         const FileContentBuffer = readFile("files/" + Item.id.substring(0, 2).toLowerCase(), Item.id, "getTxData", null);
         if(FileContentBuffer) {
           ItemJson.data.content = FileContentBuffer.toString('utf-8');
         }
-      }      
+      }
+      */   
+      ItemJson.fee = {}
+      ItemJson.fee.winston = Item.reward
+      ItemJson.fee.xwe = String(Item.reward/1000000000000)
+      ItemJson.quantity = {}
+      ItemJson.quantity.winston = Item.quantity
+      ItemJson.quantity.xwe = String(Item.quantity/1000000000000)
+      ItemJson.recipient = Item.target
+      ItemJson.table = Item
+      //ItemJson.signature = Item.signature
+      //ItemJson.signatureType = Item.signatureType
+      ItemJson.bundleid = Item.bundleid
+      RS.push(ItemJson)
+    })
+    return RS;
+  }
+
+  function TxRowToJsonFormatData(getTxPageValue) {
+    const RS = []
+    getTxPageValue.map((Item) =>{
+      if(Item == undefined) {
+        return []
+      }
+      const ItemJson = {}
+      ItemJson.id = Item.id
+      ItemJson.owner = {}
+      ItemJson.owner.key = Item.owner
+      ItemJson.owner.address = Item.from_address
+      //ItemJson.owner.key = Item.owner
+      ItemJson.anchor = Item.anchor
+      ItemJson.tags = Item.tags ? JSON.parse(Item.tags) : []
+      ItemJson.block = {}
+      ItemJson.block.height = Item.block_height
+      ItemJson.block.indep_hash = Item.block_indep_hash
+      ItemJson.block.timestamp = Item.timestamp
+      ItemJson.data = {}
+      ItemJson.data.size = Item.data_size
+      ItemJson.data.type = contentTypeToFileType(Item.content_type)
+      ItemJson.data.content = ""
+      if(ItemJson.data.type == "" && ItemJson.data.size > 0 && Item.id && Item.id.length == 43) {        
+        const FileContentBuffer = readFile("files/" + Item.id.substring(0, 2).toLowerCase(), Item.id, "getTxData", null);
+        if(FileContentBuffer) {
+          ItemJson.data.content = FileContentBuffer.toString('utf-8');
+        }
+      } 
       ItemJson.fee = {}
       ItemJson.fee.winston = Item.reward
       ItemJson.fee.xwe = String(Item.reward/1000000000000)
