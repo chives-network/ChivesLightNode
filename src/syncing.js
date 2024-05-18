@@ -28,7 +28,7 @@
 
   //import isDev from 'electron-is-dev';
   const isDev = false;
-  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"/home/ubuntu/data"});
+  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"D:/GitHub/ChivesweaveDataDir"});
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
 
@@ -269,6 +269,8 @@
         db.run(`CREATE INDEX IF NOT EXISTS idx_address_agent ON address (agent);`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_address_referee ON address (referee);`);
         db.run(`CREATE INDEX IF NOT EXISTS idx_address_last_tx_action ON address (last_tx_action);`);
+
+        db.run(`update tx set signature = null;`);
 
     });
 
@@ -605,7 +607,7 @@
       //log("TxInfor TagsMap",TxInfor)
       
       //Update Tx
-      const updateTx = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, signature = ?, reward = ?, data_size = ?, data_root = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
+      const updateTx = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, reward = ?, data_size = ?, data_root = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
       let from_address = '';
       //log("TxInfor TagsMap",TxInfor)
       if(TxInfor.owner && TxInfor.owner.address) {
@@ -650,7 +652,7 @@
       else {
           entity_type = "Tx";
       }
-      updateTx.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.signature, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
+      updateTx.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
       updateTx.finalize();
 
       log("TxInfor from_address: ", from_address)
@@ -758,7 +760,7 @@
                         //log("unBundleItem signatureType",Item.signatureType)
                         //log("unBundleItem data",Item.data)
                         //Update Chunks Status IGNORE
-                        const insertTxBundleItem = db.prepare('INSERT OR IGNORE INTO tx (id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,tags, tx_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                        const insertTxBundleItem = db.prepare('INSERT OR IGNORE INTO tx (id,block_indep_hash,last_tx,owner,from_address,target,quantity,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,tags, tx_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
                         const id = Item.id
                         const block_indep_hash = TxInfor.block_indep_hash
                         const last_tx = Item.anchor
@@ -766,7 +768,6 @@
                         const from_address = await ownerToAddress(Item.owner);
                         const target = Item.target
                         const quantity = Item.quantity || 0
-                        const signature = Item.signature
                         const reward = 0
                         const timestamp = TxInfor.timestamp
                         const block_height = TxInfor.block_height
@@ -798,7 +799,7 @@
                         const app_instance = TagsMap['App-Instance'] || "";
                         const last_tx_action = id
 
-                        insertTxBundleItem.run(id,block_indep_hash,last_tx,owner,from_address,target,quantity,signature,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,JSON.stringify(Item.tags), timestampToDate(timestamp));
+                        insertTxBundleItem.run(id,block_indep_hash,last_tx,owner,from_address,target,quantity,reward,timestamp,block_height,data_size,bundleid,item_name,item_type,item_parent,content_type,item_hash,item_summary,item_star,item_label,item_download,item_language,item_pages,is_encrypt,is_public,entity_type,app_name,app_version,app_instance,bundleTxParse,data_root,data_root_status,last_tx_action,JSON.stringify(Item.tags), timestampToDate(timestamp));
                         insertTxBundleItem.finalize();
 
                         //Write Item Data to File
@@ -1187,6 +1188,7 @@
       const result = [];
       for (const Height of BlockHeightRange) {
         const BlockInfor = await syncingBlockByHeight(Height);
+        console.error("syncingBlock syncingBlockByHeight:", Height, BlockInfor);
         result.push(BlockInfor.height)
       }
       return result;
@@ -1223,11 +1225,11 @@
       updateBlockMinedTime.run(60, 1);
       updateBlockMinedTime.finalize();
       for (const BlockInfor of GetExistBlocks) {
-        //log("syncingBlockMinedTime BlockInfor:", BlockInfor);
+        log("syncingBlockMinedTime BlockInfor:", BlockInfor);
         BlockTimestamp[Number(BlockInfor.id)] = BlockInfor.timestamp
         if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] == undefined) {
           const previousBlock = await getBlockInforByHeightFromDb(Number(BlockInfor.id)-1);
-          log("syncingBlockMinedTime previousBlock", Number(BlockInfor.id))
+          log("syncingBlockMinedTime previousBlock", previousBlock)
           BlockTimestamp[Number(BlockInfor.id)-1] = previousBlock.timestamp;
         }
         if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] ) {
@@ -1254,12 +1256,14 @@
     const EndHeight = (Index + 1) * 100000;
     try {
       const getBlockHeightFromDbValue = await getBlockHeightFromDb();
-      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      const MinerNodeStatus = await axios.get(NodeApi + '/info').then(res=>res.data).catch(() => {});
+      log("MinerNodeStatus 1261:", MinerNodeStatus, NodeApi);
       const MaxHeight = MinerNodeStatus.height;
       //Only do this operation when chain is synced
       if(MaxHeight < (getBlockHeightFromDbValue + 100))  {
         const EndHeightFinal = (MaxHeight - EndHeight) > 0 ? EndHeight : MaxHeight
         const BlockHeightRange = generateSequence(BeginHeight, EndHeightFinal);
+        log("BlockHeightRange:", BlockHeightRange);
         const GetExistBlocks = await new Promise((resolve, reject) => {
                                   db.all("SELECT id FROM block where id in ("+BlockHeightRange.join(',')+")", (err, result) => {
                                     if (err) {
@@ -1286,7 +1290,7 @@
             result.push(BlockInfor.height)
           }
           catch (error) {
-            console.error("syncingBlockMissing error fetching block data:", error.message, Height);
+            console.error("syncingBlockMissing error fetching block data 1292:", error.message, Height);
           }
         }
         return result;
@@ -1296,7 +1300,7 @@
       }
     } 
     catch (error) {
-      console.error("syncingBlockMissing error fetching block data:", error.message);
+      console.error("syncingBlockMissing error fetching block data 1302:", error.message);
       return { error: "Internal Server Error" };
     }
   }
@@ -1804,7 +1808,7 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where bundleid = '"+txid+"' and from_address is not null order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx where bundleid = '"+txid+"' and from_address is not null limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
