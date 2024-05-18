@@ -28,7 +28,7 @@
 
   //import isDev from 'electron-is-dev';
   const isDev = false;
-  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"E:/ChivesweaveDataDir"});
+  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"E:/ChivesWeaveData"});
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
 
@@ -1251,8 +1251,8 @@
   }
 
   async function syncingBlockMissing(Index = 0) {
-    const BeginHeight = Index * 100000 + 1;
-    const EndHeight = (Index + 1) * 100000;
+    const BeginHeight = Index * 1000000 + 1;
+    const EndHeight = (Index + 1) * 1000000;
     try {
       const getBlockHeightFromDbValue = await getBlockHeightFromDb();
       const MinerNodeStatus = await axios.get(NodeApi + '/info').then(res=>res.data).catch(() => {});
@@ -1760,7 +1760,7 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {

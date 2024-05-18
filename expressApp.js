@@ -45,7 +45,6 @@ expressApp.get('/syncing', async (req, res) => {
 
 cron.schedule('*/1 * * * *', () => {
   console.log('schedule syncingBlock Task Begin !!!');
-  syncing.syncingBlockMissing();
   syncing.syncingBlock(5);
   syncing.syncingBlockMinedTime(5);
 });
