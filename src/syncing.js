@@ -1753,7 +1753,8 @@
     });
   }
   async function getAllTxPage(pageid, pagesize, getTxCountValue) {
-    const From = getTxCountValue - Number(pagesize) * Number(pageid + 1)
+    //const From = getTxCountValue - Number(pagesize) * Number(pageid + 1)
+    const From = Number(pagesize) * Number(pageid)
     console.log("getAllTxPage", pagesize, pageid);
     return new Promise((resolve, reject) => {
       if(db == null) {
