@@ -28,9 +28,19 @@
 
   //import isDev from 'electron-is-dev';
   const isDev = false;
-  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeStorageDirectory":"E:/ChivesWeaveData"});
+  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeApi2":"http://node1.chivesweave.net:1987","NodeStorageDirectory":"E:/ChivesWeaveData"});
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
+
+  function isDirectorySync(path) {
+    try {
+        const stats = fs.statSync(path);
+        return stats.isDirectory();
+    } catch (err) {
+        console.error('isDirectorySync Error checking if path is a directory:', err);
+        return false;
+    }
+  }
 
   async function initChivesLightNode(ChivesLightNodeSetting) {
     if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi1 && await checkPeer(ChivesLightNodeSetting.NodeApi1) > 0) {
@@ -55,6 +65,9 @@
       timeout: 5000,
       logging: false
     })
+    if(!isDirectorySync(DataDir)) {
+      return false; 
+    }
     db = new sqlite3Verbose.Database(DataDir + '/chiveslightnode.db');
     db.serialize(() => {
         db.run(`
