@@ -24,6 +24,7 @@
   //import isDev from 'electron-is-dev';
   const isDev = false;
   let ChivesLightNodeSetting = null
+  let db = null
   
   await initChivesLightNodeSetting({"NodeApi1":"http://node1.chivesweave.net:1985","NodeApi2":"http://node1.chivesweave.net:1987","NodeStorageDirectory":"E:/ChivesWeaveData"});
   await initChivesLightNodeSql();
@@ -59,10 +60,14 @@
       timeout: 5000,
       logging: false
     })
+    
     if(!isDirectorySync(DataDir)) {
       return {NodeApi, DataDir: null, arweave, db: null}
     }
-    const db = new sqlite3Verbose.Database(DataDir + '/chiveslightnode.db');
+    
+    if(db == null) {
+      db = new sqlite3Verbose.Database(DataDir + '/chiveslightnode.db');
+    }
     
     return { NodeApi, DataDir, arweave, db }
 
