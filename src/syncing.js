@@ -19,30 +19,24 @@
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
 
-  let NodeApi = null;
-  let DataDir = null;
-  let arweave = null;
-  let db = null;
-
   //Only for Dev
 
   //import isDev from 'electron-is-dev';
   const isDev = false;
-  await initChivesLightNode({"NodeApi1":"http://node1.chivesweave.net:1985","NodeApi2":"http://node1.chivesweave.net:1987","NodeStorageDirectory":"E:/ChivesWeaveData"});
+  let ChivesLightNodeSetting = null
+  
+  await initChivesLightNodeSetting({"NodeApi1":"http://node1.chivesweave.net:1985","NodeApi2":"http://node1.chivesweave.net:1987","NodeStorageDirectory":"E:/ChivesWeaveData00"});
+  await initChivesLightNodeSql();
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
 
-  function isDirectorySync(path) {
-    try {
-        const stats = fs.statSync(path);
-        return stats.isDirectory();
-    } catch (err) {
-        console.error('isDirectorySync Error checking if path is a directory:', err);
-        return false;
-    }
+  
+  async function initChivesLightNodeSetting(Data) {
+    ChivesLightNodeSetting = Data
   }
 
-  async function initChivesLightNode(ChivesLightNodeSetting) {
+  async function initChivesLightNode() {
+    let NodeApi = null;
     if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi1 && await checkPeer(ChivesLightNodeSetting.NodeApi1) > 0) {
       NodeApi = ChivesLightNodeSetting.NodeApi1
     }
@@ -56,9 +50,9 @@
       NodeApi = "http://112.170.68.77:1985"
     }
 
-    DataDir = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeStorageDirectory ? ChivesLightNodeSetting.NodeStorageDirectory : "D:\\";
+    const DataDir = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeStorageDirectory ? ChivesLightNodeSetting.NodeStorageDirectory : "D:\\";
     const parsedUrl = new URL(NodeApi);
-    arweave = Arweave.init({
+    const arweave = Arweave.init({
       host: parsedUrl.hostname,
       port: parsedUrl.port,
       protocol: 'http',
@@ -66,9 +60,17 @@
       logging: false
     })
     if(!isDirectorySync(DataDir)) {
-      return false; 
+      return {NodeApi, DataDir: null, arweave, db: null}
     }
-    db = new sqlite3Verbose.Database(DataDir + '/chiveslightnode.db');
+    const db = new sqlite3Verbose.Database(DataDir + '/chiveslightnode.db');
+    
+    return { NodeApi, DataDir, arweave, db }
+
+  }
+
+  async function initChivesLightNodeSql() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
+
     db.serialize(() => {
         db.run(`
             CREATE TABLE IF NOT EXISTS peers (
@@ -289,33 +291,18 @@
 
   }
 
-  async function refreshChivesLightNodeUrl(ChivesLightNodeSetting) {
-    if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi1 && await checkPeer(ChivesLightNodeSetting.NodeApi1) > 0) {
-      NodeApi = ChivesLightNodeSetting.NodeApi1
-    }
-    else if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi2 && await checkPeer(ChivesLightNodeSetting.NodeApi2) > 0) {
-      NodeApi = ChivesLightNodeSetting.NodeApi2
-    }
-    else if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi3 && await checkPeer(ChivesLightNodeSetting.NodeApi3) > 0) {
-      NodeApi = ChivesLightNodeSetting.NodeApi3
+  function getDataDir() {
+    const DataDir = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeStorageDirectory ? ChivesLightNodeSetting.NodeStorageDirectory : null;
+    if(!isDirectorySync(DataDir)) {
+      return null
     }
     else {
-      NodeApi = "http://112.170.68.77:1985"
+      return DataDir
     }
-
-    DataDir = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeStorageDirectory ? ChivesLightNodeSetting.NodeStorageDirectory : "D:\\";
-    const parsedUrl = new URL(NodeApi);
-    arweave = Arweave.init({
-      host: parsedUrl.hostname,
-      port: parsedUrl.port,
-      protocol: 'http',
-      timeout: 5000,
-      logging: false
-    })
-
   }
 
   async function chivesLightNodeUrl(Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(null);
@@ -332,6 +319,7 @@
   }
 
   async function chivesLightNodeStatus() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getBlockHeightFromDbValue = await getBlockHeightFromDb();
     const BlockInfor = await getBlockInforByHeightFromDb(getBlockHeightFromDbValue);
     const NotSyncingTxCount = await new Promise((resolve, reject) => {
@@ -387,6 +375,7 @@
   }
 
   async function ownerToAddress(owner) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pubJwk = {
         kty: 'RSA',
         e: 'AQAB',
@@ -396,6 +385,7 @@
   }
 
   async function syncingTxParseBundle(TxCount = 30) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getTxsNotSyncingList = await getTxsBundleNotSyncing(TxCount)
     log("syncingTxParseBundle getTxsNotSyncingList: ", getTxsNotSyncingList)
     try {
@@ -414,6 +404,7 @@
   }
 
   async function syncingTx(TxCount = 30) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getTxsNotSyncingList = await getTxsNotSyncing(TxCount)
     log("syncingTx Count: ", getTxsNotSyncingList.length)
     try {
@@ -432,6 +423,7 @@
   }
 
   async function syncingTxPromiseAll(TxCount = 30) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       const getTxsNotSyncingList = await getTxsNotSyncing(TxCount);
       log("syncingTxPromiseAll NodeApi: ", NodeApi);
@@ -459,8 +451,8 @@
     }
   }
   
-
   async function getTxsNotSyncing(TxCount) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       db.all("SELECT id, block_height from tx where from_address is null order by block_height asc limit " + TxCount + " offset 0", (err, result) => {
         if (err) {
@@ -473,6 +465,7 @@
   }
 
   async function getTxsBundleNotSyncing(TxCount) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       db.all("SELECT * from tx where entity_type ='Bundle' and data_root_status = '200' and (bundleTxParse is null or bundleTxParse = '') order by block_height asc limit " + TxCount + " offset 0", (err, result) => {
         if (err) {
@@ -485,6 +478,7 @@
   }
 
   async function syncingChunks(TxCount = 5) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getTxsHaveChunksList = await getTxsHaveChunks(TxCount)
     log("syncingChunks Count: ", getTxsHaveChunksList.length)
     try {
@@ -502,6 +496,7 @@
   }
 
   async function resetTx404() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       const updateDataRootTypeStatus = db.prepare("update tx set data_root_status = ? where data_root_status = ? and entity_type = ?");
       updateDataRootTypeStatus.run('200', '404', 'ChivesLightNodeHeartBeat');
@@ -516,6 +511,7 @@
   }
 
   async function syncingChunksPromiseAll(TxCount = 5) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       const getTxsHaveChunksList = await getTxsHaveChunks(TxCount);
       log("syncingChunks Count: ", getTxsHaveChunksList.length);
@@ -539,8 +535,8 @@
     }
   }
   
-
   async function getTxsHaveChunks(TxCount) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       db.all("SELECT id, data_root, data_root_status from tx where data_root is not null and data_root != '' and (data_root_status is null or data_root_status = '') limit " + TxCount + " offset 0", (err, result) => {
         if (err) {
@@ -553,6 +549,7 @@
   }
   
   async function syncingTxById(TxId, Height) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     // @ts-ignore
     let TxInfor = null
     let writeFileStatus = false
@@ -721,6 +718,7 @@
   }
 
   async function syncingTxParseBundleById(TxInfor) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     //syncingTxPromiseAll(10);
     //syncingChunksPromiseAll(50);
     //Write Tx File
@@ -981,6 +979,7 @@
   }
   
   async function syncingTxWaitDoingAction(Index=10) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const GetTxWaitDoingAction = await new Promise((resolve, reject) => {
       db.all("SELECT * FROM tx where entity_type = 'WaitDoingAction' order by block_height asc limit " + Number(Index), (err, result) => {
         if (err) {
@@ -1070,6 +1069,7 @@
   }
 
   async function syncingTxChunksById(TxId) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     // @ts-ignore
     let data_root_status = 0;
     try {
@@ -1189,6 +1189,7 @@
   }
   
   async function syncingBlock(EveryTimeDealBlockCount = 5) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getBlockHeightFromDbValue = await getBlockHeightFromDb()
     const BeginHeight = getBlockHeightFromDbValue + 1;
     log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
@@ -1220,6 +1221,7 @@
   }
 
   async function syncingBlockMinedTime(Index = 100) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       const GetExistBlocks = await new Promise((resolve, reject) => {
                                 db.all("SELECT id, timestamp FROM block where mining_time = '0' order by id asc limit " + Number(Index), (err, result) => {
@@ -1264,6 +1266,7 @@
   }
 
   async function syncingBlockMissing(Index = 0) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const BeginHeight = Index * 1000000 + 1;
     const EndHeight = (Index + 1) * 1000000;
     try {
@@ -1318,6 +1321,7 @@
   }
 
   async function syncingBlockPromiseAll(EveryTimeDealBlockCount = 5) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       const getBlockHeightFromDbValue = await getBlockHeightFromDb();
       const BeginHeight = getBlockHeightFromDbValue + 1;
@@ -1350,6 +1354,7 @@
   }
 
   function enableBlockHeightDir(Height) {
+    const DataDir = getDataDir()
     const BlockHeightDir = String(Math.floor(Height / 10000));
     const directoryPath = join(DataDir, 'blocks', BlockHeightDir);  
     try {
@@ -1385,6 +1390,16 @@
     }
   }
 
+  function isDirectorySync(path) {
+    try {
+        const stats = fs.statSync(path);
+        return stats.isDirectory();
+    } catch (err) {
+        console.error('isDirectorySync Error checking if path is a directory:', err);
+        return false;
+    }
+  }
+  
   function timestampToDate(timestamp) {
     const date = new Date(Number(timestamp) * 1000);
     const year = date.getFullYear();
@@ -1395,6 +1410,7 @@
   }
   
   async function syncingBlockByHeight(currentHeight) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     // @ts-ignore
     let BlockInfor = null;
     const BlockHeightDir = enableBlockHeightDir(currentHeight);
@@ -1485,6 +1501,7 @@
   }
 
   async function log(Action1, Action2='', Action3='', Action4='', Action5='', Action6='', Action7='', Action8='', Action9='', Action10='') {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const currentDate = new Date();
     const currentDateTime = currentDate.toLocaleString();
     if(db) {
@@ -1501,6 +1518,7 @@
   }
 
   async function deleteLog() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const MaxId = await new Promise((resolve, reject) => {
       if(db == null) {
         resolve(null);
@@ -1526,6 +1544,7 @@
   }
 
   async function syncingBlockAndTxStat(block_date)  {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const BlockStat = await new Promise((resolve, reject) => {
       if(db == null) {
         resolve(null);
@@ -1605,6 +1624,7 @@
   }
 
   async function getTxInforByIdFromDb(TxId) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     if(db == null) return
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -1622,6 +1642,7 @@
   }
 
   async function getBlockInforByHeightFromDb(Height) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(null);
@@ -1638,6 +1659,7 @@
   }
 
   async function getBlockInforByHashFromDb(Hash) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(null);
@@ -1654,6 +1676,7 @@
   }
 
   async function getBlockCount() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -1669,6 +1692,7 @@
     });
   }
   async function getBlockPage(pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -1685,6 +1709,7 @@
     });
   }
   async function getBlockPageJson(pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -1701,6 +1726,7 @@
   }
 
   async function getTxCount(Height) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -1716,6 +1742,7 @@
     });
   }
   async function getTxPage(height, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -1732,6 +1759,7 @@
     });
   }
   async function getTxPageJson(height, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const heightFiler = Number(height) < 0 ? 1 : Number(height);
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
@@ -1751,6 +1779,7 @@
   }
 
   async function getAllTxCount() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -1766,6 +1795,7 @@
     });
   }
   async function getAllTxPage(pageid, pagesize, getTxCountValue) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     //const From = getTxCountValue - Number(pagesize) * Number(pageid + 1)
     const From = Number(pagesize) * Number(pageid)
     console.log("getAllTxPage", pagesize, pageid);
@@ -1784,6 +1814,7 @@
     });
   }
   async function getAllTxPageJson(pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -1800,6 +1831,7 @@
   }
 
   async function getTxBundleItemCount(txid) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -1814,7 +1846,9 @@
       });
     });
   }
+
   async function getTxBundleItemPage(txid, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -1830,7 +1864,9 @@
       });
     });
   }
+
   async function getTxBundleItemPageJson(txid, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -1847,6 +1883,7 @@
   }
 
   async function getTxBundleItemsInUnbundle(txid, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(txid);
     await syncingTxParseBundleById(getTxInforByIdFromDbValue);
     const getTxBundleItemPageJsonValue = await getTxBundleItemPageJson(txid, pageid, pagesize);
@@ -1858,31 +1895,37 @@
   }
 
   async function getTxPending() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const TxPending = await axios.get(NodeApi + '/tx/pending', {}).then(res=>res.data).catch(() => {});
     return TxPending ? TxPending : [];
   }
 
   async function getTxPendingRecord() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const TxPending = await axios.get(NodeApi + '/tx/pending/record', {}).then(res=>res.data).catch(() => {});
     return TxPending ? TxPending : [];
   }
   
   async function getTxAnchor() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const TxAnchor = await axios.get(NodeApi + '/tx_anchor', {}).then(res=>res.data).catch(() => {});
     return TxAnchor ? String(TxAnchor) : '';
   }
 
   async function getPrice(datasize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const Price = await axios.get(NodeApi + '/price/' + datasize, {}).then(res=>res.data).catch(() => {});
     return Price ? String(Price) : '0';
   }
 
   async function getPriceAddress(datasize, Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const Price = await axios.get(NodeApi + '/price/' + datasize + '/' + Address, {}).then(res=>res.data).catch(() => {});
     return Price ? String(Price) : '0';
   }
 
   async function postTx(Payload) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       let response = await axios.post(NodeApi + '/tx', Payload).catch(() => {});
       log('postTx:', response.data);
@@ -1904,6 +1947,7 @@
   }
 
   async function postTxForwarding(Payload) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       db.all("SELECT * from peers where status = '1'", (err, result) => {
         if (err) {
@@ -1931,6 +1975,7 @@
   }
 
   async function postChunk(Payload) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       const response = await axios.post(NodeApi + '/chunk', Payload);
       log('postChunk:', response.data);
@@ -1952,6 +1997,7 @@
   }
 
   async function postChunkForwarding(Payload) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       db.all("SELECT * from peers where status = '1'", (err, result) => {
         if (err) {
@@ -1979,16 +2025,19 @@
   }
   
   async function getTxStatusById(TxId) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const TxStatus = await axios.get(NodeApi + '/tx/'+TxId+'/status', {}).then(res=>res.data).catch(() => {});
     return TxStatus;
   }
 
   async function getTxUnconfirmed(TxId) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const TxStatus = await axios.get(NodeApi + '/unconfirmed_tx/'+TxId, {}).then(res=>res.data).catch(() => {});
     return TxStatus;
   }
 
   async function getAllAddressCount() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -2003,7 +2052,9 @@
       });
     });
   }
+
   async function getAllAddressPage(pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       db.all("SELECT * FROM address order by balance desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
@@ -2015,7 +2066,9 @@
       });
     });
   }
+
   async function getAllAddressPageJson(pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2032,6 +2085,7 @@
   }
 
   async function getAllFileTypeCount(FileType) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       let ItemTypeSql = "item_type = '"+FileType+"'";
       if(FileType == "word") {
@@ -2056,7 +2110,9 @@
       });
     });
   }
+
   async function getAllFileTypePage(FileType, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       let ItemTypeSql = "item_type = '"+FileType+"'";
@@ -2078,7 +2134,9 @@
       });
     });
   }
+
   async function getAllFileTypePageJson(FileType, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2095,12 +2153,14 @@
   }
 
   async function getWalletTxJson(TxId) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxId);
     log("getTxInforByIdFromDbValue", getTxInforByIdFromDbValue)
     return TxRowToJsonFormat([getTxInforByIdFromDbValue])[0];
   }
 
   async function getAllFileTypeAddressCount(FileType, Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -2115,7 +2175,9 @@
       });
     });
   }
+
   async function getAllFileTypeAddressPage(FileType, Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -2131,7 +2193,9 @@
       });
     });
   }
+
   async function getAllFileTypeAddressPageJson(FileType, Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2151,6 +2215,7 @@
   
 
   async function getAllFileFolderAddressCount(Folder, Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -2165,7 +2230,9 @@
       });
     });
   }
+
   async function getAllFileFolderAddressPage(Folder, Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -2181,7 +2248,9 @@
       });
     });
   }
+
   async function getAllFileFolderAddressPageJson(Folder, Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2200,6 +2269,7 @@
   }
 
   async function getAllFileStarAddressCount(Star, Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -2214,7 +2284,9 @@
       });
     });
   }
+
   async function getAllFileStarAddressPage(Star, Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -2230,7 +2302,9 @@
       });
     });
   }
+
   async function getAllFileStarAddressPageJson(Star, Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2249,6 +2323,7 @@
   }
 
   async function getAllFileLabelAddressCount(Label, Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -2263,7 +2338,9 @@
       });
     });
   }
+
   async function getAllFileLabelAddressPage(Label, Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -2279,7 +2356,9 @@
       });
     });
   }
+
   async function getAllFileLabelAddressPageJson(Label, Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2298,6 +2377,7 @@
   }
 
   async function getAllFileLabelGroup(Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const AddressFilter = filterString(Address);
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -2315,6 +2395,7 @@
   }
 
   async function getAllFileFolder(Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const AddressFilter = filterString(Address);
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -2331,8 +2412,8 @@
     });
   }
   
-
   async function getWalletTxsAllCount(Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -2347,7 +2428,9 @@
       });
     });
   }
+
   async function getWalletTxsAllPage(Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -2363,7 +2446,9 @@
       });
     });
   }
+
   async function getWalletTxsAllPageJson(Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2381,6 +2466,7 @@
   }
 
   async function getWalletTxsSentCount(Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -2395,7 +2481,9 @@
       });
     });
   }
+  
   async function getWalletTxsSentPage(Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -2411,7 +2499,9 @@
       });
     });
   }
+
   async function getWalletTxsSentPageJson(Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2429,6 +2519,7 @@
   }
 
   async function getWalletTxsReceivedCount(Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -2443,7 +2534,9 @@
       });
     });
   }
+
   async function getWalletTxsReceivedPage(Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -2459,7 +2552,9 @@
       });
     });
   }
+
   async function getWalletTxsReceivedPageJson(Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2477,6 +2572,7 @@
   }
 
   async function getWalletTxsFilesCount(Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(0);
@@ -2491,7 +2587,9 @@
       });
     });
   }
+
   async function getWalletTxsFilesPage(Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
       if(db == null) {
@@ -2507,7 +2605,9 @@
       });
     });
   }
+
   async function getWalletTxsFilesPageJson(Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2525,6 +2625,7 @@
   }
 
   async function getPeers() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getPeersInfoValue = await getPeersInfo();
     const RS = [];
     getPeersInfoValue.map((Peer)=>{
@@ -2560,6 +2661,7 @@
   }
 
   async function calculatePeers() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       const getPeersAvailableList = await getPeersInfo()
       getPeersAvailableList.map(async (Item)=>{
@@ -2618,6 +2720,7 @@
   }
 
   async function getPeersAndInsertDb(PeerUrl) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       const peersList = await axios.get("http://" + PeerUrl + '/peers', {}).then(res=>res.data).catch(() => {});
       const HaveIpLocationPeersList = await getPeers();
@@ -2652,6 +2755,7 @@
   }
 
   async function getPeersInfo() {  
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       db.all("SELECT * from peers where 1=1 order by status desc", (err, result) => {
         if (err) {
@@ -2664,6 +2768,7 @@
   }
 
   async function getPeersAvailable() {  
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       db.all("SELECT * from peers where status = '1'", (err, result) => {
         if (err) {
@@ -2676,6 +2781,7 @@
   }
 
   async function getStatisticsBlock(AllDates=30) {  
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const BlockStat = await new Promise((resolve, reject) => {
                         db.all("SELECT * from stat order by block_date desc limit "+Number(AllDates), (err, result) => {
                           if (err) {
@@ -2755,6 +2861,7 @@
   }
 
   async function getWalletAddressProfile(Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const AddressInfor = await new Promise((resolve, reject) => {
                             if(db == null) {
                               return null;
@@ -2791,6 +2898,7 @@
   }
 
   async function getAgentList(pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2852,6 +2960,7 @@
   }
 
   async function getAddressReferee(Address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2916,6 +3025,7 @@
   }
 
   async function getChivesLightNodeHeartBeat(from_address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -2954,6 +3064,7 @@
   }
 
   async function getChivesLightNodeReward(from_address, pageid, pagesize) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
@@ -3083,6 +3194,7 @@
 
 
   async function getWalletAddressBalanceFromDb(Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(null);
@@ -3099,6 +3211,7 @@
   }
   
   async function getBlockHeightFromDb() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(null);
@@ -3115,6 +3228,7 @@
   }
 
   async function getLightNodeStatus() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getBlockHeightFromDbValue = await getBlockHeightFromDb();
     const BlockInfor = await getBlockInforByHeightFromDb(getBlockHeightFromDbValue);
     //log("BlockInfor", BlockInfor)
@@ -3178,6 +3292,7 @@
   }
 
   async function getTxData(TxId) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const TxIdFilter = filterString(TxId)
     const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxIdFilter);
     let FileContent = readFile("files/" + TxIdFilter.substring(0, 2).toLowerCase(), TxIdFilter, "getTxData", null);
@@ -3198,18 +3313,21 @@
   }
 
   async function getAddressBalance(Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const AddressFilter = filterString(Address);
     const addressBalance = await axios.get(NodeApi + '/wallet/' + AddressFilter + '/balance', {}).then(res=>res.data).catch(() => {});
     return addressBalance;
   }
 
   async function getAddressBalanceMining(Address) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const AddressFilter = filterString(Address);
     const addressBalance = await axios.get(NodeApi + '/wallet/' + AddressFilter + '/reserved_rewards_total', {}).then(res=>res.data).catch(() => {});
     return addressBalance;
   }
   
   function readFile(Dir, FileName, Mark, OpenFormat) {
+    const DataDir = getDataDir()
     const filePath = DataDir + '/' + Dir + '/' + FileName;
     if(isFile(filePath)) {
       //log("filePath", filePath)
@@ -3223,6 +3341,7 @@
   }
 
   function writeFile(Dir, FileName, FileContent, Mark) {
+    const DataDir = getDataDir()
     const directoryPath = DataDir + '/' + Dir;
     enableDir(directoryPath)
     const TxFilePath = directoryPath + "/" + FileName
@@ -3253,6 +3372,7 @@
   }
 
   function mkdirForData() {
+    const DataDir = getDataDir()
     fs.mkdir(DataDir + '/blocks', { recursive: true }, (err) => {});
     fs.mkdir(DataDir + '/txs', { recursive: true }, (err) => {});
     fs.mkdir(DataDir + '/files', { recursive: true }, (err) => {});
@@ -3315,6 +3435,7 @@
   }
 
   async function convertVideoFirstScreenToImage(inputFilePath, outputFilePath) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     let command = `${__dirname}/../../app.asar.unpacked/lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe -y -i ${inputFilePath} -vframes 1 -q:v 2 ${outputFilePath}`;
     if(isDev==true) {
       command = `${__dirname}/../lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe -y -i ${inputFilePath} -vframes 1 -q:v 2 ${outputFilePath}`;
@@ -3331,6 +3452,7 @@
   }
 
   async function htmlToImage(html, outputPath) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const browser = await puppeteer.launch({headless: 'new',});
     const page = await browser.newPage();
     await page.setContent(html);
@@ -3339,6 +3461,7 @@
   }
 
   async function convertDocxToImage(inputFilePath, outputFilePath) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     mammoth.convertToHtml({ path: inputFilePath })
       .then((result) => {
         const html = result.value;
@@ -3353,6 +3476,7 @@
   }
 
   async function convertXlsxToImage(inputFilePath, outputFilePath) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const workbook = xlsx.readFile(inputFilePath);
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
@@ -3361,6 +3485,7 @@
   }
 
   async function convertPptxToPdf(inputFilePath, outputFilePath, fileTypeSuffix) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     copyFileSync(inputFilePath, inputFilePath+"."+fileTypeSuffix);
     try {
         // Initial setup, create credentials instance.
@@ -3397,6 +3522,7 @@
   }
   
   async function getTxDataThumbnail(OriginalTxId) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     mkdirForData();
     const TxContent = readFile("txs/" + OriginalTxId.substring(0, 2).toLowerCase(), OriginalTxId + '.json', "getTxDataThumbnail", 'utf-8');
     const TxInfor = JSON.parse(TxContent);
@@ -3554,9 +3680,11 @@
   }
 
   async function compressImage(TxId, ContentType) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
   }
 
   async function deleteBlackTxsAndAddress() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const DeleteAddress = db.prepare("delete from tx where from_address = ?");
     BlackListAddress.map((Address)=>{
       DeleteAddress.run(Address);
@@ -3591,7 +3719,8 @@
 
   export default {
     initChivesLightNode,
-    refreshChivesLightNodeUrl,
+    initChivesLightNodeSql,
+    initChivesLightNodeSetting,
     chivesLightNodeStatus,
     chivesLightNodeUrl,
     syncingBlock,

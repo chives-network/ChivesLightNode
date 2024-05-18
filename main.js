@@ -27,7 +27,8 @@ function createMainWindow() {
   ipcMain.on('start-chives-light-node', async (event, data) => {
     ChivesLightNodeSetting = await settings.get('chives-light-node');
     console.log("ChivesLightNodeSetting main.js", ChivesLightNodeSetting)
-    await syncing.initChivesLightNode(ChivesLightNodeSetting);
+    await syncing.initChivesLightNodeSetting(ChivesLightNodeSetting);
+    await syncing.initChivesLightNodeSql();
     mainWindow.loadURL('http://localhost:' + PORT);
   });
   
