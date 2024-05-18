@@ -25,7 +25,7 @@
   const isDev = false;
   let ChivesLightNodeSetting = null
   
-  await initChivesLightNodeSetting({"NodeApi1":"http://node1.chivesweave.net:1985","NodeApi2":"http://node1.chivesweave.net:1987","NodeStorageDirectory":"E:/ChivesWeaveData00"});
+  await initChivesLightNodeSetting({"NodeApi1":"http://node1.chivesweave.net:1985","NodeApi2":"http://node1.chivesweave.net:1987","NodeStorageDirectory":"E:/ChivesWeaveData"});
   await initChivesLightNodeSql();
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
