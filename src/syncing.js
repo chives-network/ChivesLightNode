@@ -396,8 +396,8 @@
     try {
       const result = [];
       for (const TxList of getTxsNotSyncingList) {
-        const TxInfor = await syncingTxParseBundleById(TxList);
-        log("syncingTxParseBundle TxInfor: 11111111111111111111111111", TxList.id, TxList.block_height, "TxCount", TxCount)
+        await syncingTxParseBundleById(TxList);
+        log("syncingTxParseBundle TxInfor: ", TxList.id, TxList.block_height, "TxCount", TxCount)
         result.push(TxList.id)
       }
       return result;
@@ -416,7 +416,7 @@
       const result = [];
       for (const TxList of getTxsNotSyncingList) {
         const TxInfor = await syncingTxById(TxList.id, TxList.block_height);
-        log("syncingTx TxInfor: ", TxList.id, TxInfor.id)
+        log("syncingTx TxInfor: ", TxList.id, TxInfor?.id)
         result.push(TxInfor)
       }
       return result;
@@ -436,10 +436,10 @@
       log("syncingTxPromiseAll Count: ", getTxsNotSyncingList.length);
   
       const result = await Promise.all(
-        getTxsNotSyncingList.map(async (TxList) => {
+        getTxsNotSyncingList && getTxsNotSyncingList.map(async (TxList) => {
           try {
             const TxInfor = await syncingTxById(TxList.id, TxList.block_height);
-            log("syncingTxPromiseAll TxInfor: ", TxList.id, TxInfor.id);
+            log("syncingTxPromiseAll TxInfor: ", TxList.id, TxInfor?.id);
             return TxInfor;
           } 
           catch (error) {
@@ -485,7 +485,7 @@
   async function syncingChunks(TxCount = 5) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getTxsHaveChunksList = await getTxsHaveChunks(TxCount)
-    log("syncingChunks Count: ", getTxsHaveChunksList.length)
+    log("syncingChunks Count: ", getTxsHaveChunksList?.length)
     try {
       const result = [];
       for (const TxList of getTxsHaveChunksList) {
@@ -519,10 +519,10 @@
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
       const getTxsHaveChunksList = await getTxsHaveChunks(TxCount);
-      log("syncingChunks Count: ", getTxsHaveChunksList.length);
+      log("syncingChunks Count: ", getTxsHaveChunksList?.length);
   
       const result = await Promise.all(
-        getTxsHaveChunksList.map(async (TxList) => {
+        getTxsHaveChunksList && getTxsHaveChunksList.map(async (TxList) => {
           try {
             const TxInfor = await syncingTxChunksById(TxList.id);
             return TxInfor;
@@ -580,132 +580,140 @@
     }
     else {
       const result = await axios.get(NodeApi + '/tx/' + TxId, {}).catch(() => {});
-      TxInfor = result.data
-      log("syncingTxById From Remote Node",TxId)
-      //Write Tx File
-      writeFileStatus = writeFile('txs/' + TxId.substring(0, 2).toLowerCase(), TxId + ".json", JSON.stringify(TxInfor), "syncingTxById")
+      if(result && result.data) {
+        TxInfor = result.data
+        log("syncingTxById From Remote Node",TxId)
+        try {
+          //Write Tx File
+          writeFileStatus = writeFile('txs/' + TxId.substring(0, 2).toLowerCase(), TxId + ".json", JSON.stringify(TxInfor), "syncingTxById")
+
+          //Write Tx File
+          if(writeFileStatus)    {
+            //Insert Tags
+            TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
+              const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
+              const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
+              const insertTag = db.prepare('INSERT OR IGNORE INTO tag (height, tx_id, name, value) VALUES (?, ?, ?, ?)');
+              insertTag.run(Height, TxId, TagName, TagValue);
+              insertTag.finalize();
+            })
+          
+            //log("TxInfor TagsMap",TxInfor)
+            //Tags Data
+            const newTags = []
+            const TagsMap = {}
+            if(TxInfor.owner && TxInfor.owner.address) {
+              TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
+                TagsMap[Tag.name] = Tag.value;
+                newTags.push({'name':Tag.name, 'value':Tag.value})
+              })
+              TxInfor.owner = TxInfor.owner.key
+              TxInfor.quantity = TxInfor.quantity.winston
+              //log("TxInfor TagsMap",TagsMap)
+            }
+            else {
+              TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
+                const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
+                const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
+                TagsMap[TagName] = TagValue;
+                newTags.push({'name':TagName, 'value':TagValue})
+              })
+              //log("TxInfor TagsMap",TagsMap)
+            }
+            //log("TxInfor TagsMap",TxInfor)
+            
+            //Update Tx
+            const updateTx = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, reward = ?, data_size = ?, data_root = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
+            let from_address = '';
+            //log("TxInfor TagsMap",TxInfor)
+            if(TxInfor.owner && TxInfor.owner.address) {
+              from_address = TxInfor.owner.address;
+              TxInfor.owner = TxInfor.owner.key
+              TxInfor.quantity = TxInfor.quantity.winston
+            }
+            else if(TxInfor.owner) {
+              from_address = await ownerToAddress(TxInfor.owner);
+            }
+            else {
+              from_address = "";
+            }
+            const item_name = TagsMap['File-Name'] || "";
+            const item_type = contentTypeToFileType(TagsMap['Content-Type']);
+            const item_parent = TagsMap['File-Parent'] || "Root";
+            const content_type = TagsMap['Content-Type'] || "";
+            const item_hash = TagsMap['File-Hash'] || "";
+            const item_summary = TagsMap['File-Summary'] || "";
+            const is_encrypt = TagsMap['Cipher-ALG'] || "";
+            const is_public = TagsMap['File-Public'] || "";
+            const app_name = TagsMap['App-Name'] || "";
+            const app_version = TagsMap['App-Version'] || "";
+            const app_instance = TagsMap['App-Instance'] || "";
+
+            let entity_type = "";
+            const BundleFormat = TagsMap['Bundle-Format'] || "";
+            if(BundleFormat == "binary") {
+                entity_type = "Bundle";
+            }
+            else if(TagsMap['Entity-Type'] && TagsMap['Entity-Type'] == "Action" && 
+              (TagsMap['Entity-Action'] == "RegisterChivesLightNode" || TagsMap['Entity-Action'] == "HeartBeatChivesLightNode") 
+              ) {
+                entity_type = "WaitDoingAction";
+            }
+            else if(TagsMap['Entity-Type'] && TagsMap['Entity-Type'] != "") {
+                entity_type = TagsMap['Entity-Type'];
+            }
+            else if(TxInfor.data_size > 0 && item_type !="" && item_name != "") {
+                entity_type = "File";
+            }
+            else {
+                entity_type = "Tx";
+            }
+            updateTx.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
+            updateTx.finalize();
+
+            log("TxInfor from_address: ", from_address)
+
+            //Insert Address
+            const BlockInfor = await getBlockInforByHeightFromDb(Height);
+            const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+            insertAddress.run(from_address, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
+            insertAddress.finalize();
+            //Update Address
+            const AddressBalance = await axios.get(NodeApi + "/wallet/" + from_address + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
+            const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
+            updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, from_address);
+            updateAddress.finalize();
+            if(TxInfor.target && TxInfor.target.length==43) {
+              const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+              insertAddress.run(TxInfor.target, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
+              insertAddress.finalize();
+              //Update Address
+              const AddressBalanceTarget = await axios.get(NodeApi + "/wallet/" + TxInfor.target + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
+              log("TxInfor.target", TxInfor.target)
+              log("AddressBalanceTarget", AddressBalanceTarget)
+              const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
+              updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalanceTarget, TxInfor.target);
+              updateAddress.finalize();
+            }
+
+            //Download Chunk
+            const data_root = TxInfor.data_root
+            if(data_root && data_root.length && data_root.length == 43) {
+                log("TxInfor data_root: ______________________________________________________________", data_root)
+                log("TxInfor entity_type: ______________________________________________________________", entity_type)
+            }
+          }
+          else {
+            //Write File Content Error
+          }
+
+        } 
+        catch (err) {
+          console.error('syncingTxById Error writeFileStatus:', err);
+        }
+      }
     }
 
-    //Write Tx File
-    if(writeFileStatus)    {
-      //Insert Tags
-      TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
-        const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
-        const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
-        const insertTag = db.prepare('INSERT OR IGNORE INTO tag (height, tx_id, name, value) VALUES (?, ?, ?, ?)');
-        insertTag.run(Height, TxId, TagName, TagValue);
-        insertTag.finalize();
-      })
-    
-      //log("TxInfor TagsMap",TxInfor)
-      //Tags Data
-      const newTags = []
-      const TagsMap = {}
-      if(TxInfor.owner && TxInfor.owner.address) {
-        TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
-          TagsMap[Tag.name] = Tag.value;
-          newTags.push({'name':Tag.name, 'value':Tag.value})
-        })
-        TxInfor.owner = TxInfor.owner.key
-        TxInfor.quantity = TxInfor.quantity.winston
-        //log("TxInfor TagsMap",TagsMap)
-      }
-      else {
-        TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
-          const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
-          const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
-          TagsMap[TagName] = TagValue;
-          newTags.push({'name':TagName, 'value':TagValue})
-        })
-        //log("TxInfor TagsMap",TagsMap)
-      }
-      //log("TxInfor TagsMap",TxInfor)
-      
-      //Update Tx
-      const updateTx = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, reward = ?, data_size = ?, data_root = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
-      let from_address = '';
-      //log("TxInfor TagsMap",TxInfor)
-      if(TxInfor.owner && TxInfor.owner.address) {
-        from_address = TxInfor.owner.address;
-        TxInfor.owner = TxInfor.owner.key
-        TxInfor.quantity = TxInfor.quantity.winston
-      }
-      else if(TxInfor.owner) {
-        from_address = await ownerToAddress(TxInfor.owner);
-      }
-      else {
-        from_address = "";
-      }
-      const item_name = TagsMap['File-Name'] || "";
-      const item_type = contentTypeToFileType(TagsMap['Content-Type']);
-      const item_parent = TagsMap['File-Parent'] || "Root";
-      const content_type = TagsMap['Content-Type'] || "";
-      const item_hash = TagsMap['File-Hash'] || "";
-      const item_summary = TagsMap['File-Summary'] || "";
-      const is_encrypt = TagsMap['Cipher-ALG'] || "";
-      const is_public = TagsMap['File-Public'] || "";
-      const app_name = TagsMap['App-Name'] || "";
-      const app_version = TagsMap['App-Version'] || "";
-      const app_instance = TagsMap['App-Instance'] || "";
-
-      let entity_type = "";
-      const BundleFormat = TagsMap['Bundle-Format'] || "";
-      if(BundleFormat == "binary") {
-          entity_type = "Bundle";
-      }
-      else if(TagsMap['Entity-Type'] && TagsMap['Entity-Type'] == "Action" && 
-        (TagsMap['Entity-Action'] == "RegisterChivesLightNode" || TagsMap['Entity-Action'] == "HeartBeatChivesLightNode") 
-        ) {
-          entity_type = "WaitDoingAction";
-      }
-      else if(TagsMap['Entity-Type'] && TagsMap['Entity-Type'] != "") {
-          entity_type = TagsMap['Entity-Type'];
-      }
-      else if(TxInfor.data_size > 0 && item_type !="" && item_name != "") {
-          entity_type = "File";
-      }
-      else {
-          entity_type = "Tx";
-      }
-      updateTx.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
-      updateTx.finalize();
-
-      log("TxInfor from_address: ", from_address)
-
-      //Insert Address
-      const BlockInfor = await getBlockInforByHeightFromDb(Height);
-      const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-      insertAddress.run(from_address, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
-      insertAddress.finalize();
-      //Update Address
-      const AddressBalance = await axios.get(NodeApi + "/wallet/" + from_address + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
-      const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
-      updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, from_address);
-      updateAddress.finalize();
-      if(TxInfor.target && TxInfor.target.length==43) {
-        const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-        insertAddress.run(TxInfor.target, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
-        insertAddress.finalize();
-        //Update Address
-        const AddressBalanceTarget = await axios.get(NodeApi + "/wallet/" + TxInfor.target + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
-        log("TxInfor.target", TxInfor.target)
-        log("AddressBalanceTarget", AddressBalanceTarget)
-        const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
-        updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalanceTarget, TxInfor.target);
-        updateAddress.finalize();
-      }
-
-      //Download Chunk
-      const data_root = TxInfor.data_root
-      if(data_root && data_root.length && data_root.length == 43) {
-          log("TxInfor data_root: ______________________________________________________________", data_root)
-          log("TxInfor entity_type: ______________________________________________________________", entity_type)
-      }
-    }
-    else {
-      //Write File Content Error
-    }
-  
     return TxInfor;
   }
 
@@ -1431,7 +1439,7 @@
         headers: {},
         params: {}
       }).then(res=>res.data).catch(() => {});
-      log("syncingBlockByHeight Get Block From Remote Node",BlockInfor.reward_addr, currentHeight)
+      log("syncingBlockByHeight Get Block From Remote Node",BlockInfor?.reward_addr, currentHeight)
     }
     
     // Begin a transaction
@@ -1526,14 +1534,14 @@
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const MaxId = await new Promise((resolve, reject) => {
       if(db == null) {
-        resolve(null);
+        resolve(0);
         return;
       }
       db.get("SELECT MAX(id) AS NUM FROM log", (err, result) => {
         if (err) {
           reject(err);
         } else {
-          resolve(result ? result.NUM : null);
+          resolve(result ? result.NUM : 0);
         }
       });
     });
@@ -1718,7 +1726,7 @@
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
-    const getBlockCountValue = await getBlockCount();
+    const getBlockCountValue = await getBlockCount() ?? 0;
     const getBlockPageValue = await getBlockPage(pageidFiler, pagesizeFiler);
     const RS = {};
     RS['allpages'] = Math.ceil(getBlockCountValue/pagesizeFiler);
@@ -1769,7 +1777,7 @@
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
-    const getTxCountValue = await getTxCount(heightFiler);
+    const getTxCountValue = await getTxCount(heightFiler) ?? 0;
     const getTxPageValue = await getTxPage(heightFiler, pageidFiler, pagesizeFiler);
     const BlockInfor = await getBlockInforByHeightFromDb(heightFiler);
     const RS = {};
@@ -1823,7 +1831,7 @@
     const pageidFiler = Number(pageid) < 0 ? 0 : Number(pageid);
     const pagesizeFiler = Number(pagesize) < 5 ? 5 : Number(pagesize);
     const From = pageidFiler * pagesizeFiler;
-    const getTxCountValue = await getAllTxCount();
+    const getTxCountValue = await getAllTxCount() ?? 0;
     const getTxPageValue = await getAllTxPage(pageidFiler, pagesizeFiler, getTxCountValue);
     const RS = {};
     RS['allpages'] = Math.ceil(getTxCountValue/pagesizeFiler);
@@ -1889,14 +1897,19 @@
 
   async function getTxBundleItemsInUnbundle(txid, pageid, pagesize) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
-    const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(txid);
-    await syncingTxParseBundleById(getTxInforByIdFromDbValue);
-    const getTxBundleItemPageJsonValue = await getTxBundleItemPageJson(txid, pageid, pagesize);
-    const txArray = TxRowToJsonFormat([getTxInforByIdFromDbValue]);
-    getTxBundleItemPageJsonValue['tx'] = txArray[0];
-    getTxBundleItemPageJsonValue['txs'] = getTxBundleItemPageJsonValue['data'];
-    //log("getTxBundleItemPageJsonValue", getTxBundleItemPageJsonValue);
-    return getTxBundleItemPageJsonValue;
+    try {
+      const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(txid);
+      await syncingTxParseBundleById(getTxInforByIdFromDbValue);
+      const getTxBundleItemPageJsonValue = await getTxBundleItemPageJson(txid, pageid, pagesize);
+      const txArray = TxRowToJsonFormat([getTxInforByIdFromDbValue]);
+      getTxBundleItemPageJsonValue['tx'] = txArray[0];
+      getTxBundleItemPageJsonValue['txs'] = getTxBundleItemPageJsonValue['data'];
+      //log("getTxBundleItemPageJsonValue", getTxBundleItemPageJsonValue);
+      return getTxBundleItemPageJsonValue;
+    }
+    catch(Error) {
+      console.log("getTxBundleItemsInUnbundle Error:", Error)
+    }
   }
 
   async function getTxPending() {
@@ -2159,9 +2172,14 @@
 
   async function getWalletTxJson(TxId) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
-    const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxId);
-    log("getTxInforByIdFromDbValue", getTxInforByIdFromDbValue)
-    return TxRowToJsonFormat([getTxInforByIdFromDbValue])[0];
+    try {
+      const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxId);
+      log("getTxInforByIdFromDbValue", getTxInforByIdFromDbValue)
+      return TxRowToJsonFormat([getTxInforByIdFromDbValue])[0];
+    }
+    catch(Error) {
+      console.log("getWalletTxJson Error:", Error)
+    }
   }
 
   async function getAllFileTypeAddressCount(FileType, Address) {
@@ -2633,7 +2651,7 @@
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getPeersInfoValue = await getPeersInfo();
     const RS = [];
-    getPeersInfoValue.map((Peer)=>{
+    getPeersInfoValue && getPeersInfoValue.map((Peer)=>{
       RS.push(Peer.ip)
     })
     return RS;
@@ -2642,7 +2660,7 @@
   async function checkPeer(url) {
     try {
       const response = await axios.get(url).catch(() => {});  
-      if (response.status === 200) {
+      if (response && response.status === 200) {
         //log(`URL ${url} is reachable.`);
         if(response.data && response.data.type && response.data.type == "lightnode") {
           return 2;
@@ -3299,23 +3317,28 @@
 
   async function getTxData(TxId) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
-    const TxIdFilter = filterString(TxId)
-    const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxIdFilter);
-    let FileContent = readFile("files/" + TxIdFilter.substring(0, 2).toLowerCase(), TxIdFilter, "getTxData", null);
-    if(FileContent == null) {
-        const TxContent = readFile("txs/" + TxIdFilter.substring(0, 2).toLowerCase(), TxIdFilter + '.json', "getTxData", 'utf-8');
-        const TxContentJson = JSON.parse(TxContent);
-        if(TxContentJson && TxContentJson.data && TxContentJson.data_root == '') {
-            FileContent = Buffer.from(TxContentJson.data, 'base64');
-        }
-        else {
-            FileContent = '';
-        }
+    try {
+      const TxIdFilter = filterString(TxId)
+      const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxIdFilter);
+      let FileContent = readFile("files/" + TxIdFilter.substring(0, 2).toLowerCase(), TxIdFilter, "getTxData", null);
+      if(FileContent == null) {
+          const TxContent = readFile("txs/" + TxIdFilter.substring(0, 2).toLowerCase(), TxIdFilter + '.json', "getTxData", 'utf-8');
+          const TxContentJson = JSON.parse(TxContent);
+          if(TxContentJson && TxContentJson.data && TxContentJson.data_root == '') {
+              FileContent = Buffer.from(TxContentJson.data, 'base64');
+          }
+          else {
+              FileContent = '';
+          }
+      }
+      const FileName = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['item_name'] ? getTxInforByIdFromDbValue['item_name'] : TxId;
+      const ContentType = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['content_type'] ? getTxInforByIdFromDbValue['content_type'] : "";
+      log("FileContent", FileContent)
+      return {FileName, ContentType, FileContent};
     }
-    const FileName = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['item_name'] ? getTxInforByIdFromDbValue['item_name'] : TxId;
-    const ContentType = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['content_type'] ? getTxInforByIdFromDbValue['content_type'] : "";
-    log("FileContent", FileContent)
-    return {FileName, ContentType, FileContent};
+    catch(Error) {
+      console.log("getWalletTxJson Error:", Error)
+    }
   }
 
   async function getAddressBalance(Address) {
@@ -3529,160 +3552,164 @@
   
   async function getTxDataThumbnail(OriginalTxId) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
-    mkdirForData();
-    const TxContent = readFile("txs/" + OriginalTxId.substring(0, 2).toLowerCase(), OriginalTxId + '.json', "getTxDataThumbnail", 'utf-8');
-    const TxInfor = JSON.parse(TxContent);
-    //log("TxInfor", TxInfor);
-    
-    const TagsMap = {}
-    TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
-      //For Bundle ITem
-      TagsMap[Tag.name] = Tag.value;
-      //For Tx Item
-      const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
-      const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
-      TagsMap[TagName] = TagValue;
-    })
-    const FileName = TagsMap['File-Name'] || "Unknown"
-    const ContentType = TagsMap['Content-Type']
-    const TxId = TagsMap['File-TxId'] ? TagsMap['File-TxId'] : OriginalTxId
-    log("TxId OriginalTxId", TxId, OriginalTxId);
-    
-    const inputFilePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
-    log("inputFilePath", inputFilePath)
-    if(isFile(inputFilePath)) {
-      //Thumbnail Exist
-      const compressFilePath = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
-      if(isFile(compressFilePath)) {
-        log("compressFilePath", compressFilePath)
-        const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
-        return {FileName, ContentType, FileContent};
-      }
-
-      //Compress File
-      const outputFilePath = DataDir + '/thumbnail/' + TxId.substring(0, 2).toLowerCase();
-      enableDir(outputFilePath)
-      const fileType = getContentTypeAbbreviation(ContentType);
-      const fileTypeSuffix = String(fileType).toLowerCase();
-      log("fileTypeSuffix", fileTypeSuffix)
-      if((fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") && false) {
-          sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
-              if (err) {
-                log("getTxDataThumbnail sharp err:", TxId, err, info)
-              } else {
-                log("getTxDataThumbnail sharp info:", info);
-              }
-          });
-      }
-      else if(fileTypeSuffix == "png" && false) {
-        sharp(inputFilePath).png({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
-          log("getTxDataThumbnail sharp:", TxId, err, info)
-        });
-      }
-      else if(fileTypeSuffix == "gif" && false) {
-        sharp(inputFilePath).gif({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
-          log("getTxDataThumbnail sharp:", TxId, err, info)
-        });
-      }
-      else if(fileTypeSuffix == "pdf")    {
-        if(isFile(outputFilePath + '/' + TxId + '.png')) {
-          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-          return {FileName, ContentType:"image/png", FileContent};
-        }
-        else {
-          const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(inputFilePath, outputFilePath + '/' + TxId);
-          if(convertPdfFirstPageToImageStatus) {
-            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-            return {FileName, ContentType:"image/png", FileContent};
-          }
-          log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
-        }
-        //printer(inputFilePath).then(log);
-        log("outputFilePath", outputFilePath + '/' + TxId + '.png')
-      }
-      else if(fileTypeSuffix == "video")    {
-        if(isFile(outputFilePath + '/' + TxId + '.png')) {
-          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-          return {FileName, ContentType:"image/png", FileContent};
-        }
-        else {
-          const convertVideoFirstScreenToImageValue = await convertVideoFirstScreenToImage(inputFilePath, outputFilePath + '/' + TxId + '.png');
-          if(convertVideoFirstScreenToImageValue) {
-            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-            return {FileName, ContentType:"image/png", FileContent};
-          }
-          log("convertVideoFirstScreenToImageValue", convertVideoFirstScreenToImageValue);
-        }
-        //printer(inputFilePath).then(log);
-        log("outputFilePath", outputFilePath + '/' + TxId + '.png')
-      }
-      else if(fileTypeSuffix == "docx" || fileTypeSuffix == "doc")    {
-        if(isFile(outputFilePath + '/' + TxId + '.png')) {
-          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-          return {FileName, ContentType:"image/png", FileContent};
-        }
-        else {
-          convertDocxToImage(inputFilePath, outputFilePath + '/' + TxId);
-          const sleep = util.promisify(setTimeout);
-          await sleep(2000);
-          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-          return {FileName, ContentType:"image/png", FileContent};
-        }
-      }
-      else if(fileTypeSuffix == "xls" || fileTypeSuffix == "xlsx")    {
-        if(isFile(outputFilePath + '/' + TxId + '.png')) {
-          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-          return {FileName, ContentType:"image/png", FileContent};
-        }
-        else {
-          await convertXlsxToImage(inputFilePath, outputFilePath + '/' + TxId);
-          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-          return {FileName, ContentType:"image/png", FileContent};
-        }
-      }
-      else if(fileTypeSuffix == "ppt" || fileTypeSuffix == "pptx")    {
-        if(isFile(outputFilePath + '/' + TxId + '.png')) {
-          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-          return {FileName, ContentType:"image/png", FileContent};
-        }
-        else if(!isFile(outputFilePath + '/' + TxId + '.pdf')) {
-          await convertPptxToPdf(inputFilePath, outputFilePath + '/' + TxId, fileTypeSuffix);
-          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-          return {FileName, ContentType:"image/png", FileContent};
-        }
-        else if(isFile(outputFilePath + '/' + TxId + '.pdf')) {
-          const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(outputFilePath + '/' + TxId + '.pdf', outputFilePath + '/' + TxId);
-          if(convertPdfFirstPageToImageStatus) {
-            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-            return {FileName, ContentType:"image/png", FileContent};
-          }
-          log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
-        }
-      }
+    try {
+      mkdirForData();
+      const TxContent = readFile("txs/" + OriginalTxId.substring(0, 2).toLowerCase(), OriginalTxId + '.json', "getTxDataThumbnail", 'utf-8');
+      const TxInfor = JSON.parse(TxContent);
+      //log("TxInfor", TxInfor);
       
-      //Thumbnail Exist
-      const compressFilePath2 = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
-      if(isFile(compressFilePath2)) {
-        log("compressFilePath2", compressFilePath2)
-        const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
-        return {FileName, ContentType, FileContent};
-      }
+      const TagsMap = {}
+      TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
+        //For Bundle ITem
+        TagsMap[Tag.name] = Tag.value;
+        //For Tx Item
+        const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
+        const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
+        TagsMap[TagName] = TagValue;
+      })
+      const FileName = TagsMap['File-Name'] || "Unknown"
+      const ContentType = TagsMap['Content-Type']
+      const TxId = TagsMap['File-TxId'] ? TagsMap['File-TxId'] : OriginalTxId
+      log("TxId OriginalTxId", TxId, OriginalTxId);
+      
+      const inputFilePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
+      log("inputFilePath", inputFilePath)
+      if(isFile(inputFilePath)) {
+        //Thumbnail Exist
+        const compressFilePath = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
+        if(isFile(compressFilePath)) {
+          log("compressFilePath", compressFilePath)
+          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
+          return {FileName, ContentType, FileContent};
+        }
 
-      //Out Original File Content
-      const FileContent = readFile("files/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
-      return {FileName, ContentType, FileContent};
-    }
-    else {
-      let FileContent = ''
-      if(TxInfor && TxInfor.data && TxInfor.data_root == '') {
-          FileContent = Buffer.from(TxInfor.data, 'base64');
+        //Compress File
+        const outputFilePath = DataDir + '/thumbnail/' + TxId.substring(0, 2).toLowerCase();
+        enableDir(outputFilePath)
+        const fileType = getContentTypeAbbreviation(ContentType);
+        const fileTypeSuffix = String(fileType).toLowerCase();
+        log("fileTypeSuffix", fileTypeSuffix)
+        if((fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") && false) {
+            sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
+                if (err) {
+                  log("getTxDataThumbnail sharp err:", TxId, err, info)
+                } else {
+                  log("getTxDataThumbnail sharp info:", info);
+                }
+            });
+        }
+        else if(fileTypeSuffix == "png" && false) {
+          sharp(inputFilePath).png({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
+            log("getTxDataThumbnail sharp:", TxId, err, info)
+          });
+        }
+        else if(fileTypeSuffix == "gif" && false) {
+          sharp(inputFilePath).gif({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
+            log("getTxDataThumbnail sharp:", TxId, err, info)
+          });
+        }
+        else if(fileTypeSuffix == "pdf")    {
+          if(isFile(outputFilePath + '/' + TxId + '.png')) {
+            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+            return {FileName, ContentType:"image/png", FileContent};
+          }
+          else {
+            const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(inputFilePath, outputFilePath + '/' + TxId);
+            if(convertPdfFirstPageToImageStatus) {
+              const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+              return {FileName, ContentType:"image/png", FileContent};
+            }
+            log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
+          }
+          //printer(inputFilePath).then(log);
+          log("outputFilePath", outputFilePath + '/' + TxId + '.png')
+        }
+        else if(fileTypeSuffix == "video")    {
+          if(isFile(outputFilePath + '/' + TxId + '.png')) {
+            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+            return {FileName, ContentType:"image/png", FileContent};
+          }
+          else {
+            const convertVideoFirstScreenToImageValue = await convertVideoFirstScreenToImage(inputFilePath, outputFilePath + '/' + TxId + '.png');
+            if(convertVideoFirstScreenToImageValue) {
+              const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+              return {FileName, ContentType:"image/png", FileContent};
+            }
+            log("convertVideoFirstScreenToImageValue", convertVideoFirstScreenToImageValue);
+          }
+          //printer(inputFilePath).then(log);
+          log("outputFilePath", outputFilePath + '/' + TxId + '.png')
+        }
+        else if(fileTypeSuffix == "docx" || fileTypeSuffix == "doc")    {
+          if(isFile(outputFilePath + '/' + TxId + '.png')) {
+            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+            return {FileName, ContentType:"image/png", FileContent};
+          }
+          else {
+            convertDocxToImage(inputFilePath, outputFilePath + '/' + TxId);
+            const sleep = util.promisify(setTimeout);
+            await sleep(2000);
+            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+            return {FileName, ContentType:"image/png", FileContent};
+          }
+        }
+        else if(fileTypeSuffix == "xls" || fileTypeSuffix == "xlsx")    {
+          if(isFile(outputFilePath + '/' + TxId + '.png')) {
+            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+            return {FileName, ContentType:"image/png", FileContent};
+          }
+          else {
+            await convertXlsxToImage(inputFilePath, outputFilePath + '/' + TxId);
+            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+            return {FileName, ContentType:"image/png", FileContent};
+          }
+        }
+        else if(fileTypeSuffix == "ppt" || fileTypeSuffix == "pptx")    {
+          if(isFile(outputFilePath + '/' + TxId + '.png')) {
+            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+            return {FileName, ContentType:"image/png", FileContent};
+          }
+          else if(!isFile(outputFilePath + '/' + TxId + '.pdf')) {
+            await convertPptxToPdf(inputFilePath, outputFilePath + '/' + TxId, fileTypeSuffix);
+            const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+            return {FileName, ContentType:"image/png", FileContent};
+          }
+          else if(isFile(outputFilePath + '/' + TxId + '.pdf')) {
+            const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(outputFilePath + '/' + TxId + '.pdf', outputFilePath + '/' + TxId);
+            if(convertPdfFirstPageToImageStatus) {
+              const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
+              return {FileName, ContentType:"image/png", FileContent};
+            }
+            log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
+          }
+        }
+        
+        //Thumbnail Exist
+        const compressFilePath2 = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
+        if(isFile(compressFilePath2)) {
+          log("compressFilePath2", compressFilePath2)
+          const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
+          return {FileName, ContentType, FileContent};
+        }
+
+        //Out Original File Content
+        const FileContent = readFile("files/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
+        return {FileName, ContentType, FileContent};
       }
       else {
-          log("inputFilePath Not Exist:", inputFilePath)
+        let FileContent = ''
+        if(TxInfor && TxInfor.data && TxInfor.data_root == '') {
+            FileContent = Buffer.from(TxInfor.data, 'base64');
+        }
+        else {
+            log("inputFilePath Not Exist:", inputFilePath)
+        }
+        return {FileName, ContentType, FileContent};
       }
-      return {FileName, ContentType, FileContent};
     }
-
+    catch(Error) {
+      console.log("getWalletTxJson Error:", Error)
+    }
   }
 
   async function compressImage(TxId, ContentType) {
