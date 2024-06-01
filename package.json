@@ -19,7 +19,6 @@
     "@adobe/pdfservices-node-sdk": "^3.4.2",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
-    "@img/sharp-linux-x64": "^0.33.3",
     "@mui/material": "^5.15.3",
     "arbundles": "^0.10.1",
     "arweave": "^1.14.4",
