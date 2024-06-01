@@ -1,4 +1,4 @@
-name: ChivesLightNode App
+name: ChivesLightNode Windows
 
 on:
   push:
@@ -16,7 +16,12 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18.17.1'
+        node-version: '20.x'
+
+    - name: Unzip html.zip
+      run: |
+        tar -xf html.zip
+      shell: bash
 
     - name: Install dependencies
       run: npm install
