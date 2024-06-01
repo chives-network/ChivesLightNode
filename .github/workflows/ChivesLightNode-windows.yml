@@ -24,10 +24,11 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Unzip html.zip
-      run: |
-        tar -xf html.zip
-      shell: bash
+    - name: Install unzip (if not already installed)
+      run: sudo apt-get install -y unzip
+
+    - name: Unzip html.zip to current directory
+      run: unzip html.zip -d .
 
     - name: Build Electron App
       run: npm run build
