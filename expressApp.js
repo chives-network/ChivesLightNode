@@ -25,7 +25,6 @@ const expressApp = express();
 
 expressApp.use(cors());
 
-
 expressApp.get('/syncing', async (req, res) => {
   //await syncing.resetTx404();
   //await syncing.deleteBlackTxsAndAddress();

@@ -89,7 +89,6 @@ function openNewURL(url) {
   newWindow.loadURL(url);
 }
 
-
 app.whenReady().then(()=>{
   createMainWindow();
 });
