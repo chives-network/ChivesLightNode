@@ -21,6 +21,9 @@ jobs:
     - name: Unzip html.zip to current directory
       run: |
         Expand-Archive -Path html.zip -DestinationPath .
+    
+    - name: Set up GitHub Token
+      run: echo "GH_TOKEN=${{ secrets.GH_TOKEN }}" >> $GITHUB_ENV
 
     - name: Set up MSBuild
       uses: microsoft/setup-msbuild@v1
