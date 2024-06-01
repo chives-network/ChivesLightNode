@@ -1,0 +1,39 @@
+name: Build Electron App
+
+on:
+  push:
+    branches:
+      - main  # 你可以修改为你的默认分支名称，例如 master
+
+jobs:
+  build:
+    runs-on: windows-2019  # 使用 Windows Server 2019 作为运行环境
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4  # 更新为使用 Node.js 20
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4  # 更新为使用 Node.js 20
+      with:
+        node-version: '20.x'  # 设置你的 Node.js 版本
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Install Windows Build Tools
+      run: npm install --global windows-build-tools
+
+    - name: Unzip html.zip
+      run: |
+        tar -xf html.zip
+      shell: bash
+
+    - name: Build Electron App
+      run: npm run build
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: electron-build
+        path: dist  # 修改为你构建输出的目录
