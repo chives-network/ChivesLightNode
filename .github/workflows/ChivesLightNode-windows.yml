@@ -18,11 +18,11 @@ jobs:
       with:
         node-version: '20.x'  # 设置你的 Node.js 版本
 
+    - name: Set up MSBuild
+      uses: microsoft/setup-msbuild@v1
+
     - name: Install dependencies
       run: npm install
-
-    - name: Install Windows Build Tools
-      run: npm install --global windows-build-tools
 
     - name: Unzip html.zip
       run: |
