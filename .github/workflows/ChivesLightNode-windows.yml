@@ -40,4 +40,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: electron-build
-        path: dist  # 修改为你构建输出的目录
+        path: dist/*.exe
+    
