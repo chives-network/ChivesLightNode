@@ -47,6 +47,21 @@
     else if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi3 && await checkPeer(ChivesLightNodeSetting.NodeApi3) > 0) {
       NodeApi = ChivesLightNodeSetting.NodeApi3
     }
+    else if( await checkPeer("http://112.170.68.77:1985") > 0 ) {
+      NodeApi = "http://112.170.68.77:1985"
+    }
+    else if( await checkPeer("http://112.170.68.77:1987") > 0 ) {
+      NodeApi = "http://112.170.68.77:1987"
+    }
+    else if( await checkPeer("http://207.148.148.246:1985") > 0 ) {
+      NodeApi = "http://207.148.148.246:1985"
+    }
+    else if( await checkPeer("121.133.225.85:1985") > 0 ) {
+      NodeApi = "121.133.225.85:1985"
+    }
+    else if( await checkPeer("91.244.197.148:1985") > 0 ) {
+      NodeApi = "91.244.197.148:1985"
+    }
     else {
       NodeApi = "http://112.170.68.77:1985"
     }
