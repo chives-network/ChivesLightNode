@@ -3786,6 +3786,13 @@
     }
   };
 
+  async function closeDb () {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
+    if(db) {
+      db.close()
+    }
+  };
+
   export default {
     initChivesLightNode,
     initChivesLightNodeSql,
@@ -3870,5 +3877,6 @@
     compressImage,
     mkdirForData,
     deleteBlackTxsAndAddress,
-    restrictToLocalhost
+    restrictToLocalhost,
+    closeDb
   };
