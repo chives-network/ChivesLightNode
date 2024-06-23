@@ -3332,6 +3332,12 @@
 
   async function getTxData(TxId) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
+    switch(TxId) {
+      case 'recent_hash_list_diff':
+        return {FileName: null, ContentType: null, FileContent: ''}
+      case 'sync_buckets':
+        return {FileName: null, ContentType: null, FileContent: ''}
+    }
     try {
       const TxIdFilter = filterString(TxId)
       const getTxInforByIdFromDbValue = await getTxInforByIdFromDb(TxIdFilter);
