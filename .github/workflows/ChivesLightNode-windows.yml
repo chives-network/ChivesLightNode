@@ -42,16 +42,3 @@ jobs:
         name: Chivesweave Light Node 0.1.9 - Windows.exe
         path: dist/*.exe
     
-    - name: Create Release
-      id: create_release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: dist/*.exe
-        token: ${{ secrets.GH_TOKEN }}
-        name: Chivesweave Light Node V0.1.9 (Draft) 
-        tag_name: 0.1.9
-        body: |
-          Release created by GitHub Actions
-
-    - name: Get the URL of the created release
-      run: echo "The release is at ${{ steps.create_release.outputs.html_url }}"
