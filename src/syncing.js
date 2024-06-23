@@ -430,7 +430,7 @@
     try {
       const result = [];
       for (const TxList of getTxsNotSyncingList) {
-        const TxInfor = await syncingTxById(TxList.id, TxList.block_height);
+        const TxInfor = await syncingTxById(TxList.id, TxList.block_height, TxList.timestamp);
         log("syncingTx TxInfor: ", TxList.id, TxInfor?.id)
         result.push(TxInfor)
       }
@@ -453,7 +453,7 @@
       const result = await Promise.all(
         getTxsNotSyncingList && getTxsNotSyncingList.map(async (TxList) => {
           try {
-            const TxInfor = await syncingTxById(TxList.id, TxList.block_height);
+            const TxInfor = await syncingTxById(TxList.id, TxList.block_height, TxList.timestamp);
             log("syncingTxPromiseAll TxInfor: ", TxList.id, TxInfor?.id);
             return TxInfor;
           } 
@@ -474,7 +474,7 @@
   async function getTxsNotSyncing(TxCount) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
-      db.all("SELECT id, block_height from tx where from_address is null order by block_height asc limit " + TxCount + " offset 0", (err, result) => {
+      db.all("SELECT id, block_height, timestamp from tx where from_address is null order by block_height asc limit " + TxCount + " offset 0", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -568,7 +568,7 @@
     });
   }
   
-  async function syncingTxById(TxId, Height) {
+  async function syncingTxById(TxId, Height, timestamp = 0) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     // @ts-ignore
     let TxInfor = null
@@ -689,7 +689,13 @@
             log("TxInfor from_address: ", from_address)
 
             //Insert Address
-            const BlockInfor = await getBlockInforByHeightFromDb(Height);
+            let BlockInfor = {}
+            if(timestamp == 0) {
+              BlockInfor = await getBlockInforByHeightFromDb(Height);
+            }
+            else {
+              BlockInfor = {height: Height, timestamp: timestamp }
+            }
             const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
             insertAddress.run(from_address, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
             insertAddress.finalize();
@@ -1456,6 +1462,10 @@
       }).then(res=>res.data).catch(() => {});
       log("syncingBlockByHeight Get Block From Remote Node",BlockInfor?.reward_addr, currentHeight)
     }
+
+    if(BlockInfor == null) {
+      return
+    }
     
     // Begin a transaction
     //db.exec('BEGIN TRANSACTION');
@@ -1485,6 +1495,11 @@
         insertTx.run(Tx, BlockInfor.indep_hash, BlockInfor.height, BlockInfor.timestamp, Tx, timestampToDate(BlockInfor.timestamp));
       })
       insertTx.finalize();
+
+      //Update Tx Detail
+      await Promise.all(Txs.map(async (Tx) => {
+        await syncingTxById(Tx, BlockInfor.height, BlockInfor.timestamp);
+      }));
 
       //Write Block File
       writeFile("/blocks/" + enableBlockHeightDir(currentHeight), BlockInfor.height + ".json", JSON.stringify(BlockInfor), "syncingBlockByHeight")

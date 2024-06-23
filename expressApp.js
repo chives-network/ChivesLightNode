@@ -46,8 +46,6 @@ cron.schedule('*/1 * * * *', () => {
   console.log('schedule syncingBlock Task Begin !!!');
   syncing.syncingBlock(10);
   syncing.syncingBlockMinedTime(10);
-  syncing.syncingTx(10);
-  syncing.syncingChunksPromiseAll(2);
 });
 cron.schedule('*/2 * * * *', () => {
   console.log('schedule syncingTx Task Begin !!!');
