@@ -44,19 +44,19 @@ expressApp.get('/syncing', async (req, res) => {
 
 cron.schedule('*/1 * * * *', () => {
   console.log('schedule syncingBlock Task Begin !!!');
-  syncing.syncingBlock(5);
-  syncing.syncingBlockMinedTime(5);
+  syncing.syncingBlock(10);
+  syncing.syncingBlockMinedTime(10);
+});
+cron.schedule('*/2 * * * *', () => {
+  console.log('schedule syncingTx Task Begin !!!');
+  syncing.syncingTx(20);
+  syncing.syncingChunksPromiseAll(5);
 });
 cron.schedule('*/5 * * * *', () => {
-  console.log('schedule syncingTx Task Begin !!!');
-  syncing.syncingTx(40);
-  syncing.syncingChunksPromiseAll(10);
-});
-cron.schedule('*/9 * * * *', () => {
   console.log('schedule syncingTxParseBundle Task Begin !!!');
-  syncing.syncingTxParseBundle(50);
+  syncing.syncingTxParseBundle(20);
 });
-cron.schedule('*/17 * * * *', () => {
+cron.schedule('*/13 * * * *', () => {
   console.log('schedule resetTx404 Task Begin !!!');
   syncing.resetTx404();
   syncing.syncingBlockMissing();
