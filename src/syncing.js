@@ -26,7 +26,7 @@
   let ChivesLightNodeSetting = null
   let db = null
   
-  await initChivesLightNodeSetting({"NodeApi1":"http://node1.chivesweave.net:1985","NodeApi2":"http://node1.chivesweave.net:1987","NodeStorageDirectory":"C:/ChivesWeaveData"});
+  await initChivesLightNodeSetting({"NodeApi1":"http://112.170.68.77:1985","NodeApi2":"http://121.169.227.232:1985","NodeStorageDirectory":"C:/ChivesWeaveData"});
   await initChivesLightNodeSql();
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
@@ -53,14 +53,14 @@
     else if( await checkPeer("http://112.170.68.77:1987") > 0 ) {
       NodeApi = "http://112.170.68.77:1987"
     }
-    else if( await checkPeer("http://207.148.148.246:1985") > 0 ) {
-      NodeApi = "http://207.148.148.246:1985"
+    else if( await checkPeer("http://112.170.68.77:1987") > 0 ) {
+      NodeApi = "http://112.170.68.77:1987"
+    }
+    else if( await checkPeer("http://112.170.68.77:1987") > 0 ) {
+      NodeApi = "http://112.170.68.77:1987"
     }
     else if( await checkPeer("121.133.225.85:1985") > 0 ) {
       NodeApi = "121.133.225.85:1985"
-    }
-    else if( await checkPeer("91.244.197.148:1985") > 0 ) {
-      NodeApi = "91.244.197.148:1985"
     }
     else {
       NodeApi = "http://112.170.68.77:1985"
