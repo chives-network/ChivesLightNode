@@ -1273,21 +1273,23 @@
       updateBlockMinedTime.run(60, 1);
       updateBlockMinedTime.finalize();
       for (const BlockInfor of GetExistBlocks) {
-        log("syncingBlockMinedTime BlockInfor:", BlockInfor);
-        BlockTimestamp[Number(BlockInfor.id)] = BlockInfor.timestamp
-        if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] == undefined) {
-          const previousBlock = await getBlockInforByHeightFromDb(Number(BlockInfor.id)-1);
-          log("syncingBlockMinedTime previousBlock", previousBlock)
-          BlockTimestamp[Number(BlockInfor.id)-1] = previousBlock.timestamp;
+        if(BlockInfor && BlockInfor.id && BlockInfor.timestamp) {
+          log("syncingBlockMinedTime BlockInfor:", BlockInfor);
+          BlockTimestamp[Number(BlockInfor.id)] = BlockInfor.timestamp
+          if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] == undefined) {
+            const previousBlock = await getBlockInforByHeightFromDb(Number(BlockInfor.id)-1);
+            log("syncingBlockMinedTime previousBlock", previousBlock)
+            BlockTimestamp[Number(BlockInfor.id)-1] = previousBlock.timestamp;
+          }
+          if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] ) {
+            const MinedTime = BlockInfor.timestamp - BlockTimestamp[Number(BlockInfor.id)-1]
+            const MinedTimeValue = MinedTime > 0 ? MinedTime : 1
+            const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
+            updateBlockMinedTime.run(MinedTimeValue, BlockInfor.id);
+            updateBlockMinedTime.finalize();
+          }
+          result.push(BlockInfor.id)
         }
-        if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] ) {
-          const MinedTime = BlockInfor.timestamp - BlockTimestamp[Number(BlockInfor.id)-1]
-          const MinedTimeValue = MinedTime > 0 ? MinedTime : 1
-          const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
-          updateBlockMinedTime.run(MinedTimeValue, BlockInfor.id);
-          updateBlockMinedTime.finalize();
-        }
-        result.push(BlockInfor.id)
       }
       log("syncingBlockMinedTime Deal Block Count", GetExistBlocks.length)
       
@@ -1336,7 +1338,9 @@
           log("syncingBlockMissing Height:", Height);
           try {
             const BlockInfor = await syncingBlockByHeight(Height);
-            result.push(BlockInfor.height)
+            if(BlockInfor && BlockInfor.height) {
+              result.push(BlockInfor.height)
+            }
           }
           catch (error) {
             console.error("syncingBlockMissing error fetching block data 1292:", error.message, Height);
@@ -1463,59 +1467,61 @@
       log("syncingBlockByHeight Get Block From Remote Node",BlockInfor?.reward_addr, currentHeight)
     }
 
-    if(BlockInfor == null) {
+    if(BlockInfor == null || BlockInfor == undefined) {
       return
     }
     
     // Begin a transaction
     //db.exec('BEGIN TRANSACTION');
     try {
-      //Insert Address
-      const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-      insertAddress.run(BlockInfor.reward_addr, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
-      insertAddress.finalize();
-    
-      //Update Address
-      let AddressBalance = 0
-      AddressBalance = await getWalletAddressBalanceFromDb(BlockInfor.reward_addr)
-      //log("getWalletAddressBalanceFromDb", AddressBalance)
-      if(AddressBalance == 0 || AddressBalance == undefined) {
-        AddressBalance = await axios.get(NodeApi + "/wallet/" + BlockInfor.reward_addr + "/balance", {}).then((res)=>{return res.data}).catch(() => {});;
-        //log("AddressBalanceNodeApi", AddressBalance)
-      }
-      //log("AddressBalance", AddressBalance)
-      const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
-      updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, BlockInfor.reward_addr);
-      updateAddress.finalize();
+      if(BlockInfor && BlockInfor.height && BlockInfor.reward_addr && BlockInfor.timestamp) {
+        //Insert Address
+        const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        insertAddress.run(BlockInfor.reward_addr, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
+        insertAddress.finalize();
       
-      //Insert Tx
-      const Txs = BlockInfor.txs;
-      const insertTx = db.prepare('INSERT OR IGNORE INTO tx (id, block_indep_hash, block_height, timestamp, last_tx_action, tx_date) VALUES (?, ?, ?, ?, ?, ?)');
-      Txs.map((Tx)=>{
-        insertTx.run(Tx, BlockInfor.indep_hash, BlockInfor.height, BlockInfor.timestamp, Tx, timestampToDate(BlockInfor.timestamp));
-      })
-      insertTx.finalize();
+        //Update Address
+        let AddressBalance = 0
+        AddressBalance = await getWalletAddressBalanceFromDb(BlockInfor.reward_addr)
+        //log("getWalletAddressBalanceFromDb", AddressBalance)
+        if(AddressBalance == 0 || AddressBalance == undefined) {
+          AddressBalance = await axios.get(NodeApi + "/wallet/" + BlockInfor.reward_addr + "/balance", {}).then((res)=>{return res.data}).catch(() => {});;
+          //log("AddressBalanceNodeApi", AddressBalance)
+        }
+        //log("AddressBalance", AddressBalance)
+        const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
+        updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, BlockInfor.reward_addr);
+        updateAddress.finalize();
+        
+        //Insert Tx
+        const Txs = BlockInfor.txs;
+        const insertTx = db.prepare('INSERT OR IGNORE INTO tx (id, block_indep_hash, block_height, timestamp, last_tx_action, tx_date) VALUES (?, ?, ?, ?, ?, ?)');
+        Txs.map((Tx)=>{
+          insertTx.run(Tx, BlockInfor.indep_hash, BlockInfor.height, BlockInfor.timestamp, Tx, timestampToDate(BlockInfor.timestamp));
+        })
+        insertTx.finalize();
 
-      //Update Tx Detail
-      await Promise.all(Txs.map(async (Tx) => {
-        await syncingTxById(Tx, BlockInfor.height, BlockInfor.timestamp);
-      }));
+        //Update Tx Detail
+        await Promise.all(Txs.map(async (Tx) => {
+          await syncingTxById(Tx, BlockInfor.height, BlockInfor.timestamp);
+        }));
 
-      //Write Block File
-      writeFile("/blocks/" + enableBlockHeightDir(currentHeight), BlockInfor.height + ".json", JSON.stringify(BlockInfor), "syncingBlockByHeight")
+        //Write Block File
+        writeFile("/blocks/" + enableBlockHeightDir(currentHeight), BlockInfor.height + ".json", JSON.stringify(BlockInfor), "syncingBlockByHeight")
 
-      //Insert Block
-      const insertStatement = db.prepare('INSERT OR REPLACE INTO block (id, height, indep_hash, block_size, mining_time, reward, reward_addr, txs_length, weave_size, timestamp, syncing_status, cumulative_diff, reward_pool, block_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-      insertStatement.run(BlockInfor.height, BlockInfor.height, BlockInfor.indep_hash, BlockInfor.block_size, 0, BlockInfor.reward, BlockInfor.reward_addr, BlockInfor.txs.length, BlockInfor.weave_size, BlockInfor.timestamp, 0, BlockInfor.cumulative_diff, BlockInfor.reward_pool, timestampToDate(BlockInfor.timestamp) );
-      insertStatement.finalize();
+        //Insert Block
+        const insertStatement = db.prepare('INSERT OR REPLACE INTO block (id, height, indep_hash, block_size, mining_time, reward, reward_addr, txs_length, weave_size, timestamp, syncing_status, cumulative_diff, reward_pool, block_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        insertStatement.run(BlockInfor.height, BlockInfor.height, BlockInfor.indep_hash, BlockInfor.block_size, 0, BlockInfor.reward, BlockInfor.reward_addr, BlockInfor.txs.length, BlockInfor.weave_size, BlockInfor.timestamp, 0, BlockInfor.cumulative_diff, BlockInfor.reward_pool, timestampToDate(BlockInfor.timestamp) );
+        insertStatement.finalize();
 
-      if(BlockInfor.height % 100 == 0) {
-        //Only calculate the previous day
-        await syncingBlockAndTxStat(timestampToDate(BlockInfor.timestamp - 86400));
+        if(BlockInfor.height % 100 == 0) {
+          //Only calculate the previous day
+          await syncingBlockAndTxStat(timestampToDate(BlockInfor.timestamp - 86400));
+        }
+
+        // Commit the transaction
+        //db.exec('COMMIT');
       }
-
-      // Commit the transaction
-      //db.exec('COMMIT');
     } 
     catch (error) {
       // Rollback the transaction if an error occurs
