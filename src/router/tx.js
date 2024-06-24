@@ -125,7 +125,7 @@
 
   router.get('/:id/thumbnail', async (req, res) => {
     const { id } = req.params;
-    const {FileName, ContentType, FileContent} = await syncing.getTxDataThumbnail(id);
+    const {FileName, ContentType, FileContent} = await syncing.getTxData(id);
     res.setHeader('Cache-Control', 'public, max-age=3600'); 
     if(FileName != undefined) {
       res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`)
