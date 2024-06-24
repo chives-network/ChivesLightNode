@@ -1457,7 +1457,6 @@
       //Nothing to do
       const BlockContent = getBlockInforByHeight(currentHeight);
       BlockInfor = JSON.parse(BlockContent)
-      BlockContent = null
       log("syncingBlockByHeight Read Block From Json File",BlockInfor.reward_addr, currentHeight)
     }
     else {
@@ -1529,7 +1528,7 @@
       console.error('syncingBlockByHeight Error:', error.message);
       //db.exec('ROLLBACK');
     }
-    
+
     return BlockInfor;
   }
 
@@ -3598,6 +3597,9 @@
     try {
       mkdirForData();
       const TxContent = readFile("txs/" + OriginalTxId.substring(0, 2).toLowerCase(), OriginalTxId + '.json', "getTxDataThumbnail", 'utf-8');
+      if(TxContent == null) {
+        return null
+      }
       const TxInfor = JSON.parse(TxContent);
       //log("TxInfor", TxInfor);
       
@@ -3623,7 +3625,12 @@
         if(isFile(compressFilePath)) {
           log("compressFilePath", compressFilePath)
           const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
-          return {FileName, ContentType, FileContent};
+          if(FileContent == null) {
+            return null
+          }
+          else {
+            return {FileName, ContentType, FileContent};
+          }
         }
 
         //Compress File
