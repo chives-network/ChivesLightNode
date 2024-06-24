@@ -11,14 +11,14 @@
   router.post('/chunk', async (req, res) => {
     const payload = req.body;
     const postChunk = await syncing.postChunk(payload);
-    console.log("/chunk", postChunk);
+    //console.log("/chunk", postChunk);
     res.send(postChunk).end();
   });
 
   router.post('/tx', async (req, res) => {
     const payload = req.body;
     const postTx = await syncing.postTx(payload);
-    console.log("/tx", postTx);
+    //console.log("/tx", postTx);
     res.send(postTx).end();
   });
   

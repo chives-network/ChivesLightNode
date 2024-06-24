@@ -7,7 +7,7 @@
 
   router.get('/peers', async (req, res) => {
     const getPeers = await syncing.getPeers();
-    console.log("getPeers", getPeers)
+    //console.log("getPeers", getPeers)
     try{
       res.status(200).json(getPeers).end(); 
     }

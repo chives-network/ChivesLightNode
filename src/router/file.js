@@ -44,7 +44,7 @@
   router.get('/file/:filetype/:address/:pageid/:pagesize', async (req, res) => {
     const { filetype, address, pageid, pagesize } = req.params;
     const getAllFileTypeAddressPageJson = await syncing.getAllFileTypeAddressPageJson(filetype, address, pageid, pagesize);
-    console.log("getAllFileTypeAddressPageJson", getAllFileTypeAddressPageJson)
+    //console.log("getAllFileTypeAddressPageJson", getAllFileTypeAddressPageJson)
     try{
       res.status(200).json(getAllFileTypeAddressPageJson).end(); 
     }
@@ -56,7 +56,7 @@
   router.get('/file/folder/:Folder/:address/:pageid/:pagesize', async (req, res) => {
     const { Folder, address, pageid, pagesize } = req.params;
     const getAllFileFolderAddressPageJson = await syncing.getAllFileFolderAddressPageJson(Folder, address, pageid, pagesize);
-    console.log("getAllFileFolderAddressPageJson", getAllFileFolderAddressPageJson)
+    //console.log("getAllFileFolderAddressPageJson", getAllFileFolderAddressPageJson)
     try{
       res.status(200).json(getAllFileFolderAddressPageJson).end(); 
     }
@@ -68,7 +68,7 @@
   router.get('/file/star/:Star/:address/:pageid/:pagesize', async (req, res) => {
     const { Star, address, pageid, pagesize } = req.params;
     const getAllFileStarAddressPageJson = await syncing.getAllFileStarAddressPageJson(Star, address, pageid, pagesize);
-    console.log("getAllFileStarAddressPageJson", getAllFileStarAddressPageJson)
+    //console.log("getAllFileStarAddressPageJson", getAllFileStarAddressPageJson)
     try{
       res.status(200).json(getAllFileStarAddressPageJson).end(); 
     }
@@ -80,7 +80,7 @@
   router.get('/file/label/:Label/:address/:pageid/:pagesize', async (req, res) => {
     const { Label, address, pageid, pagesize } = req.params;
     const getAllFileLabelAddressPageJson = await syncing.getAllFileLabelAddressPageJson(Label, address, pageid, pagesize);
-    console.log("getAllFileLabelAddressPageJson", getAllFileLabelAddressPageJson)
+    //console.log("getAllFileLabelAddressPageJson", getAllFileLabelAddressPageJson)
     try{
       res.status(200).json(getAllFileLabelAddressPageJson).end(); 
     }

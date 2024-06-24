@@ -1032,7 +1032,7 @@
           TagsMap[Tag.name] = Tag.value;
         })
       }
-      console.log("TagsMap", TagsMap)
+      //console.log("TagsMap", TagsMap)
       
       const from_address = Item.from_address
       //Update Tx Status
@@ -1061,7 +1061,7 @@
                           const updateTxEntityTypeReferee = db.prepare("update tx set entity_type = ? where id = ?");
                           updateTxEntityTypeReferee.run("ChivesLightNodeHeartBeat", Item.id);
                           updateTxEntityTypeReferee.finalize();
-                          console.log('updateBundleAddressReferee SQL executed, but no rows were affected.');
+                          //console.log('updateBundleAddressReferee SQL executed, but no rows were affected.');
                       }
                   }
                   updateBundleAddressReferee.finalize();
@@ -1088,7 +1088,7 @@
                           const updateTxEntityTypeReferee = db.prepare("update tx set entity_type = ? where id = ?");
                           updateTxEntityTypeReferee.run("ChivesLightNodeHeartBeat", Item.id);
                           updateTxEntityTypeReferee.finalize();
-                          console.log('updateBundleAddressReferee SQL executed, but no rows were affected.');
+                          //console.log('updateBundleAddressReferee SQL executed, but no rows were affected.');
                       }
                   }
                   updateBundleAddressReferee.finalize();
@@ -1564,7 +1564,7 @@
       catch (error) {
       }
     }
-    console.log(Action1, Action2, Action3, Action4, Action5, Action6, Action7, Action8, Action9, Action10)
+    //console.log(Action1, Action2, Action3, Action4, Action5, Action6, Action7, Action8, Action9, Action10)
   }
 
   async function deleteLog() {
@@ -1848,7 +1848,7 @@
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     //const From = getTxCountValue - Number(pagesize) * Number(pageid + 1)
     const From = Number(pagesize) * Number(pageid)
-    console.log("getAllTxPage", pagesize, pageid);
+    //console.log("getAllTxPage", pagesize, pageid);
     return new Promise((resolve, reject) => {
       if(db == null) {
         resolve(null);
@@ -1945,7 +1945,7 @@
       return getTxBundleItemPageJsonValue;
     }
     catch(Error) {
-      console.log("getTxBundleItemsInUnbundle Error:", Error)
+      //console.log("getTxBundleItemsInUnbundle Error:", Error)
     }
   }
 
@@ -2215,7 +2215,7 @@
       return TxRowToJsonFormat([getTxInforByIdFromDbValue])[0];
     }
     catch(Error) {
-      console.log("getWalletTxJson Error:", Error)
+      //console.log("getWalletTxJson Error:", Error)
     }
   }
 
@@ -3380,7 +3380,7 @@
       return {FileName, ContentType, FileContent};
     }
     catch(Error) {
-      console.log("getWalletTxJson Error:", Error)
+      //console.log("getWalletTxJson Error:", Error)
     }
   }
 
@@ -3432,7 +3432,7 @@
     const inputStream = fs.createReadStream(inputFile);
     const outputStream = fs.createWriteStream(outputFile + '.gz');
     inputStream.pipe(gzip).pipe(outputStream);
-    console.log('File compressed successfully.');
+    //console.log('File compressed successfully.');
   }
 
   function deompressToJson(inputFile, outputFile) {
@@ -3440,7 +3440,7 @@
     const inputStream = fs.createReadStream(inputFile);
     const outputStream = fs.createWriteStream(outputFile);
     inputStream.pipe(gunzip).pipe(outputStream);
-    console.log('File decompressed successfully.');
+    //console.log('File decompressed successfully.');
   }
 
   function mkdirForData() {
@@ -3758,7 +3758,7 @@
       }
     }
     catch(Error) {
-      console.log("getWalletTxJson Error:", Error)
+      //console.log("getWalletTxJson Error:", Error)
     }
   }
 
