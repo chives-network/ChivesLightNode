@@ -1109,13 +1109,13 @@
     try {
         const arrayBuffer = await fetch(NodeApi + '/' + TxId).then(res => res.arrayBuffer()).catch(() => {})
         //Write Chunks File
-        log("syncingTxChunksById arrayBuffer:", TxId, arrayBuffer)
+        //log("syncingTxChunksById arrayBuffer:", TxId, arrayBuffer)
         if(arrayBuffer && arrayBuffer.byteLength && arrayBuffer.byteLength > 0) {
             const FileBuffer = Buffer.from(arrayBuffer);
             data_root_status = 200
             const FileContentString = FileBuffer.toString('utf-8')
             if(arrayBuffer.byteLength<10000 && FileContentString.includes("This page cannot be found, yet.")) {
-              log("arrayBuffer.byteLength--------------------------------------", arrayBuffer.byteLength)
+              //log("arrayBuffer.byteLength--------------------------------------", arrayBuffer.byteLength)
             }
             else {
               writeFile('files/' + TxId.substring(0, 2).toLowerCase(), TxId, FileBuffer, "syncingTxChunksById")
@@ -1226,7 +1226,7 @@
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getBlockHeightFromDbValue = await getBlockHeightFromDb()
     const BeginHeight = getBlockHeightFromDbValue + 1;
-    log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
+    //log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
     try {
       const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
       const MaxHeight = MinerNodeStatus.height;
@@ -1525,7 +1525,7 @@
     } 
     catch (error) {
       // Rollback the transaction if an error occurs
-      console.error('Error:', error.message);
+      console.error('syncingBlockByHeight Error:', error.message);
       //db.exec('ROLLBACK');
     }
     return BlockInfor;
@@ -3451,7 +3451,6 @@
   }
 
   function filterString(input) {
-    log("filterString input:", input)
     if(input) {
       const sanitizedInput = input?.replace(/[^a-zA-Z0-9_\-@. ]/g, '');
       return sanitizedInput;
