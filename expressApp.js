@@ -56,7 +56,7 @@ cron.schedule('*/5 * * * *', () => {
   console.log('schedule syncingTxParseBundle Task Begin !!!');
   syncing.syncingTxParseBundle(20);
 });
-cron.schedule('*/13 * * * *', () => {
+cron.schedule('*/1300 * * * *', () => {
   console.log('schedule resetTx404 Task Begin !!!');
   syncing.resetTx404();
   syncing.syncingBlockMissing();
