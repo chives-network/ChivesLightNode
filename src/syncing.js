@@ -1457,6 +1457,7 @@
       //Nothing to do
       const BlockContent = getBlockInforByHeight(currentHeight);
       BlockInfor = JSON.parse(BlockContent)
+      BlockContent = null
       log("syncingBlockByHeight Read Block From Json File",BlockInfor.reward_addr, currentHeight)
     }
     else {
@@ -1528,6 +1529,7 @@
       console.error('syncingBlockByHeight Error:', error.message);
       //db.exec('ROLLBACK');
     }
+    
     return BlockInfor;
   }
 
