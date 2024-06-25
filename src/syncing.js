@@ -1236,7 +1236,9 @@
       const result = [];
       for (const Height of BlockHeightRange) {
         const BlockInfor = await syncingBlockByHeight(Height);
-        result.push(BlockInfor.height)
+        if(BlockInfor && BlockInfor.height) {
+          result.push(BlockInfor.height)
+        }
       }
       return result;
     } 
@@ -1375,7 +1377,12 @@
         BlockHeightRange.map(async (Height) => {
           try {
             const BlockInfor = await syncingBlockByHeight(Height);
-            return BlockInfor.height;
+            if(BlockInfor && BlockInfor.height) {
+              return BlockInfor.height;
+            }
+            else {
+              return { error: "Internal Server Error" };
+            }
           } 
           catch (error) {
             //console.error("syncingBlockPromiseAll error fetching block data:", error.message);
