@@ -46,6 +46,8 @@ cron.schedule('*/1 * * * *', () => {
   console.log('schedule syncingBlock Task Begin !!!');
   syncing.syncingBlock(10);
   syncing.syncingBlockMinedTime(10);
+  console.log('Manual garbage collection');
+  global.gc();
 });
 cron.schedule('*/2 * * * *', () => {
   console.log('schedule syncingTx Task Begin !!!');
