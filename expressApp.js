@@ -43,7 +43,7 @@ expressApp.get('/syncing', async (req, res) => {
 });
 
 cron.schedule('*/1 * * * *', () => {
-  //console.log('schedule syncingBlock Task Begin !!!');
+  console.log('schedule syncingBlock Task Begin !!!');
   syncing.syncingBlock(10);
   syncing.syncingBlockMinedTime(10);
 });
