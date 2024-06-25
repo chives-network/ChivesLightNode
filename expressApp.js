@@ -48,16 +48,16 @@ cron.schedule('*/1 * * * *', () => {
   syncing.syncingBlockMinedTime(10);
 });
 cron.schedule('*/2 * * * *', () => {
-  //console.log('schedule syncingTx Task Begin !!!');
+  console.log('schedule syncingTx Task Begin !!!');
   syncing.syncingTx(20);
   syncing.syncingChunksPromiseAll(5);
 });
 cron.schedule('*/5 * * * *', () => {
-  //console.log('schedule syncingTxParseBundle Task Begin !!!');
+  console.log('schedule syncingTxParseBundle Task Begin !!!');
   syncing.syncingTxParseBundle(20);
 });
 cron.schedule('*/1300 * * * *', () => {
-  //console.log('schedule resetTx404 Task Begin !!!');
+  console.log('schedule resetTx404 Task Begin !!!');
   syncing.resetTx404();
   syncing.syncingBlockMissing();
   syncing.deleteBlackTxsAndAddress();
@@ -66,8 +66,15 @@ cron.schedule('*/1300 * * * *', () => {
   syncing.syncingBlockAndTxStatAllDates(80);
 });
 cron.schedule('1 * * * *', () => {
-  //console.log('schedule deleteLog Task Begin !!!');
+  console.log('schedule Garbage collection Task Begin !!!');
   syncing.deleteLog()
+  if (global.gc) {
+    console.log('Manual garbage collection');
+    global.gc();
+  } 
+  else {
+    console.warn('Garbage collection is not exposed');
+  }
 });
 
 

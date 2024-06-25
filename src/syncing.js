@@ -1378,7 +1378,7 @@
             return BlockInfor.height;
           } 
           catch (error) {
-            console.error("syncingBlockPromiseAll error fetching block data:", error.message);
+            //console.error("syncingBlockPromiseAll error fetching block data:", error.message);
             return { error: "Internal Server Error" };
           }
         })
@@ -3407,7 +3407,7 @@
       return data;
     }
     else {
-      console.error("[" + Mark + "] Error read file:", filePath);
+      //console.error("[" + Mark + "] Error read file:", filePath);
       return null;
     }
   }
