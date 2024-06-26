@@ -42,23 +42,53 @@ expressApp.get('/syncing', async (req, res) => {
   res.json({});
 });
 
+let isSyncing1 = false;
 cron.schedule('*/1 * * * *', () => {
-  console.log('schedule syncingBlock Task Begin !!!');
-  syncing.syncingBlock(10);
-  syncing.syncingBlockMinedTime(10);
-  console.log('Manual garbage collection');
-  global.gc();
+  if (!isSyncing1) {
+    isSyncing1 = true;
+    console.log('schedule syncingBlock Task Begin !!!');
+    syncing.syncingBlock(30);
+    syncing.syncingBlockMinedTime(30);
+    isSyncing1 = false;
+  } else {
+    console.log('Previous syncing operation is still in progress. Skipping current execution.');
+  }
 });
+
+let isSyncing2 = false;
 cron.schedule('*/2 * * * *', () => {
-  console.log('schedule syncingTx Task Begin !!!');
-  syncing.syncingTx(20);
-  syncing.syncingChunksPromiseAll(5);
+  if (!isSyncing2) {
+    isSyncing2 = true;
+    console.log('schedule syncingTx Task Begin !!!');
+    syncing.syncingTx(20);
+    syncing.syncingChunksPromiseAll(5);
+    console.log('Manual garbage collection');
+    isSyncing2 = false;
+  } else {
+    console.log('Previous syncing operation is still in progress. Skipping current execution.');
+  }
 });
-cron.schedule('*/5 * * * *', () => {
-  console.log('schedule syncingTxParseBundle Task Begin !!!');
-  syncing.syncingTxParseBundle(20);
+
+let isSyncing5 = false;
+cron.schedule('*/2 * * * *', () => {
+  if (!isSyncing5) {
+    isSyncing5 = true;
+    console.log('schedule syncingTxParseBundle Task Begin !!!');
+    if (global.gc) {
+      console.log('Manual garbage collection');
+      global.gc();
+    } 
+    else {
+      console.warn('Garbage collection is not exposed');
+    }
+    //syncing.syncingTxParseBundle(20);
+    isSyncing5 = false;
+  } else {
+    console.log('Previous syncing operation is still in progress. Skipping current execution.');
+  }
 });
-cron.schedule('*/1300 * * * *', () => {
+
+cron.schedule('*/13 * * * *', () => {
   console.log('schedule resetTx404 Task Begin !!!');
   syncing.resetTx404();
   syncing.syncingBlockMissing();
@@ -67,16 +97,9 @@ cron.schedule('*/1300 * * * *', () => {
   syncing.syncingTxWaitDoingAction(10);
   syncing.syncingBlockAndTxStatAllDates(80);
 });
+
 cron.schedule('1 * * * *', () => {
-  console.log('schedule Garbage collection Task Begin !!!');
   syncing.deleteLog()
-  if (global.gc) {
-    console.log('Manual garbage collection');
-    global.gc();
-  } 
-  else {
-    console.warn('Garbage collection is not exposed');
-  }
 });
 
 

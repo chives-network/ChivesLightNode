@@ -1276,11 +1276,11 @@
       updateBlockMinedTime.finalize();
       for (const BlockInfor of GetExistBlocks) {
         if(BlockInfor && BlockInfor.id && BlockInfor.timestamp) {
-          log("syncingBlockMinedTime BlockInfor:", BlockInfor);
+          //log("syncingBlockMinedTime BlockInfor:", BlockInfor);
           BlockTimestamp[Number(BlockInfor.id)] = BlockInfor.timestamp
           if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] == undefined) {
             const previousBlock = await getBlockInforByHeightFromDb(Number(BlockInfor.id)-1);
-            log("syncingBlockMinedTime previousBlock", previousBlock)
+            //log("syncingBlockMinedTime previousBlock", previousBlock)
             BlockTimestamp[Number(BlockInfor.id)-1] = previousBlock.timestamp;
           }
           if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] ) {
