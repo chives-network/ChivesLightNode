@@ -47,8 +47,8 @@ cron.schedule('*/1 * * * *', () => {
   if (!isSyncing1) {
     isSyncing1 = true;
     console.log('schedule syncingBlock Task Begin !!!');
-    syncing.syncingBlock(30);
-    syncing.syncingBlockMinedTime(30);
+    syncing.syncingBlock(100);
+    syncing.syncingBlockMinedTime(100);
     isSyncing1 = false;
   } else {
     console.log('Previous syncing operation is still in progress. Skipping current execution.');
