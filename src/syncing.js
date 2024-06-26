@@ -24,6 +24,7 @@
   //import isDev from 'electron-is-dev';
   const isDev = false;
   let ChivesLightNodeSetting = null
+  let ChivesLightNodeAddress = null
   let db = null
   
   await initChivesLightNodeSetting({"NodeApi1":"http://112.170.68.77:1985","NodeApi2":"http://121.169.227.232:1985","NodeStorageDirectory":"C:/ChivesWeaveData"});
@@ -34,6 +35,14 @@
   
   async function initChivesLightNodeSetting(Data) {
     ChivesLightNodeSetting = Data
+  }
+
+  function getChivesLightNodeAddress() {
+    return ChivesLightNodeAddress ?? ''
+  }
+
+  function setChivesLightNodeAddress(Address) {
+    ChivesLightNodeAddress = Address
   }
 
   async function initChivesLightNode() {
@@ -3818,6 +3827,8 @@
     initChivesLightNode,
     initChivesLightNodeSql,
     initChivesLightNodeSetting,
+    getChivesLightNodeAddress,
+    setChivesLightNodeAddress,
     chivesLightNodeStatus,
     chivesLightNodeUrl,
     syncingBlock,
