@@ -47,8 +47,8 @@ cron.schedule('*/1 * * * *', () => {
   if (!isSyncing1) {
     isSyncing1 = true;
     console.log('schedule syncingBlock Task Begin !!!');
-    syncing.syncingBlock(100);
-    syncing.syncingBlockMinedTime(100);
+    syncing.syncingBlock(30);
+    syncing.syncingBlockMinedTime(30);
     isSyncing1 = false;
   } else {
     console.log('Previous syncing operation is still in progress. Skipping current execution.');
@@ -70,17 +70,9 @@ cron.schedule('*/2 * * * *', () => {
 });
 
 let isSyncing5 = false;
-cron.schedule('*/2 * * * *', () => {
+cron.schedule('*/5 * * * *', () => {
   if (!isSyncing5) {
     isSyncing5 = true;
-    console.log('schedule syncingTxParseBundle Task Begin !!!');
-    if (global.gc) {
-      console.log('Manual garbage collection');
-      global.gc();
-    } 
-    else {
-      console.warn('Garbage collection is not exposed');
-    }
     //syncing.syncingTxParseBundle(20);
     isSyncing5 = false;
   } else {
@@ -99,6 +91,14 @@ cron.schedule('*/13 * * * *', () => {
 });
 
 cron.schedule('1 * * * *', () => {
+  console.log('schedule syncingTxParseBundle Task Begin !!!');
+  if (global.gc) {
+    console.log('Manual garbage collection');
+    global.gc();
+  } 
+  else {
+    console.warn('Garbage collection is not exposed');
+  }
   syncing.deleteLog()
 });
 
