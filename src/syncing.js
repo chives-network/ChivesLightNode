@@ -3316,7 +3316,7 @@
       if(MinerNodeStatus && MinerNodeStatus.height)  {
         LightNodeStatus['network'] = "chivesweave.mainnet";
         LightNodeStatus['version'] = 5;
-        LightNodeStatus['release'] = 66;
+        LightNodeStatus['release'] = 67;
         LightNodeStatus['height'] = MinerNodeStatus.height;
         LightNodeStatus['current'] = MinerNodeStatus.current;
         LightNodeStatus['weave_size'] = BlockInfor.weave_size;
@@ -3329,7 +3329,7 @@
       else {
         LightNodeStatus['network'] = "chivesweave.mainnet";
         LightNodeStatus['version'] = 5;
-        LightNodeStatus['release'] = 66;
+        LightNodeStatus['release'] = 67;
         LightNodeStatus['height'] = 0;
         LightNodeStatus['current'] = '';
         LightNodeStatus['diff'] = '';
@@ -3343,7 +3343,7 @@
     else {
       LightNodeStatus['network'] = "chivesweave.mainnet";
       LightNodeStatus['version'] = 5;
-      LightNodeStatus['release'] = 66;
+      LightNodeStatus['release'] = 67;
       LightNodeStatus['height'] = 0;
       LightNodeStatus['current'] = '';
       LightNodeStatus['diff'] = '';
