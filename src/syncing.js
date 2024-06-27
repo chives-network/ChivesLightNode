@@ -27,12 +27,20 @@
   let ChivesLightNodeAddress = null
   let db = null
   
-  await initChivesLightNodeSetting({"NodeApi1":"http://112.170.68.77:1985","NodeApi2":"http://121.169.227.232:1985","NodeStorageDirectory":"C:/ChivesWeaveData"});
+  console.log("process.argv", process.argv)
+
+  if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] && isDirectorySync(process.argv[3]))  {
+    setChivesLightNodeAddress(process.argv[2])
+    await initChivesLightNodeSetting({"NodeApi1":"http://112.170.68.77:1985","NodeApi2":"http://121.169.227.232:1985","NodeStorageDirectory":process.argv[3]})
+  }
+  else {
+    await initChivesLightNodeSetting({"NodeApi1":"http://112.170.68.77:1985","NodeApi2":"http://121.169.227.232:1985","NodeStorageDirectory":"C:/ChivesWeaveData"});
+  }
+  
   await initChivesLightNodeSql();
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
 
-  
   async function initChivesLightNodeSetting(Data) {
     ChivesLightNodeSetting = Data
   }
@@ -435,13 +443,15 @@
   async function syncingTx(TxCount = 30) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getTxsNotSyncingList = await getTxsNotSyncing(TxCount)
-    log("syncingTx Count: ", getTxsNotSyncingList.length)
+    console.log("syncingTx Count: ", getTxsNotSyncingList.length)
     try {
       const result = [];
       for (const TxList of getTxsNotSyncingList) {
         const TxInfor = await syncingTxById(TxList.id, TxList.block_height, TxList.timestamp);
-        log("syncingTx TxInfor: ", TxList.id, TxInfor?.id)
-        result.push(TxInfor)
+        console.log("syncingTx TxInfor: ", TxList.id, TxInfor?.id)
+        if(TxInfor && TxInfor.id) {
+          result.push(TxInfor)
+        }
       }
       return result;
     } 
@@ -1235,13 +1245,13 @@
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getBlockHeightFromDbValue = await getBlockHeightFromDb()
     const BeginHeight = getBlockHeightFromDbValue + 1;
-    //log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
+    console.log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
     try {
       const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
       const MaxHeight = MinerNodeStatus.height;
       const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight)
       const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
-      log("BlockHeightRange:", BlockHeightRange);
+      console.log("BlockHeightRange:", BlockHeightRange);
       const result = [];
       for (const Height of BlockHeightRange) {
         const BlockInfor = await syncingBlockByHeight(Height);
@@ -3911,6 +3921,7 @@
     readFileStream,
     readFile,
     writeFile,
+    isDirectorySync,
     filterString,
     compressImage,
     mkdirForData,
