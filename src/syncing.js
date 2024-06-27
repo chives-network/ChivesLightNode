@@ -1483,14 +1483,14 @@
       //Nothing to do
       const BlockContent = getBlockInforByHeight(currentHeight);
       BlockInfor = JSON.parse(BlockContent)
-      log("syncingBlockByHeight Read Block From Json File",BlockInfor.reward_addr, currentHeight)
+      console.log("syncingBlockByHeight Read Block From Json File",BlockInfor.reward_addr, currentHeight)
     }
     else {
       BlockInfor = await axios.get(NodeApi + '/block/height/' + currentHeight, {
         headers: {},
         params: {}
       }).then(res=>res.data).catch(() => {});
-      log("syncingBlockByHeight Get Block From Remote Node",BlockInfor?.reward_addr, currentHeight)
+      console.log("syncingBlockByHeight Get Block From Remote Node",BlockInfor?.reward_addr, currentHeight)
     }
 
     if(BlockInfor == null || BlockInfor == undefined) {
