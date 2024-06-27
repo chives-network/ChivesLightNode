@@ -3392,7 +3392,7 @@
       }
       const FileName = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['item_name'] ? getTxInforByIdFromDbValue['item_name'] : TxId;
       const ContentType = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['content_type'] ? getTxInforByIdFromDbValue['content_type'] : "";
-      log("FileContent", FileContent)
+      console.log("FileContent Length", FileContent.length)
       return {FileName, ContentType, FileContent};
     }
     catch(Error) {
@@ -3412,6 +3412,10 @@
     const AddressFilter = filterString(Address);
     const addressBalance = await axios.get(NodeApi + '/wallet/' + AddressFilter + '/reserved_rewards_total', {}).then(res=>res.data).catch(() => {});
     return addressBalance;
+  }
+
+  function readFileStream(filePath) {
+    return fs.createReadStream(filePath);
   }
   
   function readFile(Dir, FileName, Mark, OpenFormat) {
@@ -3902,7 +3906,9 @@
     getChivesLightNodeHeartBeat,
     getChivesLightNodeReward,
     deleteLog,
+    getDataDir,
     isFile,
+    readFileStream,
     readFile,
     writeFile,
     filterString,

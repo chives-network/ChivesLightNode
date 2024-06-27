@@ -6,6 +6,63 @@
 
   const router = express.Router();
 
+  async function getTxDataSupportLargeFile(req, res) {
+    const { id } = req.params;
+    switch(id) {
+      case 'recent_hash_list_diff':
+        res.status(404).send('File not found');
+        return;
+      case 'sync_buckets':
+        res.status(404).send('File not found');
+        return;
+    }
+    const TxIdFilter = syncing.filterString(id)
+    const DataDir = syncing.getDataDir()
+    const FilePath = DataDir + '/' + "files/" + TxIdFilter.substring(0, 2).toLowerCase() + '/' + TxIdFilter;
+    console.log("FilePath",FilePath)
+    if (syncing.isFile(FilePath)) {
+      //Large File
+      const getTxInforByIdFromDbValue = await syncing.getTxInforByIdFromDb(TxIdFilter);
+      const FileName = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['item_name'] ? getTxInforByIdFromDbValue['item_name'] : TxIdFilter;
+      const ContentType = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['content_type'] ? getTxInforByIdFromDbValue['content_type'] : "";
+      res.setHeader('Cache-Control', 'public, max-age=0');
+      if (FileName) {
+          res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`);
+      }
+      if (ContentType) {
+          res.setHeader('Content-Type', ContentType);
+      }
+      const fileStream = syncing.readFileStream(FilePath);
+      fileStream.pipe(res).on('error', (err) => {
+          res.status(500).send('Error reading file ' + TxIdFilter);
+      }).on('finish', () => {
+        console.log('File sent successfully ' + TxIdFilter);
+      });
+    }
+    else {
+      //Small File
+      const TxContent = syncing.readFile("txs/" + TxIdFilter.substring(0, 2).toLowerCase(), TxIdFilter + '.json', "getTxData", 'utf-8');
+      const TxContentJson = JSON.parse(TxContent);
+      if(TxContentJson && TxContentJson.data && TxContentJson.data_root == '') {
+        const getTxInforByIdFromDbValue = await syncing.getTxInforByIdFromDb(TxIdFilter);
+        const FileName = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['item_name'] ? getTxInforByIdFromDbValue['item_name'] : TxIdFilter;
+        const ContentType = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['content_type'] ? getTxInforByIdFromDbValue['content_type'] : "";
+        res.setHeader('Cache-Control', 'public, max-age=0');
+        if (FileName) {
+            res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`);
+        }
+        if (ContentType) {
+            res.setHeader('Content-Type', ContentType);
+        }
+        const FileContent = Buffer.from(TxContentJson.data, 'base64');
+        res.status(200).send(FileContent).end(); 
+      }
+      else {
+        res.status(404).send('File not found');
+      }
+    }
+  }
+
   router.use(bodyParser.json({ limit: '2gb' }));
 
   router.post('/chunk', async (req, res) => {
@@ -111,43 +168,15 @@
   });
 
   router.get('/:id', async (req, res) => {
-    const { id } = req.params;
-    const {FileName, ContentType, FileContent} = await syncing.getTxData(id);
-    res.setHeader('Cache-Control', 'public, max-age=3600'); 
-    if(FileName != undefined) {
-      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`)
-    }
-    if(ContentType != undefined) {
-      res.setHeader('Content-Type', ContentType);
-    }
-    res.status(200).send(FileContent).end();  
+    await getTxDataSupportLargeFile(req, res);
   });
 
   router.get('/:id/thumbnail', async (req, res) => {
-    const { id } = req.params;
-    const {FileName, ContentType, FileContent} = await syncing.getTxData(id);
-    res.setHeader('Cache-Control', 'public, max-age=3600'); 
-    if(FileName != undefined) {
-      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`)
-    }
-    if(ContentType != undefined) {
-      res.setHeader('Content-Type', ContentType);
-    }
-    res.status(200).send(FileContent).end(); 
+    await getTxDataSupportLargeFile(req, res);
   });
 
   router.get('/tx/:id/data', async (req, res) => {
-    const { id } = req.params;
-    const {FileName, ContentType, FileContent} = await syncing.getTxData(id);
-    res.setHeader('Cache-Control', 'public, max-age=3600'); 
-    //res.setHeader('Content-Disposition', `attachment; filename="${FileName}"`);
-    if(FileName != undefined) {
-      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`)
-    }
-    if(ContentType != undefined) {
-      res.setHeader('Content-Type', ContentType);
-    }
-    res.status(200).send(FileContent).end();  
+    await getTxDataSupportLargeFile(req, res);
   });
 
   router.get('/tx/:txid/unbundle/:pageid/:pagesize', async (req, res) => {
