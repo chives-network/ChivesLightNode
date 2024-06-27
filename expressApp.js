@@ -62,7 +62,6 @@ cron.schedule('*/2 * * * *', () => {
     console.log('schedule syncingTx Task Begin !!!');
     syncing.syncingTx(20);
     syncing.syncingChunksPromiseAll(5);
-    console.log('Manual garbage collection');
     isSyncing2 = false;
   } else {
     console.log('Previous syncing operation is still in progress. Skipping current execution.');
@@ -90,7 +89,7 @@ cron.schedule('*/13 * * * *', () => {
   syncing.syncingBlockAndTxStatAllDates(80);
 });
 
-cron.schedule('1 * * * *', () => {
+cron.schedule('1 1 * * *', () => {
   console.log('schedule syncingTxParseBundle Task Begin !!!');
   if (global.gc) {
     console.log('Manual garbage collection');

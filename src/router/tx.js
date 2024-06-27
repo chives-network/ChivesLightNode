@@ -25,7 +25,7 @@
       const getTxInforByIdFromDbValue = await syncing.getTxInforByIdFromDb(TxIdFilter);
       const FileName = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['item_name'] ? getTxInforByIdFromDbValue['item_name'] : TxIdFilter;
       const ContentType = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['content_type'] ? getTxInforByIdFromDbValue['content_type'] : "";
-      res.setHeader('Cache-Control', 'public, max-age=0');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
       if (FileName) {
           res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`);
       }
@@ -47,7 +47,7 @@
         const getTxInforByIdFromDbValue = await syncing.getTxInforByIdFromDb(TxIdFilter);
         const FileName = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['item_name'] ? getTxInforByIdFromDbValue['item_name'] : TxIdFilter;
         const ContentType = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['content_type'] ? getTxInforByIdFromDbValue['content_type'] : "";
-        res.setHeader('Cache-Control', 'public, max-age=0');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
         if (FileName) {
             res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`);
         }
