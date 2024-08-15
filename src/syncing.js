@@ -1287,7 +1287,7 @@
                                   }
                                 });
                               });
-      log("syncingBlockMinedTime GetExistBlocks:", GetExistBlocks);
+      console.log("syncingBlockMinedTime GetExistBlocks:", GetExistBlocks);
       const result = [];
       const BlockTimestamp = {}
       const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
@@ -1300,7 +1300,9 @@
           if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] == undefined) {
             const previousBlock = await getBlockInforByHeightFromDb(Number(BlockInfor.id)-1);
             //log("syncingBlockMinedTime previousBlock", previousBlock)
-            BlockTimestamp[Number(BlockInfor.id)-1] = previousBlock.timestamp;
+            if(previousBlock && previousBlock.timestamp)   {
+              BlockTimestamp[Number(BlockInfor.id)-1] = previousBlock.timestamp;
+            }
           }
           if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] ) {
             const MinedTime = BlockInfor.timestamp - BlockTimestamp[Number(BlockInfor.id)-1]
@@ -1312,7 +1314,7 @@
           result.push(BlockInfor.id)
         }
       }
-      log("syncingBlockMinedTime Deal Block Count", GetExistBlocks.length)
+      console.log("syncingBlockMinedTime Deal Block Count", GetExistBlocks.length)
       
       return result;
     } 
