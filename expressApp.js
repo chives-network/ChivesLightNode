@@ -45,30 +45,29 @@ expressApp.get('/syncing', async (req, res) => {
 let isSyncing1 = false;
 let EveryTimeAsyncBlockRecords = 100
 cron.schedule('*/1 * * * *', () => {
-  if (!isSyncing1) {
-    AsyncBlocks();
-  } else {
-    console.log('Previous syncing operation is still in progress. Skipping current execution.');
-  }
+  AsyncBlocks();
 });
 
 const AsyncBlocks = async () => {
   const StartTime = Date.now();
-  isSyncing1 = true;
-  console.log('schedule syncingBlock Task Begin !!!', isSyncing1);
-  await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
-  await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
-  await syncing.syncingBlockMissing();
-  await syncing.syncingTx(20);
-  await syncing.syncingChunksPromiseAll(5);
-  isSyncing1 = false;
-  console.log('schedule syncingBlock Task End !!!', isSyncing1);
-  const EndTime = Date.now();
-  const ExecTime = Math.floor((EndTime - StartTime)/1000)
-  if(ExecTime < 50) {
-    EveryTimeAsyncBlockRecords = Math.floor(EveryTimeAsyncBlockRecords * 1.1)
+  console.log('schedule syncingBlock Task Status !!!', isSyncing1);
+  if(isSyncing1 == false)  {
+    isSyncing1 = true;
+    console.log('schedule syncingBlock Task Begin !!!', isSyncing1);
+    await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
+    await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
+    await syncing.syncingBlockMissing();
+    await syncing.syncingTx(20);
+    await syncing.syncingChunksPromiseAll(5);
+    isSyncing1 = false;
+    console.log('schedule syncingBlock Task End !!!', isSyncing1);
+    const EndTime = Date.now();
+    const ExecTime = Math.floor((EndTime - StartTime)/1000)
+    if(ExecTime < 50) {
+      EveryTimeAsyncBlockRecords = Math.floor(EveryTimeAsyncBlockRecords * 1.1)
+    }
+    console.log('ExecTime**********************', ExecTime, "Next Time EveryTimeAsyncBlockRecords", EveryTimeAsyncBlockRecords);
   }
-  console.log('ExecTime**********************', ExecTime, "Next Time EveryTimeAsyncBlockRecords", EveryTimeAsyncBlockRecords);
 }
 
 let isSyncing5 = false;
