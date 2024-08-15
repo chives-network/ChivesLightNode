@@ -45,30 +45,27 @@ expressApp.get('/syncing', async (req, res) => {
 let isSyncing1 = false;
 cron.schedule('*/1 * * * *', () => {
   if (!isSyncing1) {
-    isSyncing1 = true;
-    console.log('schedule syncingBlock Task Begin !!!', isSyncing1);
-    syncing.syncingBlock(100);
-    syncing.syncingBlockMinedTime(100);
-    syncing.syncingBlockMissing();
-    isSyncing1 = false;
-    console.log('schedule syncingBlock Task End !!!', isSyncing1);
+    AsyncBlocks();
   } else {
     console.log('Previous syncing operation is still in progress. Skipping current execution.');
   }
 });
 
-let isSyncing2 = false;
-cron.schedule('*/1 * * * *', () => {
-  if (!isSyncing2) {
-    isSyncing2 = true;
-    console.log('schedule syncingTx Task Begin !!!');
-    syncing.syncingTx(20);
-    syncing.syncingChunksPromiseAll(5);
-    isSyncing2 = false;
-  } else {
-    console.log('Previous syncing operation is still in progress. Skipping current execution.');
-  }
-});
+const AsyncBlocks = async () => {
+  const StartTime = Date.now();
+  isSyncing1 = true;
+  console.log('schedule syncingBlock Task Begin !!!', isSyncing1);
+  await syncing.syncingBlock(100);
+  await syncing.syncingBlockMinedTime(100);
+  await syncing.syncingBlockMissing();
+  await syncing.syncingTx(20);
+  await syncing.syncingChunksPromiseAll(5);
+  isSyncing1 = false;
+  console.log('schedule syncingBlock Task End !!!', isSyncing1);
+  const EndTime = Date.now();
+  const ExecTime = EndTime - StartTime
+  console.log('ExecTime**********************', ExecTime);
+}
 
 let isSyncing5 = false;
 cron.schedule('*/3 * * * *', () => {
