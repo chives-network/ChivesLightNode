@@ -46,17 +46,19 @@ let isSyncing1 = false;
 cron.schedule('*/1 * * * *', () => {
   if (!isSyncing1) {
     isSyncing1 = true;
-    console.log('schedule syncingBlock Task Begin !!!');
-    syncing.syncingBlock(30);
-    syncing.syncingBlockMinedTime(30);
+    console.log('schedule syncingBlock Task Begin !!!', isSyncing1);
+    syncing.syncingBlock(100);
+    syncing.syncingBlockMinedTime(100);
+    syncing.syncingBlockMissing();
     isSyncing1 = false;
+    console.log('schedule syncingBlock Task End !!!', isSyncing1);
   } else {
     console.log('Previous syncing operation is still in progress. Skipping current execution.');
   }
 });
 
 let isSyncing2 = false;
-cron.schedule('*/2 * * * *', () => {
+cron.schedule('*/1 * * * *', () => {
   if (!isSyncing2) {
     isSyncing2 = true;
     console.log('schedule syncingTx Task Begin !!!');
@@ -69,17 +71,17 @@ cron.schedule('*/2 * * * *', () => {
 });
 
 let isSyncing5 = false;
-cron.schedule('*/5 * * * *', () => {
+cron.schedule('*/3 * * * *', () => {
   if (!isSyncing5) {
     isSyncing5 = true;
-    //syncing.syncingTxParseBundle(20);
+    syncing.syncingTxParseBundle(20);
     isSyncing5 = false;
   } else {
     console.log('Previous syncing operation is still in progress. Skipping current execution.');
   }
 });
 
-cron.schedule('*/13 * * * *', () => {
+cron.schedule('*/5 * * * *', () => {
   console.log('schedule resetTx404 Task Begin !!!');
   syncing.resetTx404();
   syncing.syncingBlockMissing();
