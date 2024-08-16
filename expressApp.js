@@ -63,8 +63,11 @@ const AsyncBlocks = async () => {
     console.log('schedule syncingBlock Task End !!!', isSyncing1);
     const EndTime = Date.now();
     const ExecTime = Math.floor((EndTime - StartTime)/1000)
-    if(ExecTime < 50) {
+    if(ExecTime < 35) {
       EveryTimeAsyncBlockRecords = Math.floor(EveryTimeAsyncBlockRecords * 1.1)
+    }
+    if(ExecTime > 60) {
+      EveryTimeAsyncBlockRecords = Math.floor(EveryTimeAsyncBlockRecords * 0.9)
     }
     console.log('ExecTime**********************', ExecTime, "Next Time EveryTimeAsyncBlockRecords", EveryTimeAsyncBlockRecords);
   }
