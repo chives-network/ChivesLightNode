@@ -1287,7 +1287,7 @@
                                   }
                                 });
                               });
-      console.log("syncingBlockMinedTime GetExistBlocks:", GetExistBlocks);
+      //console.log("syncingBlockMinedTime GetExistBlocks:", GetExistBlocks);
       const result = [];
       const BlockTimestamp = {}
       const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
