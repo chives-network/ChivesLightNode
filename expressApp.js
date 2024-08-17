@@ -90,7 +90,7 @@ const AsyncBlocksOneTime = async () => {
 }
 
 AsyncBlocksOneTime();
-setInterval(AsyncBlocksOneTime, 5000);
+setInterval(AsyncBlocksOneTime, 15000);
 
 let isSyncing5 = false;
 cron.schedule('*/3 * * * *', () => {

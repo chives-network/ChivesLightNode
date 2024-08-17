@@ -70,8 +70,8 @@
     else if( await checkPeer("http://112.170.68.77:1987") > 0 ) {
       NodeApi = "http://112.170.68.77:1987"
     }
-    else if( await checkPeer("http://112.170.68.77:1987") > 0 ) {
-      NodeApi = "http://112.170.68.77:1987"
+    else if( await checkPeer("http://14.35.225.221:1986") > 0 ) {
+      NodeApi = "http://14.35.225.221:1986"
     }
     else if( await checkPeer("http://112.170.68.77:1987") > 0 ) {
       NodeApi = "http://112.170.68.77:1987"
@@ -1251,7 +1251,7 @@
       const MaxHeight = MinerNodeStatus.height;
       const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight)
       const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
-      console.log("BlockHeightRange:", BlockHeightRange);
+      //console.log("BlockHeightRange:", BlockHeightRange);
       const result = [];
       for (const Height of BlockHeightRange) {
         const BlockInfor = await syncingBlockByHeight(Height);
@@ -1492,7 +1492,25 @@
         headers: {},
         params: {}
       }).then(res=>res.data).catch(() => {});
-      console.log("syncingBlockByHeight Get Block From Remote Node",BlockInfor?.reward_addr, currentHeight)
+      if(BlockInfor?.reward_addr == undefined)  {
+        BlockInfor = await axios.get(ChivesLightNodeSetting.NodeApi2 + '/block/height/' + currentHeight, {
+          headers: {},
+          params: {}
+        }).then(res=>res.data).catch(() => {});
+      }
+      else if(BlockInfor?.reward_addr == undefined)  {
+        BlockInfor = await axios.get(ChivesLightNodeSetting.NodeApi3 + '/block/height/' + currentHeight, {
+          headers: {},
+          params: {}
+        }).then(res=>res.data).catch(() => {});
+      }
+      else if(BlockInfor?.reward_addr == undefined)  {
+        BlockInfor = await axios.get('http://14.35.225.221:1986/block/height/' + currentHeight, {
+          headers: {},
+          params: {}
+        }).then(res=>res.data).catch(() => {});
+      }
+      console.log("syncingBlockByHeight Get Block From Remote Node", BlockInfor?.reward_addr, currentHeight)
     }
 
     if(BlockInfor == null || BlockInfor == undefined) {
