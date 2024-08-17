@@ -45,8 +45,10 @@ expressApp.get('/syncing', async (req, res) => {
 let isSyncing1 = false;
 let EveryTimeAsyncBlockRecords = 100
 cron.schedule('*/1 * * * *', () => {
-  AsyncBlocks();
+  //AsyncBlocks();
 });
+
+AsyncBlocks();
 
 const AsyncBlocks = async () => {
   const StartTime = Date.now();
