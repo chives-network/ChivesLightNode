@@ -73,7 +73,29 @@ const AsyncBlocks = async () => {
   }
 }
 
-AsyncBlocks();
+const AsyncBlocksOneTime = async () => {
+  const StartTime = Date.now();
+  console.log('schedule syncingBlock Task Status !!!', isSyncing1);
+  if (isSyncing1 == false) {
+    isSyncing1 = true;
+    console.log('schedule syncingBlock Task Begin !!!', isSyncing1);
+    await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
+    await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
+    await syncing.syncingBlockMissing();
+    await syncing.syncingTx(20);
+    await syncing.syncingChunksPromiseAll(5);
+    isSyncing1 = false;
+    console.log('schedule syncingBlock Task End !!!', isSyncing1);
+    const EndTime = Date.now();
+    const ExecTime = Math.floor((EndTime - StartTime) / 1000);
+    console.log('ExecTime**********************', ExecTime, "Next Time EveryTimeAsyncBlockRecords", EveryTimeAsyncBlockRecords);
+  }
+
+  // 休息15秒
+  setTimeout(AsyncBlocksOneTime, 15000);
+}
+
+AsyncBlocksOneTime();
 
 let isSyncing5 = false;
 cron.schedule('*/3 * * * *', () => {
