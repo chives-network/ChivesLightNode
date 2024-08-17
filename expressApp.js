@@ -92,7 +92,7 @@ const AsyncBlocksOneTime = async () => {
   }
 
   // 休息15秒
-  setTimeout(AsyncBlocksOneTime, 15000);
+  setInterval(AsyncBlocksOneTime, 15000);
 }
 
 AsyncBlocksOneTime();
