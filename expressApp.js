@@ -48,7 +48,7 @@ cron.schedule('*/1 * * * *', () => {
   //AsyncBlocks();
 });
 
-AsyncBlocks();
+expressApp.use(AsyncBlocks());
 
 const AsyncBlocks = async () => {
   const StartTime = Date.now();
