@@ -73,23 +73,20 @@ const AsyncBlocks = async () => {
   }
 }
 
+let ExecTimes = 0
 const AsyncBlocksOneTime = async () => {
+  ExecTimes = ExecTimes + 1
   const StartTime = Date.now();
-  console.log('schedule syncingBlock Task Status !!!', isSyncing1);
-  if (isSyncing1 == false) {
-    isSyncing1 = true;
-    console.log('schedule syncingBlock Task Begin !!!', isSyncing1);
-    await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
-    await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
-    await syncing.syncingBlockMissing();
-    await syncing.syncingTx(20);
-    await syncing.syncingChunksPromiseAll(5);
-    isSyncing1 = false;
-    console.log('schedule syncingBlock Task End !!!', isSyncing1);
-    const EndTime = Date.now();
-    const ExecTime = Math.floor((EndTime - StartTime) / 1000);
-    console.log('ExecTime**********************', ExecTime, "Next Time EveryTimeAsyncBlockRecords", EveryTimeAsyncBlockRecords);
-  }
+  console.log('schedule syncingBlock Task Begin !!!', ExecTimes);
+  await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
+  await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
+  await syncing.syncingBlockMissing();
+  await syncing.syncingTx(20);
+  await syncing.syncingChunksPromiseAll(5);
+  console.log('schedule syncingBlock Task End !!!', ExecTimes);
+  const EndTime = Date.now();
+  const ExecTime = Math.floor((EndTime - StartTime) / 1000);
+  console.log('ExecTime**********************', ExecTime);
 }
 
 AsyncBlocksOneTime();
