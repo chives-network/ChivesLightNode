@@ -90,12 +90,10 @@ const AsyncBlocksOneTime = async () => {
     const ExecTime = Math.floor((EndTime - StartTime) / 1000);
     console.log('ExecTime**********************', ExecTime, "Next Time EveryTimeAsyncBlockRecords", EveryTimeAsyncBlockRecords);
   }
-
-  // 休息15秒
-  setInterval(AsyncBlocksOneTime, 15000);
 }
 
 AsyncBlocksOneTime();
+setInterval(AsyncBlocksOneTime, 5000);
 
 let isSyncing5 = false;
 cron.schedule('*/3 * * * *', () => {
