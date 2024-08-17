@@ -48,8 +48,6 @@ cron.schedule('*/1 * * * *', () => {
   //AsyncBlocks();
 });
 
-expressApp.use(AsyncBlocks());
-
 const AsyncBlocks = async () => {
   const StartTime = Date.now();
   console.log('schedule syncingBlock Task Status !!!', isSyncing1);
@@ -74,6 +72,8 @@ const AsyncBlocks = async () => {
     console.log('ExecTime**********************', ExecTime, "Next Time EveryTimeAsyncBlockRecords", EveryTimeAsyncBlockRecords);
   }
 }
+
+AsyncBlocks();
 
 let isSyncing5 = false;
 cron.schedule('*/3 * * * *', () => {
