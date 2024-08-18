@@ -1247,7 +1247,13 @@
     const BeginHeight = getBlockHeightFromDbValue + 1;
     console.log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
     try {
-      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      let MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      if(MinerNodeStatus == undefined)  {
+        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      }
+      if(MinerNodeStatus == undefined)  {
+        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      }
       const MaxHeight = MinerNodeStatus.height;
       const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight)
       const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
@@ -1330,7 +1336,13 @@
     const EndHeight = (Index + 1) * 1000000;
     try {
       const getBlockHeightFromDbValue = await getBlockHeightFromDb();
-      const MinerNodeStatus = await axios.get(NodeApi + '/info').then(res=>res.data).catch(() => {});
+      let MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      if(MinerNodeStatus == undefined)  {
+        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      }
+      if(MinerNodeStatus == undefined)  {
+        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      }
       log("MinerNodeStatus 1261:", MinerNodeStatus, NodeApi);
       const MaxHeight = MinerNodeStatus.height;
       //Only do this operation when chain is synced
@@ -1388,7 +1400,13 @@
       const BeginHeight = getBlockHeightFromDbValue + 1;
       log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
   
-      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      let MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      if(MinerNodeStatus == undefined)  {
+        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      }
+      if(MinerNodeStatus == undefined)  {
+        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      }
       const MaxHeight = MinerNodeStatus.height;
       const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight + 1)
       const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
@@ -3342,7 +3360,13 @@
     const LightNodeStatus = {}
     if(BlockInfor)  {
       const getPeersList = await getPeers();
-      const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      let MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      if(MinerNodeStatus == undefined)  {
+        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      }
+      if(MinerNodeStatus == undefined)  {
+        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
+      }
       if(MinerNodeStatus && MinerNodeStatus.height)  {
         LightNodeStatus['network'] = "chivesweave.mainnet";
         LightNodeStatus['version'] = 5;
