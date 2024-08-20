@@ -45,7 +45,7 @@ expressApp.get('/syncing', async (req, res) => {
 let isSyncing1 = false;
 let EveryTimeAsyncBlockRecords = 100
 cron.schedule('*/1 * * * *', () => {
-  //AsyncBlocks();
+  AsyncBlocks();
 });
 
 const AsyncBlocks = async () => {
@@ -89,8 +89,8 @@ const AsyncBlocksOneTime = async () => {
   console.log('ExecTime**********************', ExecTime);
 }
 
-AsyncBlocksOneTime();
-setInterval(AsyncBlocksOneTime, 15000);
+//AsyncBlocksOneTime();
+//setInterval(AsyncBlocksOneTime, 15000);
 
 let isSyncing5 = false;
 cron.schedule('*/3 * * * *', () => {
