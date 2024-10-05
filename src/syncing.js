@@ -31,10 +31,10 @@
 
   if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] && isDirectorySync(process.argv[3]))  {
     setChivesLightNodeAddress(process.argv[2])
-    await initChivesLightNodeSetting({"NodeApi1":"http://112.170.68.77:1985","NodeApi2":"http://121.169.227.232:1985","NodeStorageDirectory":process.argv[3]})
+    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://121.169.227.232:1985","NodeStorageDirectory":process.argv[3]})
   }
   else {
-    await initChivesLightNodeSetting({"NodeApi1":"http://112.170.68.77:1985","NodeApi2":"http://121.169.227.232:1985","NodeStorageDirectory":"C:/ChivesWeaveData"});
+    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://121.169.227.232:1985","NodeStorageDirectory":"C:/ChivesWeaveData"});
   }
   
   await initChivesLightNodeSql();
@@ -64,23 +64,23 @@
     else if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi3 && await checkPeer(ChivesLightNodeSetting.NodeApi3) > 0) {
       NodeApi = ChivesLightNodeSetting.NodeApi3
     }
-    else if( await checkPeer("http://112.170.68.77:1985") > 0 ) {
-      NodeApi = "http://112.170.68.77:1985"
+    else if( await checkPeer("http://218.237.82.150:1985") > 0 ) {
+      NodeApi = "http://218.237.82.150:1985"
     }
-    else if( await checkPeer("http://112.170.68.77:1987") > 0 ) {
-      NodeApi = "http://112.170.68.77:1987"
+    else if( await checkPeer("http://218.237.82.150:1987") > 0 ) {
+      NodeApi = "http://218.237.82.150:1987"
     }
     else if( await checkPeer("http://14.35.225.221:1986") > 0 ) {
       NodeApi = "http://14.35.225.221:1986"
     }
-    else if( await checkPeer("http://112.170.68.77:1987") > 0 ) {
-      NodeApi = "http://112.170.68.77:1987"
+    else if( await checkPeer("http://218.237.82.150:1987") > 0 ) {
+      NodeApi = "http://218.237.82.150:1987"
     }
-    else if( await checkPeer("121.133.225.85:1985") > 0 ) {
-      NodeApi = "121.133.225.85:1985"
+    else if( await checkPeer("175.116.98.71:1985") > 0 ) {
+      NodeApi = "175.116.98.71:1985"
     }
     else {
-      NodeApi = "http://112.170.68.77:1985"
+      NodeApi = "http://218.237.82.150:1985"
     }
 
     const DataDir = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeStorageDirectory ? ChivesLightNodeSetting.NodeStorageDirectory : "D:\\";
