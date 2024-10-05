@@ -31,10 +31,10 @@
 
   if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] && isDirectorySync(process.argv[3]))  {
     setChivesLightNodeAddress(process.argv[2])
-    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://121.169.227.232:1985","NodeStorageDirectory":process.argv[3]})
+    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1985","NodeApi3":"http://218.237.82.150:1990","NodeStorageDirectory":process.argv[3]})
   }
   else {
-    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://121.169.227.232:1985","NodeStorageDirectory":"C:/ChivesWeaveData"});
+    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1985","NodeApi3":"http://218.237.82.150:1990","NodeStorageDirectory":"C:/ChivesWeaveData"});
   }
   
   await initChivesLightNodeSql();
