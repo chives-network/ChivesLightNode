@@ -31,10 +31,10 @@
 
   if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] && isDirectorySync(process.argv[3]))  {
     setChivesLightNodeAddress(process.argv[2])
-    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1985","NodeApi3":"http://218.237.82.150:1990","NodeStorageDirectory":process.argv[3]})
+    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1990","NodeApi3":"http://218.237.82.150:1987","NodeStorageDirectory":process.argv[3]})
   }
   else {
-    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1985","NodeApi3":"http://218.237.82.150:1990","NodeStorageDirectory":"C:/ChivesWeaveData"});
+    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1990","NodeApi3":"http://218.237.82.150:1987","NodeStorageDirectory":"C:/ChivesWeaveData"});
   }
   
   await initChivesLightNodeSql();
@@ -73,11 +73,8 @@
     else if( await checkPeer("http://14.35.225.221:1986") > 0 ) {
       NodeApi = "http://14.35.225.221:1986"
     }
-    else if( await checkPeer("http://218.237.82.150:1987") > 0 ) {
-      NodeApi = "http://218.237.82.150:1987"
-    }
-    else if( await checkPeer("175.116.98.71:1985") > 0 ) {
-      NodeApi = "175.116.98.71:1985"
+    else if( await checkPeer("http://218.237.82.150:1990") > 0 ) {
+      NodeApi = "http://218.237.82.150:1990"
     }
     else {
       NodeApi = "http://218.237.82.150:1985"
