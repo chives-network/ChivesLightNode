@@ -5,7 +5,7 @@
   import { unbundleData } from 'arbundles'
   import Arweave from 'arweave'
   import { fileURLToPath } from 'url'
-  import { dirname, join } from 'path'
+  import { dirname, join, basename } from 'path'
   import { execSync } from 'child_process';
   import * as mammoth from 'mammoth';
   import xlsx from 'xlsx';
@@ -26,16 +26,23 @@
   let ChivesLightNodeSetting = null
   let ChivesLightNodeAddress = null
   let db = null
-  
-  console.log("process.argv", process.argv)
 
+  console.log("process.argv:", process.argv)
+  
   if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] && isDirectorySync(process.argv[3]))  {
     setChivesLightNodeAddress(process.argv[2])
-    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1990","NodeApi3":"http://218.237.82.150:1987","NodeStorageDirectory":process.argv[3]})
+    enableDir(process.argv[3])
+    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":process.argv[3]})
   }
   else {
-    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1990","NodeApi3":"http://218.237.82.150:1987","NodeStorageDirectory":"C:/ChivesWeaveData"});
+    // Get current directory path
+    const currentDirectory = process.cwd();
+    const currentUserDirectory = dirname(currentDirectory) + "/ChivesweaveData";
+    enableDir(currentUserDirectory)
+    console.log("Node Storage Directory:", currentUserDirectory)
+    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory});
   }
+  console.log("Begin to download data from peer, please wait ......")
   
   await initChivesLightNodeSql();
   
@@ -70,11 +77,11 @@
     else if( await checkPeer("http://218.237.82.150:1987") > 0 ) {
       NodeApi = "http://218.237.82.150:1987"
     }
-    else if( await checkPeer("http://14.35.225.221:1986") > 0 ) {
-      NodeApi = "http://14.35.225.221:1986"
+    else if( await checkPeer("http://175.116.98.71:1985") > 0 ) {
+      NodeApi = "http://175.116.98.71:1985"
     }
-    else if( await checkPeer("http://218.237.82.150:1990") > 0 ) {
-      NodeApi = "http://218.237.82.150:1990"
+    else if( await checkPeer("http://218.237.82.145:1985") > 0 ) {
+      NodeApi = "http://218.237.82.145:1985"
     }
     else {
       NodeApi = "http://218.237.82.150:1985"
@@ -1507,23 +1514,20 @@
         headers: {},
         params: {}
       }).then(res=>res.data).catch(() => {});
+      console.log("syncingBlockByHeight Get Block From Remote NodeApi", ChivesLightNodeSetting.NodeApi1 + '/block/height/' + currentHeight)
       if(BlockInfor?.reward_addr == undefined)  {
         BlockInfor = await axios.get(ChivesLightNodeSetting.NodeApi2 + '/block/height/' + currentHeight, {
           headers: {},
           params: {}
         }).then(res=>res.data).catch(() => {});
+        console.log("syncingBlockByHeight Get Block From Remote NodeApi2", ChivesLightNodeSetting.NodeApi2 + '/block/height/' + currentHeight)
       }
       else if(BlockInfor?.reward_addr == undefined)  {
         BlockInfor = await axios.get(ChivesLightNodeSetting.NodeApi3 + '/block/height/' + currentHeight, {
           headers: {},
           params: {}
         }).then(res=>res.data).catch(() => {});
-      }
-      else if(BlockInfor?.reward_addr == undefined)  {
-        BlockInfor = await axios.get('http://14.35.225.221:1986/block/height/' + currentHeight, {
-          headers: {},
-          params: {}
-        }).then(res=>res.data).catch(() => {});
+        console.log("syncingBlockByHeight Get Block From Remote NodeApi3", ChivesLightNodeSetting.NodeApi3 + '/block/height/' + currentHeight)
       }
       console.log("syncingBlockByHeight Get Block From Remote Node", BlockInfor?.reward_addr, currentHeight)
     }

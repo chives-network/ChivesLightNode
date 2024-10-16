@@ -8,6 +8,8 @@
   "type": "module",
   "scripts": {
     "start": "npm run electron",
+    "back": "mkdir -p ~/ChivesweaveData && nohup npm run electron > ~/ChivesweaveData/electron.log 2>&1 &",
+    "stop": "ps aux | grep 'npm run electron' && echo 'You need use this command mannul: kill -9 pid'",
     "electron": "electron --max-old-space-size=8096  main.js",
     "express": "nodemon --max-old-space-size=8096 --expose-gc expressApp.js",
     "build": "electron-builder"
