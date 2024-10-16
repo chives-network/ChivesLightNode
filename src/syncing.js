@@ -1514,22 +1514,22 @@
         headers: {},
         params: {}
       }).then(res=>res.data).catch(() => {});
-      console.log("syncingBlockByHeight Get Block From Remote NodeApi", ChivesLightNodeSetting.NodeApi1 + '/block/height/' + currentHeight)
-      if(BlockInfor?.reward_addr == undefined)  {
+      console.log("syncingBlockByHeight Get Block From Remote NodeApi1:", ChivesLightNodeSetting.NodeApi1 + '/block/height/' + currentHeight, BlockInfor?.reward_addr)
+      if(BlockInfor == null || BlockInfor?.reward_addr == undefined)  {
         BlockInfor = await axios.get(ChivesLightNodeSetting.NodeApi2 + '/block/height/' + currentHeight, {
           headers: {},
           params: {}
         }).then(res=>res.data).catch(() => {});
-        console.log("syncingBlockByHeight Get Block From Remote NodeApi2", ChivesLightNodeSetting.NodeApi2 + '/block/height/' + currentHeight)
+        console.log("syncingBlockByHeight Get Block From Remote NodeApi2:", ChivesLightNodeSetting.NodeApi2 + '/block/height/' + currentHeight, BlockInfor?.reward_addr)
       }
-      else if(BlockInfor?.reward_addr == undefined)  {
+      if(BlockInfor == null || BlockInfor?.reward_addr == undefined)  {
         BlockInfor = await axios.get(ChivesLightNodeSetting.NodeApi3 + '/block/height/' + currentHeight, {
           headers: {},
           params: {}
         }).then(res=>res.data).catch(() => {});
-        console.log("syncingBlockByHeight Get Block From Remote NodeApi3", ChivesLightNodeSetting.NodeApi3 + '/block/height/' + currentHeight)
+        console.log("syncingBlockByHeight Get Block From Remote NodeApi3:", ChivesLightNodeSetting.NodeApi3 + '/block/height/' + currentHeight, BlockInfor?.reward_addr)
       }
-      console.log("syncingBlockByHeight Get Block From Remote Node", BlockInfor?.reward_addr, currentHeight)
+      console.log("syncingBlockByHeight Get Block From Remote Node Final Result:", currentHeight, "reward_addr:", BlockInfor?.reward_addr)
     }
 
     if(BlockInfor == null || BlockInfor == undefined) {
