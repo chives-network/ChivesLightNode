@@ -12,7 +12,7 @@
   "scripts": {
     "start": "npm run electron",
     "electron": "electron --max-old-space-size=8096  main.js",
-    "express": "nodemon --max-old-space-size=8096 --expose-gc expressApp.js",
+    "express": "NODE_ENV=express nodemon --max-old-space-size=8096 --expose-gc expressApp.js",
     "build": "electron-builder"
   },
   "keywords": [],

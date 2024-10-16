@@ -27,7 +27,7 @@
   let ChivesLightNodeAddress = null
   let db = null
 
-  console.log("process.argv:", process.argv)
+  console.log("process.argv:", process.argv, "process.env.NODE_ENV:", process.env.NODE_ENV)
   
   if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] && isDirectorySync(process.argv[3]))  {
     setChivesLightNodeAddress(process.argv[2])
@@ -44,7 +44,9 @@
   }
   console.log("Begin to download data from peer, please wait ......")
   
-  await initChivesLightNodeSql();
+  if(process.env?.NODE_ENV == "express")  {
+    await initChivesLightNodeSql();
+  }
   
   const BlackListAddress = ["omBC7G49jVti_pbqLgl7Z7DouF6fgxY6NAnLgh3FdBo"];
 

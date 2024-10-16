@@ -59,12 +59,6 @@ function createMainWindow() {
           click: () => {
             openNewURL('https://twitter.com/chivesweave');
           }
-        },
-        {
-          label: 'Task To Earn',
-          click: () => {
-            openNewURL('https://chivesweave.org/task-to-earn/');
-          }
         }
       ]
     },
