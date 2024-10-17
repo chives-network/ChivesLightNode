@@ -77,20 +77,20 @@ let ExecTimes = 0
 const AsyncBlocksOneTime = async () => {
   ExecTimes = ExecTimes + 1
   const StartTime = Date.now();
-  console.log('schedule syncingBlock Task Begin !!!', ExecTimes);
+  console.log('AsyncBlocksOneTime Task Begin !!!', ExecTimes);
   await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
   await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
   await syncing.syncingBlockMissing();
   await syncing.syncingTx(20);
   await syncing.syncingChunksPromiseAll(5);
-  console.log('schedule syncingBlock Task End !!!', ExecTimes);
+  console.log('AsyncBlocksOneTime Task End !!!', ExecTimes);
   const EndTime = Date.now();
   const ExecTime = Math.floor((EndTime - StartTime) / 1000);
-  console.log('ExecTime**********************', ExecTime);
+  console.log('AsyncBlocksOneTime ExecTime**********************', ExecTime);
 }
 
 //AsyncBlocksOneTime();
-//setInterval(AsyncBlocksOneTime, 15000);
+setInterval(AsyncBlocksOneTime, 3600000);
 
 let isSyncing5 = false;
 cron.schedule('*/3 * * * *', () => {
@@ -106,7 +106,6 @@ cron.schedule('*/3 * * * *', () => {
 cron.schedule('*/10 * * * *', () => {
   console.log('schedule resetTx404 Task Begin !!!');
   syncing.resetTx404();
-  syncing.syncingBlockMissing();
   syncing.deleteBlackTxsAndAddress();
   syncing.calculatePeers();
   syncing.syncingTxWaitDoingAction(10);
