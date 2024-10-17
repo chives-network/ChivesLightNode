@@ -54,11 +54,11 @@ const AsyncBlocks = async () => {
   if(isSyncing1 == false)  {
     isSyncing1 = true;
     console.log('schedule syncingBlock Task Begin !!!', isSyncing1);
-    //await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
-    //await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
-    await syncing.syncingBlockMissing();
-    //await syncing.syncingTx(20);
-    //await syncing.syncingChunksPromiseAll(5);
+    await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
+    await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
+    //await syncing.syncingBlockMissing();
+    await syncing.syncingTx(20);
+    await syncing.syncingChunksPromiseAll(5);
     isSyncing1 = false;
     console.log('schedule syncingBlock Task End !!!', isSyncing1);
     const EndTime = Date.now();
@@ -103,7 +103,7 @@ cron.schedule('*/3 * * * *', () => {
   }
 });
 
-cron.schedule('*/5 * * * *', () => {
+cron.schedule('*/10 * * * *', () => {
   console.log('schedule resetTx404 Task Begin !!!');
   syncing.resetTx404();
   syncing.syncingBlockMissing();

@@ -1759,7 +1759,7 @@
         }
       });
     });
-    log("BlockStat", BlockStat)
+    //log("BlockStat", BlockStat)
     if(BlockStat && BlockStat.reward) {
 
       const TxStat = await new Promise((resolve, reject) => {
@@ -1789,7 +1789,7 @@
       txs_item_map['pptx'] = 0;
       txs_item_map['audio'] = 0;
       txs_item_map['stl'] = 0;
-      log("TxStat", TxStat)
+      //log("TxStat", TxStat)
       TxStat && TxStat.map((Item)=>{
         txs_item += Item.item_type_count
         txs_item_map[Item.item_type] = Item.item_type_count
