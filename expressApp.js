@@ -34,11 +34,11 @@ expressApp.get('/syncing', async (req, res) => {
   await syncing.syncingBlockMissing();
   //35753 43355 
   //await syncing.syncingBlockPromiseAll(30);
-  await syncing.syncingBlock(50);
-  await syncing.syncingTx(50);
-  await syncing.syncingChunksPromiseAll(10);
-  await syncing.syncingTxParseBundle(10);
-  await syncing.syncingBlockMinedTime(50);
+  //await syncing.syncingBlock(50);
+  //await syncing.syncingTx(50);
+  //await syncing.syncingChunksPromiseAll(10);
+  //await syncing.syncingTxParseBundle(10);
+  //await syncing.syncingBlockMinedTime(50);
   res.json({});
 });
 
@@ -54,11 +54,11 @@ const AsyncBlocks = async () => {
   if(isSyncing1 == false)  {
     isSyncing1 = true;
     console.log('schedule syncingBlock Task Begin !!!', isSyncing1);
-    await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
-    await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
+    //await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
+    //await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
     await syncing.syncingBlockMissing();
-    await syncing.syncingTx(20);
-    await syncing.syncingChunksPromiseAll(5);
+    //await syncing.syncingTx(20);
+    //await syncing.syncingChunksPromiseAll(5);
     isSyncing1 = false;
     console.log('schedule syncingBlock Task End !!!', isSyncing1);
     const EndTime = Date.now();

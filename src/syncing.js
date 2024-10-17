@@ -15,7 +15,8 @@
   import sqlite3 from 'sqlite3';
   const sqlite3Verbose = sqlite3.verbose();
 
-  
+  const sleep = util.promisify(setTimeout);
+
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
 
@@ -128,6 +129,13 @@
                   status INTEGER DEFAULT 0
               );
           `);
+          db.run(`
+            CREATE TABLE IF NOT EXISTS blockmissing (
+                beginHeight INTEGER PRIMARY KEY DEFAULT 0,
+                endHeight INTEGER DEFAULT 0,
+                status INTEGER DEFAULT 0
+            );
+        `);
           db.run(`
               CREATE TABLE IF NOT EXISTS address (
                   id TEXT PRIMARY KEY,
@@ -430,7 +438,7 @@
   async function syncingTxParseBundle(TxCount = 30) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getTxsNotSyncingList = await getTxsBundleNotSyncing(TxCount)
-    log("syncingTxParseBundle getTxsNotSyncingList: ", getTxsNotSyncingList)
+    //log("syncingTxParseBundle getTxsNotSyncingList: ", getTxsNotSyncingList)
     try {
       const result = [];
       for (const TxList of getTxsNotSyncingList) {
@@ -606,7 +614,7 @@
       TxInfor = JSON.parse(TxContent)
       log("syncingTxById Read Tx From Json File",TxInfor.id)
       writeFileStatus = true
-      log("TxInfor TagsMap",TxInfor.id)
+      //log("TxInfor TagsMap",TxInfor.id)
       if(TxInfor==undefined || TxInfor.id==undefined) {
         try {
           fs.unlinkSync(TxJsonFilePath);
@@ -736,7 +744,7 @@
               //Update Address
               const AddressBalanceTarget = await axios.get(NodeApi + "/wallet/" + TxInfor.target + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
               log("TxInfor.target", TxInfor.target)
-              log("AddressBalanceTarget", AddressBalanceTarget)
+              log("AddressBalanceTarget", AddressBalanceTarget/1000000000000)
               const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
               updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalanceTarget, TxInfor.target);
               updateAddress.finalize();
@@ -745,8 +753,8 @@
             //Download Chunk
             const data_root = TxInfor.data_root
             if(data_root && data_root.length && data_root.length == 43) {
-                log("TxInfor data_root: ______________________________________________________________", data_root)
-                log("TxInfor entity_type: ______________________________________________________________", entity_type)
+                //log("TxInfor data_root: ______________________________________________________________", data_root)
+                //log("TxInfor entity_type: ______________________________________________________________", entity_type)
             }
           }
           else {
@@ -820,8 +828,8 @@
                         //Not Need Parse File
                       }
                       else {
-                        log("unbundleItems",Item)
-                        log("unbundleItems id", Item.id, Item.tags)
+                        //log("unbundleItems",Item)
+                        //log("unbundleItems id", Item.id, Item.tags)
                         //log("unBundleItem tags",Item.tags)
                         //log("unBundleItem owner",Item.owner)
                         //log("unBundleItem anchor",Item.anchor)
@@ -1336,10 +1344,8 @@
     }
   }
 
-  async function syncingBlockMissing(Index = 0) {
+  async function syncingBlockMissing() {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
-    const BeginHeight = Index * 1000000 + 1;
-    const EndHeight = (Index + 1) * 1000000;
     try {
       const getBlockHeightFromDbValue = await getBlockHeightFromDb();
       let MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
@@ -1353,9 +1359,49 @@
       const MaxHeight = MinerNodeStatus.height;
       //Only do this operation when chain is synced
       if(MaxHeight < (getBlockHeightFromDbValue + 100))  {
+        const MaxHeightSection = Math.floor(MaxHeight/10000);
+        console.log("MaxHeightSection", MaxHeightSection);
+        const BlockHeightRange = generateSequence(0, MaxHeightSection);
+        console.log("BlockHeightRange", BlockHeightRange);
+
+        const getBlockMissingStatusData = await getBlockMissingStatus();
+        
+        if (BlockHeightRange && BlockHeightRange.length > 0) {
+          for (let SectionIndex of BlockHeightRange) {
+              const BeginHeight = SectionIndex * 10000 + 1;
+              const EndHeight = (SectionIndex + 1) * 10000;
+              const syncedStatus = getBlockMissingStatusData[String(BeginHeight)] ?? '0';
+  
+              if (syncedStatus == '1') {
+                  log("getBlockMissingStatusData Finished Synced Block Data:", getBlockMissingStatusData, "syncedStatus", syncedStatus, "BeginHeight", BeginHeight, "SectionIndex", SectionIndex);
+              } else {
+                  await syncingBlockMissingSection(BeginHeight, EndHeight, getBlockMissingStatusData, getBlockHeightFromDbValue, getBlockHeightFromDbValue, MaxHeight);
+                  await sleep(5000);
+              }
+          }
+        }
+
+      }
+      else {
+        return { error: "Not Finished Synced" };
+      }
+    } 
+    catch (error) {
+      console.error("syncingBlockMissing error fetching block data 1350:", error.message);
+      return { error: "Internal Server Error" };
+    }
+  }
+
+  async function syncingBlockMissingSection(BeginHeight, EndHeight, getBlockMissingStatusData, getBlockHeightFromDbValue, MaxHeight) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
+    const syncedStatus = getBlockMissingStatusData[String(BeginHeight)] ?? '0';
+    log("getBlockMissingStatusData:", getBlockMissingStatusData, "syncedStatus", syncedStatus);
+    try {
+      //Only do this operation when chain is synced
+      if(MaxHeight < (getBlockHeightFromDbValue + 100))  {
         const EndHeightFinal = (MaxHeight - EndHeight) > 0 ? EndHeight : MaxHeight
         const BlockHeightRange = generateSequence(BeginHeight, EndHeightFinal);
-        log("BlockHeightRange:", BlockHeightRange);
+        log("BlockHeightRange:", BeginHeight, EndHeightFinal);
         const GetExistBlocks = await new Promise((resolve, reject) => {
                                   db.all("SELECT id FROM block where id in ("+BlockHeightRange.join(',')+")", (err, result) => {
                                     if (err) {
@@ -1371,23 +1417,32 @@
             GetExistBlocksIds.push(Item.id)
           })
         }
-        //log("GetExistBlocksIds:", GetExistBlocksIds);
+        log("GetExistBlocksIds Size:", GetExistBlocksIds.length);
         const getMissingBlockIds = arrayDifference(BlockHeightRange, GetExistBlocksIds)
-        log("getMissingBlockIds:", getMissingBlockIds);
-        const result = [];
-        for (const Height of getMissingBlockIds) {
-          log("syncingBlockMissing Height:", Height);
-          try {
-            const BlockInfor = await syncingBlockByHeight(Height);
-            if(BlockInfor && BlockInfor.height) {
-              result.push(BlockInfor.height)
+        log("getMissingBlockIds List:", getMissingBlockIds);
+        if(getMissingBlockIds && getMissingBlockIds.length > 0)  {
+          const result = [];
+          for (const Height of getMissingBlockIds) {
+            log("syncingBlockMissing Height:", Height);
+            try {
+              const BlockInfor = await syncingBlockByHeight(Height);
+              if(BlockInfor && BlockInfor.height) {
+                result.push(BlockInfor.height)
+              }
+            }
+            catch (error) {
+              console.error("syncingBlockMissing error fetching block data 1292:", error.message, Height);
             }
           }
-          catch (error) {
-            console.error("syncingBlockMissing error fetching block data 1292:", error.message, Height);
-          }
+          return result;
         }
-        return result;
+        else {
+          const insertPeers = db.prepare('INSERT OR REPLACE INTO blockmissing (beginHeight, endHeight, status) VALUES (?, ?, ?)');
+          insertPeers.run(BeginHeight, EndHeight, 1);
+          insertPeers.finalize();
+          return [];
+        }
+        
       }
       else {
         return { error: "Not Finished Synced" };
@@ -1512,24 +1567,50 @@
       console.log("syncingBlockByHeight Read Block From Json File",BlockInfor.reward_addr, currentHeight)
     }
     else {
-      BlockInfor = await axios.get(NodeApi + '/block/height/' + currentHeight, {
-        headers: {},
-        params: {}
-      }).then(res=>res.data).catch(() => {});
-      console.log("syncingBlockByHeight Get Block From Remote NodeApi1:", ChivesLightNodeSetting.NodeApi1 + '/block/height/' + currentHeight, BlockInfor?.reward_addr)
+      if(BlockInfor == null || BlockInfor?.reward_addr == undefined)  {
+        BlockInfor = await axios.get(NodeApi + '/block/height/' + currentHeight, {
+          headers: {},
+          params: {},
+          timeout: 5000
+        }).then(res=>res.data).catch(() => {});
+        if(BlockInfor == undefined || BlockInfor == 'undefined') {
+          
+          await sleep(2000);
+          console.log("syncingBlockByHeight Get Block From Remote NodeApi1 sleep 2s:", ChivesLightNodeSetting.NodeApi1 + '/block/height/' + currentHeight, BlockInfor)
+        }
+        else {
+          console.log("syncingBlockByHeight Get Block From Remote NodeApi1:", ChivesLightNodeSetting.NodeApi1 + '/block/height/' + currentHeight, BlockInfor?.reward_addr)
+        }
+      }
       if(BlockInfor == null || BlockInfor?.reward_addr == undefined)  {
         BlockInfor = await axios.get(ChivesLightNodeSetting.NodeApi2 + '/block/height/' + currentHeight, {
           headers: {},
-          params: {}
+          params: {},
+          timeout: 5000
         }).then(res=>res.data).catch(() => {});
-        console.log("syncingBlockByHeight Get Block From Remote NodeApi2:", ChivesLightNodeSetting.NodeApi2 + '/block/height/' + currentHeight, BlockInfor?.reward_addr)
+        if(BlockInfor == undefined || BlockInfor == 'undefined') {
+          
+          await sleep(2000);
+          console.log("syncingBlockByHeight Get Block From Remote NodeApi2 sleep 2s:", ChivesLightNodeSetting.NodeApi2 + '/block/height/' + currentHeight, BlockInfor)
+        }
+        else {
+          console.log("syncingBlockByHeight Get Block From Remote NodeApi2:", ChivesLightNodeSetting.NodeApi2 + '/block/height/' + currentHeight, BlockInfor?.reward_addr)
+        }
       }
       if(BlockInfor == null || BlockInfor?.reward_addr == undefined)  {
         BlockInfor = await axios.get(ChivesLightNodeSetting.NodeApi3 + '/block/height/' + currentHeight, {
           headers: {},
-          params: {}
+          params: {},
+          timeout: 5000
         }).then(res=>res.data).catch(() => {});
-        console.log("syncingBlockByHeight Get Block From Remote NodeApi3:", ChivesLightNodeSetting.NodeApi3 + '/block/height/' + currentHeight, BlockInfor?.reward_addr)
+        if(BlockInfor == undefined || BlockInfor == 'undefined') {
+          
+          await sleep(2000);
+          console.log("syncingBlockByHeight Get Block From Remote NodeApi3 sleep 2s:", ChivesLightNodeSetting.NodeApi3 + '/block/height/' + currentHeight, BlockInfor)
+        }
+        else {
+          console.log("syncingBlockByHeight Get Block From Remote NodeApi3:", ChivesLightNodeSetting.NodeApi3 + '/block/height/' + currentHeight, BlockInfor?.reward_addr)
+        }
       }
       console.log("syncingBlockByHeight Get Block From Remote Node Final Result:", currentHeight, "reward_addr:", BlockInfor?.reward_addr)
     }
@@ -1596,6 +1677,9 @@
       //db.exec('ROLLBACK');
     }
 
+    
+    await sleep(200);
+
     return BlockInfor;
   }
 
@@ -1631,7 +1715,7 @@
       catch (error) {
       }
     }
-    //console.log(Action1, Action2, Action3, Action4, Action5, Action6, Action7, Action8, Action9, Action10)
+    console.log(Action1, Action2, Action3, Action4, Action5, Action6, Action7, Action8, Action9, Action10)
   }
 
   async function deleteLog() {
@@ -2895,6 +2979,30 @@
     });
   }
 
+  async function getBlockMissingRecords() {  
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
+    return new Promise((resolve, reject) => {
+      db.all("SELECT * from blockmissing", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+
+  async function getBlockMissingStatus() {  
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
+    const getBlockMissingStatusData = await getBlockMissingRecords();
+    const RS = {};
+    console.log("getBlockMissingStatusData", getBlockMissingStatusData)
+    getBlockMissingStatusData && getBlockMissingStatusData.map((BlockMissingStatus)=>{
+      RS[BlockMissingStatus.beginHeight] = BlockMissingStatus.status
+    })
+    return RS;
+  }
+
   async function getPeersAvailable() {  
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
@@ -3774,7 +3882,7 @@
           }
           else {
             convertDocxToImage(inputFilePath, outputFilePath + '/' + TxId);
-            const sleep = util.promisify(setTimeout);
+            
             await sleep(2000);
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
             return {FileName, ContentType:"image/png", FileContent};
