@@ -59,6 +59,7 @@ const AsyncBlocks = async () => {
     //await syncing.syncingBlockMissing();
     await syncing.syncingTx(20);
     await syncing.syncingChunksPromiseAll(5);
+    await syncing.resetTx404();
     isSyncing1 = false;
     console.log('schedule syncingBlock Task End !!!', isSyncing1);
     const EndTime = Date.now();
@@ -105,7 +106,6 @@ cron.schedule('*/3 * * * *', () => {
 
 cron.schedule('*/10 * * * *', () => {
   console.log('schedule resetTx404 Task Begin !!!');
-  syncing.resetTx404();
   syncing.deleteBlackTxsAndAddress();
   syncing.calculatePeers();
   syncing.syncingTxWaitDoingAction(10);
