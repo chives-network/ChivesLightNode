@@ -457,7 +457,7 @@
   async function syncingTx(TxCount = 30) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getTxsNotSyncingList = await getTxsNotSyncing(TxCount)
-    console.log("syncingTx Count: ", getTxsNotSyncingList.length)
+    console.log("getTxsNotSyncingList syncingTx Count: ----------", getTxsNotSyncingList.length)
     try {
       const result = [];
       for (const TxList of getTxsNotSyncingList) {
@@ -612,7 +612,7 @@
       //Nothing to do
       const TxContent = getTxInforById(TxId);
       TxInfor = JSON.parse(TxContent)
-      log("syncingTxById Read Tx From Json File",TxInfor.id)
+      //log("syncingTxById Read Tx From Json File",TxInfor.id)
       writeFileStatus = true
       //log("TxInfor TagsMap",TxInfor.id)
       if(TxInfor==undefined || TxInfor.id==undefined) {
@@ -630,142 +630,142 @@
       const result = await axios.get(NodeApi + '/tx/' + TxId, {}).catch(() => {});
       if(result && result.data) {
         TxInfor = result.data
-        log("syncingTxById From Remote Node",TxId)
+        console.log("syncingTxById From Remote Node",NodeApi, TxId)
         try {
           //Write Tx File
           writeFileStatus = writeFile('txs/' + TxId.substring(0, 2).toLowerCase(), TxId + ".json", JSON.stringify(TxInfor), "syncingTxById")
-
-          //Write Tx File
-          if(writeFileStatus)    {
-            //Insert Tags
-            TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
-              const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
-              const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
-              const insertTag = db.prepare('INSERT OR IGNORE INTO tag (height, tx_id, name, value) VALUES (?, ?, ?, ?)');
-              insertTag.run(Height, TxId, TagName, TagValue);
-              insertTag.finalize();
-            })
-          
-            //log("TxInfor TagsMap",TxInfor)
-            //Tags Data
-            const newTags = []
-            const TagsMap = {}
-            if(TxInfor.owner && TxInfor.owner.address) {
-              TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
-                TagsMap[Tag.name] = Tag.value;
-                newTags.push({'name':Tag.name, 'value':Tag.value})
-              })
-              TxInfor.owner = TxInfor.owner.key
-              TxInfor.quantity = TxInfor.quantity.winston
-              //log("TxInfor TagsMap",TagsMap)
-            }
-            else {
-              TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
-                const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
-                const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
-                TagsMap[TagName] = TagValue;
-                newTags.push({'name':TagName, 'value':TagValue})
-              })
-              //log("TxInfor TagsMap",TagsMap)
-            }
-            //log("TxInfor TagsMap",TxInfor)
-            
-            //Update Tx
-            const updateTx = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, reward = ?, data_size = ?, data_root = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
-            let from_address = '';
-            //log("TxInfor TagsMap",TxInfor)
-            if(TxInfor.owner && TxInfor.owner.address) {
-              from_address = TxInfor.owner.address;
-              TxInfor.owner = TxInfor.owner.key
-              TxInfor.quantity = TxInfor.quantity.winston
-            }
-            else if(TxInfor.owner) {
-              from_address = await ownerToAddress(TxInfor.owner);
-            }
-            else {
-              from_address = "";
-            }
-            const item_name = TagsMap['File-Name'] || "";
-            const item_type = contentTypeToFileType(TagsMap['Content-Type']);
-            const item_parent = TagsMap['File-Parent'] || "Root";
-            const content_type = TagsMap['Content-Type'] || "";
-            const item_hash = TagsMap['File-Hash'] || "";
-            const item_summary = TagsMap['File-Summary'] || "";
-            const is_encrypt = TagsMap['Cipher-ALG'] || "";
-            const is_public = TagsMap['File-Public'] || "";
-            const app_name = TagsMap['App-Name'] || "";
-            const app_version = TagsMap['App-Version'] || "";
-            const app_instance = TagsMap['App-Instance'] || "";
-
-            let entity_type = "";
-            const BundleFormat = TagsMap['Bundle-Format'] || "";
-            if(BundleFormat == "binary") {
-                entity_type = "Bundle";
-            }
-            else if(TagsMap['Entity-Type'] && TagsMap['Entity-Type'] == "Action" && 
-              (TagsMap['Entity-Action'] == "RegisterChivesLightNode" || TagsMap['Entity-Action'] == "HeartBeatChivesLightNode") 
-              ) {
-                entity_type = "WaitDoingAction";
-            }
-            else if(TagsMap['Entity-Type'] && TagsMap['Entity-Type'] != "") {
-                entity_type = TagsMap['Entity-Type'];
-            }
-            else if(TxInfor.data_size > 0 && item_type !="" && item_name != "") {
-                entity_type = "File";
-            }
-            else {
-                entity_type = "Tx";
-            }
-            updateTx.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
-            updateTx.finalize();
-
-            log("TxInfor from_address: ", from_address)
-
-            //Insert Address
-            let BlockInfor = {}
-            if(timestamp == 0) {
-              BlockInfor = await getBlockInforByHeightFromDb(Height);
-            }
-            else {
-              BlockInfor = {height: Height, timestamp: timestamp }
-            }
-            const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-            insertAddress.run(from_address, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
-            insertAddress.finalize();
-            //Update Address
-            const AddressBalance = await axios.get(NodeApi + "/wallet/" + from_address + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
-            const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
-            updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, from_address);
-            updateAddress.finalize();
-            if(TxInfor.target && TxInfor.target.length==43) {
-              const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-              insertAddress.run(TxInfor.target, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
-              insertAddress.finalize();
-              //Update Address
-              const AddressBalanceTarget = await axios.get(NodeApi + "/wallet/" + TxInfor.target + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
-              log("TxInfor.target", TxInfor.target)
-              log("AddressBalanceTarget", AddressBalanceTarget/1000000000000)
-              const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
-              updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalanceTarget, TxInfor.target);
-              updateAddress.finalize();
-            }
-
-            //Download Chunk
-            const data_root = TxInfor.data_root
-            if(data_root && data_root.length && data_root.length == 43) {
-                //log("TxInfor data_root: ______________________________________________________________", data_root)
-                //log("TxInfor entity_type: ______________________________________________________________", entity_type)
-            }
-          }
-          else {
-            //Write File Content Error
-          }
-
         } 
         catch (err) {
           console.error('syncingTxById Error writeFileStatus:', err);
         }
       }
+    }
+
+    
+    //Insert to table
+    if(TxInfor && TxInfor.owner)    {
+      //Insert Tags
+      TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
+        const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
+        const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
+        const insertTag = db.prepare('INSERT OR IGNORE INTO tag (height, tx_id, name, value) VALUES (?, ?, ?, ?)');
+        insertTag.run(Height, TxId, TagName, TagValue);
+        insertTag.finalize();
+      })
+    
+      //console.log("TxInfor TagsMap------------------------------",TxInfor)
+      //Tags Data
+      const newTags = []
+      const TagsMap = {}
+      if(TxInfor.owner && TxInfor.owner.address) {
+        TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
+          TagsMap[Tag.name] = Tag.value;
+          newTags.push({'name':Tag.name, 'value':Tag.value})
+        })
+        TxInfor.owner = TxInfor.owner.key
+        TxInfor.quantity = TxInfor.quantity.winston
+        //log("TxInfor TagsMap",TagsMap)
+      }
+      else {
+        TxInfor && TxInfor.tags && TxInfor.tags.length > 0 && TxInfor.tags.map( (Tag) => {
+          const TagName = Buffer.from(Tag.name, 'base64').toString('utf-8');
+          const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
+          TagsMap[TagName] = TagValue;
+          newTags.push({'name':TagName, 'value':TagValue})
+        })
+        //log("TxInfor TagsMap",TagsMap)
+      }
+      //log("TxInfor TagsMap",TxInfor)
+      
+      //Update Tx
+      const updateTx = db.prepare('update tx set last_tx = ?, owner = ?, from_address = ?, target = ?, quantity = ?, reward = ?, data_size = ?, data_root = ?, item_name = ?, item_type = ?, item_parent = ?, content_type = ?, item_hash = ?, item_summary = ?, is_encrypt = ?, is_public = ?, entity_type = ?, app_name = ?, app_version = ?, app_instance = ?, tags = ? where id = ?');
+      let from_address = '';
+      if(TxInfor.owner && TxInfor.owner.address) {
+        from_address = TxInfor.owner.address;
+        TxInfor.owner = TxInfor.owner.key
+        TxInfor.quantity = TxInfor.quantity.winston
+      }
+      else if(TxInfor.owner) {
+        from_address = await ownerToAddress(TxInfor.owner);
+      }
+      else {
+        from_address = "";
+      }
+      const item_name = TagsMap['File-Name'] || "";
+      const item_type = contentTypeToFileType(TagsMap['Content-Type']);
+      const item_parent = TagsMap['File-Parent'] || "Root";
+      const content_type = TagsMap['Content-Type'] || "";
+      const item_hash = TagsMap['File-Hash'] || "";
+      const item_summary = TagsMap['File-Summary'] || "";
+      const is_encrypt = TagsMap['Cipher-ALG'] || "";
+      const is_public = TagsMap['File-Public'] || "";
+      const app_name = TagsMap['App-Name'] || "";
+      const app_version = TagsMap['App-Version'] || "";
+      const app_instance = TagsMap['App-Instance'] || "";
+
+      let entity_type = "";
+      const BundleFormat = TagsMap['Bundle-Format'] || "";
+      if(BundleFormat == "binary") {
+          entity_type = "Bundle";
+      }
+      else if(TagsMap['Entity-Type'] && TagsMap['Entity-Type'] == "Action" && 
+        (TagsMap['Entity-Action'] == "RegisterChivesLightNode" || TagsMap['Entity-Action'] == "HeartBeatChivesLightNode") 
+        ) {
+          entity_type = "WaitDoingAction";
+      }
+      else if(TagsMap['Entity-Type'] && TagsMap['Entity-Type'] != "") {
+          entity_type = TagsMap['Entity-Type'];
+      }
+      else if(TxInfor.data_size > 0 && item_type !="" && item_name != "") {
+          entity_type = "File";
+      }
+      else {
+          entity_type = "Tx";
+      }
+      updateTx.run(TxInfor.last_tx, TxInfor.owner, from_address, TxInfor.target, TxInfor.quantity, TxInfor.reward, TxInfor.data_size, TxInfor.data_root, item_name, item_type, item_parent, content_type, item_hash, item_summary, is_encrypt, is_public, entity_type, app_name, app_version, app_instance, JSON.stringify(newTags), TxId);
+      updateTx.finalize();
+
+      log("TxInfor from_address: ", from_address)
+
+      //Insert Address
+      let BlockInfor = {}
+      if(timestamp == 0) {
+        BlockInfor = await getBlockInforByHeightFromDb(Height);
+      }
+      else {
+        BlockInfor = {height: Height, timestamp: timestamp }
+      }
+      const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+      insertAddress.run(from_address, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
+      insertAddress.finalize();
+      //Update Address
+      const AddressBalance = await axios.get(NodeApi + "/wallet/" + from_address + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
+      const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
+      updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalance, from_address);
+      updateAddress.finalize();
+      if(TxInfor.target && TxInfor.target.length==43) {
+        const insertAddress = db.prepare('INSERT OR IGNORE INTO address (id, lastblock, timestamp, balance, txs, profile, referee, last_tx_action) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        insertAddress.run(TxInfor.target, BlockInfor.height, BlockInfor.timestamp, 0, 0, "", "", "");
+        insertAddress.finalize();
+        //Update Address
+        const AddressBalanceTarget = await axios.get(NodeApi + "/wallet/" + TxInfor.target + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
+        log("TxInfor.target", TxInfor.target)
+        log("AddressBalanceTarget", AddressBalanceTarget/1000000000000)
+        const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
+        updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalanceTarget, TxInfor.target);
+        updateAddress.finalize();
+      }
+
+      //Download Chunk
+      const data_root = TxInfor.data_root
+      if(data_root && data_root.length && data_root.length == 43) {
+          //log("TxInfor data_root: ______________________________________________________________", data_root)
+          //log("TxInfor entity_type: ______________________________________________________________", entity_type)
+      }
+    }
+    else {
+      //Write File Content Error
+      console.error("Block Tx Infor Download Failed ------------------------------", TxId, Height)
     }
 
     return TxInfor;
