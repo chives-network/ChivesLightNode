@@ -59,7 +59,7 @@ const AsyncBlocks = async () => {
     //await syncing.syncingBlockMissing();
     await syncing.syncingTx(20);
     await syncing.syncingChunksPromiseAll(5);
-    await syncing.resetTx404();
+    //await syncing.resetTx404();
     isSyncing1 = false;
     console.log('schedule syncingBlock Task End !!!', isSyncing1);
     const EndTime = Date.now();
@@ -113,6 +113,7 @@ cron.schedule('*/10 * * * *', () => {
 });
 
 cron.schedule('1 1 * * *', () => {
+  syncing.resetTx404();
   console.log('schedule syncingTxParseBundle Task Begin !!!');
   if (global.gc) {
     console.log('Manual garbage collection');
