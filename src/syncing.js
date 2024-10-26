@@ -1254,7 +1254,7 @@
     
     return contentTypeMap[contentType] || contentType; // 未知类型
   }
-  
+
   async function syncingBlock(EveryTimeDealBlockCount = 5) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const getBlockHeightFromDbValue = await getBlockHeightFromDb()
@@ -1262,12 +1262,6 @@
     console.log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
     try {
       let MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      if(MinerNodeStatus == undefined)  {
-        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      }
-      if(MinerNodeStatus == undefined)  {
-        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      }
       const MaxHeight = MinerNodeStatus.height;
       const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight)
       const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
@@ -1352,12 +1346,6 @@
     try {
       const getBlockHeightFromDbValue = await getBlockHeightFromDb();
       let MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      if(MinerNodeStatus == undefined)  {
-        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      }
-      if(MinerNodeStatus == undefined)  {
-        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      }
       log("MinerNodeStatus 1261:", MinerNodeStatus, NodeApi);
       const MaxHeight = MinerNodeStatus.height;
       //Only do this operation when chain is synced
@@ -1465,12 +1453,6 @@
       log("getBlockHeightFromDbValue:", getBlockHeightFromDbValue);
   
       let MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      if(MinerNodeStatus == undefined)  {
-        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      }
-      if(MinerNodeStatus == undefined)  {
-        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      }
       const MaxHeight = MinerNodeStatus.height;
       const GetBlockRange = (MaxHeight - BeginHeight) > EveryTimeDealBlockCount ? EveryTimeDealBlockCount : (MaxHeight - BeginHeight + 1)
       const BlockHeightRange = Array.from({ length: GetBlockRange }, (_, index) => BeginHeight + index);
@@ -1971,6 +1953,7 @@
     const getTxCountValue = await getTxCount(heightFiler) ?? 0;
     const getTxPageValue = await getTxPage(heightFiler, pageidFiler, pagesizeFiler);
     const BlockInfor = await getBlockInforByHeightFromDb(heightFiler);
+    const getBlockHeightFromDbValue = await getBlockHeightFromDb();
     const RS = {};
     RS['allpages'] = Math.ceil(getTxCountValue/pagesizeFiler);
     RS['txs'] = TxRowToJsonFormat(getTxPageValue);
@@ -1978,7 +1961,7 @@
     RS['pageid'] = pageidFiler;
     RS['pagesize'] = pagesizeFiler;
     RS['total'] = getTxCountValue;
-    RS['block'] = BlockInfor;
+    RS['block'] = {...BlockInfor, current_height: getBlockHeightFromDbValue};
     return RS;
   }
 
@@ -3475,12 +3458,6 @@
     if(BlockInfor)  {
       const getPeersList = await getPeers();
       let MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      if(MinerNodeStatus == undefined)  {
-        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      }
-      if(MinerNodeStatus == undefined)  {
-        MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-      }
       if(MinerNodeStatus && MinerNodeStatus.height)  {
         LightNodeStatus['network'] = "chivesweave.mainnet";
         LightNodeStatus['version'] = 5;
