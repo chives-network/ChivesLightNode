@@ -1324,11 +1324,14 @@
               BlockTimestamp[Number(BlockInfor.id)-1] = previousBlock.timestamp;
             }
           }
-          if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1] ) {
+          //console.log("BlockTimestamp-------------------------", BlockInfor.id)
+          if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1]) {
             const MinedTime = BlockInfor.timestamp - BlockTimestamp[Number(BlockInfor.id)-1]
             const MinedTimeValue = MinedTime > 0 ? MinedTime : 1
+            //console.log("MinedTime-------------------------", MinedTime)
+            //console.log("MinedTimeValue-------------------------", BlockInfor.id, MinedTimeValue)
             const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
-            updateBlockMinedTime.run(MinedTimeValue, BlockInfor.id);
+            updateBlockMinedTime.run(Number(MinedTimeValue), BlockInfor.id);
             updateBlockMinedTime.finalize();
           }
           result.push(BlockInfor.id)
