@@ -359,13 +359,17 @@
         resolve(null);
         return;
       }
-      db.get("SELECT * from address where id='"+filterString(Address)+"'", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.get(
+        "SELECT * FROM address WHERE id = ?", 
+        [filterString(Address)], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -1736,25 +1740,41 @@
         resolve(null);
         return;
       }
-      db.get("SELECT SUM(block_size/1048576) AS block_size, SUM(mining_time) AS mining_time, SUM(reward/1000000000000) AS reward, SUM(txs_length) AS txs_length, MAX(weave_size/1048576) AS weave_size, MAX(cumulative_diff/1024) AS cumulative_diff, SUM(reward_pool/1000000000000) AS reward_pool, COUNT(*) AS block_count FROM block where block_date='"+filterString(block_date)+"'", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.get(
+        "SELECT SUM(block_size / 1048576) AS block_size, " +
+        "SUM(mining_time) AS mining_time, " +
+        "SUM(reward / 1000000000000) AS reward, " +
+        "SUM(txs_length) AS txs_length, " +
+        "MAX(weave_size / 1048576) AS weave_size, " +
+        "MAX(cumulative_diff / 1024) AS cumulative_diff, " +
+        "SUM(reward_pool / 1000000000000) AS reward_pool, " +
+        "COUNT(*) AS block_count " +
+        "FROM block WHERE block_date = ?",
+        [filterString(block_date)],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
     //log("BlockStat", BlockStat)
     if(BlockStat && BlockStat.reward) {
 
       const TxStat = await new Promise((resolve, reject) => {
-        db.all("SELECT item_type, COUNT(id) AS item_type_count FROM tx where tx_date='"+filterString(block_date)+"' group by item_type", (err, result) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(result ? result : null);
+        db.all(
+          "SELECT item_type, COUNT(id) AS item_type_count FROM tx WHERE tx_date = ? GROUP BY item_type", 
+          [filterString(block_date)], 
+          (err, result) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(result || null);
+            }
           }
-        });
+        );
       });
       let txs_item = 0;
       const txs_item_map = {}
@@ -1817,13 +1837,17 @@
         resolve(null);
         return;
       }
-      db.get("SELECT * FROM tx where id = '"+ TxId +"'", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.get(
+        "SELECT * FROM tx WHERE id = ?", 
+        [TxId], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -1834,13 +1858,17 @@
         resolve(null);
         return;
       }
-      db.get("SELECT * FROM block where height = '"+ Number(Height) +"'", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.get(
+        "SELECT * FROM block WHERE height = ?", 
+        [Number(Height)], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -1851,13 +1879,17 @@
         resolve(null);
         return;
       }
-      db.get("SELECT * FROM block where indep_hash = '"+ filterString(Hash) +"'", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.get(
+        "SELECT * FROM block WHERE indep_hash = ?", 
+        [filterString(Hash)], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -1918,13 +1950,17 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where from_address is not null and block_height ='"+ Number(Height) +"'", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.NUM : 0);
+      db.get(
+        "SELECT COUNT(*) AS NUM FROM tx WHERE from_address IS NOT NULL AND block_height = ?", 
+        [Number(Height)], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.NUM : 0);
+          }
         }
-      });
+      );
     });
   }
   async function getTxPage(height, pageid, pagesize) {
@@ -1935,13 +1971,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where block_height ='"+ Number(height) +"' and from_address is not null limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT * FROM tx WHERE block_height = ? AND from_address IS NOT NULL LIMIT ? OFFSET ?", 
+        [Number(height), Number(pagesize), From], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
   async function getTxPageJson(height, pageid, pagesize) {
@@ -2024,13 +2064,17 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where bundleid = '"+txid+"' and from_address is not null", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.NUM : 0);
+      db.get(
+        "SELECT COUNT(*) AS NUM FROM tx WHERE bundleid = ? AND from_address IS NOT NULL", 
+        [txid], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.NUM : 0);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2042,13 +2086,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where bundleid = '"+txid+"' and from_address is not null limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT * FROM tx WHERE bundleid = ? AND from_address IS NOT NULL LIMIT ? OFFSET ?", 
+        [txid, Number(pagesize), From], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2297,7 +2345,7 @@
   async function getAllFileTypeCount(FileType) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
-      let ItemTypeSql = "item_type = '"+FileType+"'";
+      let ItemTypeSql = "item_type = '"+filterString(FileType)+"'";
       if(FileType == "word") {
         ItemTypeSql = "item_type in ('doc', 'docx')";
       }
@@ -2325,7 +2373,7 @@
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     const From = Number(pagesize) * Number(pageid)
     return new Promise((resolve, reject) => {
-      let ItemTypeSql = "item_type = '"+FileType+"'";
+      let ItemTypeSql = "item_type = '"+filterString(FileType)+"'";
       if(FileType == "word") {
         ItemTypeSql = "item_type in ('doc', 'docx')";
       }
@@ -2381,13 +2429,17 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where item_type = '"+FileType+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.NUM : 0);
+      db.get(
+        "SELECT COUNT(*) AS NUM FROM tx WHERE item_type = ? AND from_address = ? AND is_encrypt = '' AND entity_type = 'File'", 
+        [FileType, Address], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.NUM : 0);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2399,13 +2451,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where item_type = '"+FileType+"' and from_address = '"+Address+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') order by entity_type desc, block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT * FROM tx WHERE item_type = ? AND from_address = ? AND is_encrypt = '' AND (entity_type = 'File' OR entity_type = 'Folder') ORDER BY entity_type DESC, block_height DESC LIMIT ? OFFSET ?", 
+        [FileType, Address, Number(pagesize), From], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2436,13 +2492,17 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where item_parent = '"+Folder+"' and from_address = '"+Address+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') ", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.NUM : 0);
+      db.get(
+        "SELECT COUNT(*) AS NUM FROM tx WHERE item_parent = ? AND from_address = ? AND is_encrypt = '' AND (entity_type = 'File' OR entity_type = 'Folder')", 
+        [Folder, Address], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.NUM : 0);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2454,13 +2514,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where item_parent = '"+Folder+"' and from_address = '"+Address+"' and is_encrypt = '' and (entity_type = 'File' or entity_type = 'Folder') order by entity_type desc, block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT * FROM tx WHERE item_parent = ? AND from_address = ? AND is_encrypt = '' AND (entity_type = 'File' OR entity_type = 'Folder') ORDER BY entity_type DESC, block_height DESC LIMIT ? OFFSET ?", 
+        [Folder, Address, Number(pagesize), From], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2490,13 +2554,17 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where item_star = '"+Star+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.NUM : 0);
+      db.get(
+        "SELECT COUNT(*) AS NUM FROM tx WHERE item_star = ? AND from_address = ? AND is_encrypt = '' AND entity_type = 'File'", 
+        [Star, Address], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.NUM : 0);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2508,13 +2576,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where item_star = '"+Star+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT * FROM tx WHERE item_star = ? AND from_address = ? AND is_encrypt = '' AND entity_type = 'File' ORDER BY block_height DESC LIMIT ? OFFSET ?", 
+        [Star, Address, Number(pagesize), From], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2544,13 +2616,17 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where item_label = '"+Label+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.NUM : 0);
+      db.get(
+        "SELECT COUNT(*) AS NUM FROM tx WHERE item_label = ? AND from_address = ? AND is_encrypt = '' AND entity_type = 'File'", 
+        [Label, Address], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.NUM : 0);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2562,13 +2638,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where item_label = '"+Label+"' and from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT * FROM tx WHERE item_label = ? AND from_address = ? AND is_encrypt = '' AND entity_type = 'File' ORDER BY block_height DESC LIMIT ? OFFSET ?", 
+        [Label, Address, Number(pagesize), From], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2599,13 +2679,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT item_label, COUNT(*) AS NUM FROM tx where is_encrypt = '' and entity_type = 'File' and from_address = '"+AddressFilter+"' group by item_label", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT item_label, COUNT(*) AS NUM FROM tx WHERE is_encrypt = '' AND entity_type = 'File' AND from_address = ? GROUP BY item_label",
+        [AddressFilter],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2617,13 +2701,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where is_encrypt = '' and entity_type = 'Folder' and from_address = '"+AddressFilter+"' order by block_height desc", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT * FROM tx WHERE is_encrypt = '' AND entity_type = 'Folder' AND from_address = ? ORDER BY block_height DESC",
+        [AddressFilter], // 将AddressFilter作为参数传递
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
   
@@ -2634,13 +2722,17 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where (from_address = '"+Address+"' or target = '"+Address+"') and is_encrypt = '' ", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.NUM : 0);
+      db.get(
+        "SELECT COUNT(*) AS NUM FROM tx WHERE (from_address = ? OR target = ?) AND is_encrypt = ''", 
+        [Address, Address], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.NUM : 0);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2652,13 +2744,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where (from_address = '"+Address+"' or target = '"+Address+"') and is_encrypt = '' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT * FROM tx WHERE (from_address = ? OR target = ?) AND is_encrypt = '' ORDER BY block_height DESC LIMIT ? OFFSET ?", 
+        [Address, Address, Number(pagesize), Number(From)], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result : null);
+          }
         }
-      });
+      );      
     });
   }
 
@@ -2687,13 +2783,17 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'Tx' ", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.NUM : 0);
+      db.get(
+        "SELECT COUNT(*) AS NUM FROM tx WHERE from_address = ? AND is_encrypt = '' AND entity_type = 'Tx'", 
+        [Address], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.NUM : 0);
+          }
         }
-      });
+      );
     });
   }
   
@@ -2705,13 +2805,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where from_address = '"+Address+"' and is_encrypt = '' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT * FROM tx WHERE from_address = ? AND is_encrypt = '' ORDER BY block_height DESC LIMIT ? OFFSET ?", 
+        [Address, Number(pagesize), Number(From)], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2740,13 +2844,17 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where target = '"+Address+"' and is_encrypt = '' ", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.NUM : 0);
+      db.get(
+        "SELECT COUNT(*) AS NUM FROM tx WHERE target = ? AND is_encrypt = ''", 
+        [Address], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.NUM : 0);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2758,13 +2866,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where target = '"+Address+"' and is_encrypt = '' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT * FROM tx WHERE target = ? AND is_encrypt = '' ORDER BY block_height DESC LIMIT ? OFFSET ?", 
+        [Address, Number(pagesize), Number(From)], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -2793,13 +2905,17 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' ", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.NUM : 0);
+      db.get(
+        "SELECT COUNT(*) AS NUM FROM tx WHERE from_address = ? AND is_encrypt = '' AND entity_type = 'File'", 
+        [Address], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.NUM : 0);
+          }
         }
-      });
+      );      
     });
   }
 
@@ -2811,13 +2927,17 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where from_address = '"+Address+"' and is_encrypt = '' and entity_type = 'File' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result : null);
+      db.all(
+        "SELECT * FROM tx WHERE from_address = ? AND is_encrypt = '' AND entity_type = 'File' ORDER BY block_height DESC LIMIT ? OFFSET ?", 
+        [Address, Number(pagesize), Number(From)], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result || null);
+          }
         }
-      });
+      );
     });
   }
 
@@ -3106,13 +3226,17 @@
                             if(db == null) {
                               return null;
                             }
-                            db.get("SELECT * from address where id='"+filterString(Address)+"'", (err, result) => {
-                              if (err) {
-                                reject(err);
-                              } else {
-                                resolve(result ? result : null);
+                            db.get(
+                              "SELECT * FROM address WHERE id = ?", 
+                              [filterString(Address)], 
+                              (err, result) => {
+                                if (err) {
+                                  reject(err);
+                                } else {
+                                  resolve(result || null);
+                                }
                               }
-                            });
+                            );
                           });
     const RS = {}
     if(AddressInfor) {
@@ -3209,22 +3333,30 @@
         resolve(null);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM from address where referee='"+Address+"'", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.NUM : null);
+      db.get(
+        "SELECT COUNT(*) AS NUM FROM address WHERE referee = ?", 
+        [Address], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.NUM : null);
+          }
         }
-      });
+      );
     });
     const AgentAll = await new Promise((resolve, reject) => {
-                            db.all("SELECT * from address where referee='"+Address+"' order by id desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-                              if (err) {
-                                reject(err);
-                              } else {
-                                resolve(result ? result : null);
+                            db.all(
+                              "SELECT * FROM address WHERE referee = ? ORDER BY id DESC LIMIT ? OFFSET ?", 
+                              [Address, Number(pagesize), Number(From)], 
+                              (err, result) => {
+                                if (err) {
+                                  reject(err);
+                                } else {
+                                  resolve(result || null);
+                                }
                               }
-                            });
+                            );
                           });
     let RSDATA = []
     if(AgentAll != undefined) {
@@ -3273,25 +3405,33 @@
                                             if(db == null) {
                                               return null;
                                             }
-                                            db.get("SELECT COUNT(*) AS NUM from tx where entity_type='ChivesLightNodeHeartBeat' and from_address='"+from_address+"'", (err, result) => {
-                                              if (err) {
-                                                reject(err);
-                                              } else {
-                                                resolve(result ? result.NUM : null);
+                                            db.get(
+                                              "SELECT COUNT(*) AS NUM FROM tx WHERE entity_type = 'ChivesLightNodeHeartBeat' AND from_address = ?", 
+                                              [from_address], 
+                                              (err, result) => {
+                                                if (err) {
+                                                  reject(err);
+                                                } else {
+                                                  resolve(result ? result.NUM : null);
+                                                }
                                               }
-                                            });
+                                            );
                                           });
     const ChivesLightNodeHeartBeatAll = await new Promise((resolve, reject) => {
                                           if(db == null) {
                                             return null;
                                           }
-                                          db.all("SELECT * from tx where entity_type='ChivesLightNodeHeartBeat' and from_address='"+from_address+"' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-                                            if (err) {
-                                              reject(err);
-                                            } else {
-                                              resolve(result ? result : null);
+                                          db.all(
+                                            "SELECT * FROM tx WHERE entity_type = 'ChivesLightNodeHeartBeat' AND from_address = ? ORDER BY block_height DESC LIMIT ? OFFSET ?", 
+                                            [from_address, Number(pagesize), Number(From)], 
+                                            (err, result) => {
+                                              if (err) {
+                                                reject(err);
+                                              } else {
+                                                resolve(result || null);
+                                              }
                                             }
-                                          });
+                                          );
                                         });
     const RS = {};
     RS['allpages'] = Math.ceil(ChivesLightNodeHeartBeatTotal/pagesizeFiler);
@@ -3312,25 +3452,33 @@
                                             if(db == null) {
                                               return null;
                                             }
-                                            db.get("SELECT COUNT(*) AS NUM from tx where entity_type='ChivesLightNodeReward' and from_address='"+from_address+"'", (err, result) => {
-                                              if (err) {
-                                                reject(err);
-                                              } else {
-                                                resolve(result ? result.NUM : null);
+                                            db.get(
+                                              "SELECT COUNT(*) AS NUM FROM tx WHERE entity_type = 'ChivesLightNodeReward' AND from_address = ?", 
+                                              [from_address], 
+                                              (err, result) => {
+                                                if (err) {
+                                                  reject(err);
+                                                } else {
+                                                  resolve(result ? result.NUM : null);
+                                                }
                                               }
-                                            });
+                                            );
                                           });
     const ChivesLightNodeHeartBeatAll = await new Promise((resolve, reject) => {
                                           if(db == null) {
                                             return null;
                                           }
-                                          db.all("SELECT * from tx where entity_type='ChivesLightNodeReward' and from_address='"+from_address+"' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
-                                            if (err) {
-                                              reject(err);
-                                            } else {
-                                              resolve(result ? result : null);
+                                          db.all(
+                                            "SELECT * FROM tx WHERE entity_type = 'ChivesLightNodeReward' AND from_address = ? ORDER BY block_height DESC LIMIT ? OFFSET ?", 
+                                            [from_address, Number(pagesize), Number(From)], 
+                                            (err, result) => {
+                                              if (err) {
+                                                reject(err);
+                                              } else {
+                                                resolve(result || null);
+                                              }
                                             }
-                                          });
+                                          );
                                         });
     const RS = {};
     RS['allpages'] = Math.ceil(ChivesLightNodeHeartBeatTotal/pagesizeFiler);
@@ -3440,13 +3588,17 @@
         resolve(null);
         return;
       }
-      db.get("SELECT balance FROM address where id = '"+ Address +"'", (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result ? result.balance : null);
+      db.get(
+        "SELECT balance FROM address WHERE id = ?", 
+        [Address], 
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result ? result.balance : null);
+          }
         }
-      });
+      );
     });
   }
   
