@@ -2097,6 +2097,24 @@
     const TxPending = await axios.get(NodeApi + '/tx/pending/record', {}).then(res=>res.data).catch(() => {});
     return TxPending ? TxPending : [];
   }
+
+  async function getTxPendingMyRecord(id) {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
+    const TxPending = await axios.get(NodeApi + '/tx/pending/record', {}).then(res=>res.data).catch(() => {});
+    const MyTxPendingRecords = {'List':[], 'Sent': 0, 'Received': 0, 'Balance': 0};
+    TxPending && TxPending.length > 0 && TxPending.map((Item)=>{
+      if(Item.recipient == id) {
+        MyTxPendingRecords['Received'] += Item.quantity.xwe
+        MyTxPendingRecords['Balance'] += Item.quantity.xwe
+      }
+      if(Item.owner.address == id) {
+        MyTxPendingRecords['Sent'] += Item.quantity.xwe  
+        MyTxPendingRecords['Balance'] -= Item.quantity.xwe      
+      }
+      MyTxPendingRecords['List'].push(Item)
+    })
+    return MyTxPendingRecords;
+  }
   
   async function getTxAnchor() {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
@@ -2616,7 +2634,7 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(*) AS NUM FROM tx where from_address = '"+Address+"' and is_encrypt = '' ", (err, result) => {
+      db.get("SELECT COUNT(*) AS NUM FROM tx where (from_address = '"+Address+"' or target = '"+Address+"') and is_encrypt = '' ", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -2634,7 +2652,7 @@
         resolve(null);
         return;
       }
-      db.all("SELECT * FROM tx where from_address = '"+Address+"' and is_encrypt = '' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
+      db.all("SELECT * FROM tx where (from_address = '"+Address+"' or target = '"+Address+"') and is_encrypt = '' order by block_height desc limit "+ Number(pagesize) +" offset "+ From +"", (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -4019,6 +4037,7 @@
     getTxBundleItemsInUnbundle,
     getTxPending,
     getTxPendingRecord,
+    getTxPendingMyRecord,
     getTxAnchor,
     getPrice,
     getPriceAddress,

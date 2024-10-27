@@ -100,6 +100,18 @@
       res.status(200).json([]).end(); 
     }
   });
+  
+  router.get('/tx/pending/myrecord/:id', async (req, res) => {
+    const { id } = req.params;
+    const getTxPendingMyRecord = await syncing.getTxPendingMyRecord(id);
+    //console.log("/tx/pending:", getTxPending);
+    try{
+      res.status(200).json(getTxPendingMyRecord).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
+  });
 
   router.get('/tx_anchor', async (req, res) => {
     const getTxAnchor = await syncing.getTxAnchor();
