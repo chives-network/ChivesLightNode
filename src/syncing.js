@@ -30,7 +30,16 @@
 
   console.log("process.argv:", process.argv, "process.env.NODE_ENV:", process.env.NODE_ENV)
   
-  if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] && isDirectorySync(process.argv[3]))  {
+  if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] == null)  {
+    setChivesLightNodeAddress(process.argv[2])
+    // Get current directory path
+    const currentDirectory = process.cwd();
+    const currentUserDirectory = dirname(currentDirectory) + "/ChivesweaveData";
+    enableDir(currentUserDirectory)
+    console.log("Node Storage Directory:", currentUserDirectory)
+    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory})
+  }
+  else if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] && isDirectorySync(process.argv[3]))  {
     setChivesLightNodeAddress(process.argv[2])
     enableDir(process.argv[3])
     await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":process.argv[3]})
