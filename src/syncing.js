@@ -1975,7 +1975,7 @@
         resolve(null);
         return;
       }
-      db.all("SELECT reward_addr, sum(reward / 1000000000000) as reward_amount, count(reward / 1000000000000) as reward_number FROM block WHERE timestamp >= strftime('%s', 'now', '-24 hours') group by reward_addr order by reward_amount desc", (err, result) => {
+      db.all("SELECT reward_addr as id, reward_addr, sum(reward / 1000000000000) as reward_amount, count(reward / 1000000000000) as reward_number FROM block WHERE timestamp >= strftime('%s', 'now', '-24 hours') group by reward_addr order by reward_amount desc", (err, result) => {
         if (err) {
           reject(err);
         } else {
