@@ -1959,7 +1959,7 @@
         resolve(0);
         return;
       }
-      db.get("SELECT COUNT(distinct reward_addr) as NUM FROM block WHERE datetime(timestamp) >= datetime('now', '-24 hours')", (err, result) => {
+      db.get("SELECT COUNT(distinct reward_addr) as NUM FROM block WHERE timestamp >= strftime('%s', 'now', '-24 hours')", (err, result) => {
         if (err) {
           reject(err);
         } else {
