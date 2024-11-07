@@ -48,6 +48,17 @@
     }
   });
 
+  router.get('/blockreward', async (req, res) => {
+    const getBlockRewardJson = await syncing.getBlockRewardJson();
+    //console.log("getBlockRewardJson", getBlockRewardJson)
+    try{
+      res.status(200).json(getBlockRewardJson).end(); 
+    }
+    catch(error) {
+      res.status(200).json([]).end(); 
+    }
+  });
+
   router.get('/block/txsrecord/:height/:pageid/:pagesize', async (req, res) => {
     const { height, pageid, pagesize } = req.params;
     const getTxPageJson = await syncing.getTxPageJson(height, pageid, pagesize);

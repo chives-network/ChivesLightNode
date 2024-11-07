@@ -1952,6 +1952,51 @@
     return RS;
   }
 
+  async function getBlockRewardCount() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
+    return new Promise((resolve, reject) => {
+      if(db == null) {
+        resolve(0);
+        return;
+      }
+      db.get("SELECT COUNT(distinct reward_addr) as NUM FROM block WHERE datetime(timestamp) >= datetime('now', '-24 hours')", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : 0);
+        }
+      });
+    });
+  }
+  async function getBlockRewardPage() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
+    return new Promise((resolve, reject) => {
+      if(db == null) {
+        resolve(null);
+        return;
+      }
+      db.all("SELECT reward_addr, sum(reward / 1000000000000) as reward_amount, count(reward / 1000000000000) as reward_number FROM block WHERE timestamp >= strftime('%s', 'now', '-24 hours') group by reward_addr order by reward_amount desc", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result : null);
+        }
+      });
+    });
+  }
+  async function getBlockRewardJson() {
+    const getBlockCountValue = await getBlockRewardCount() ?? 0;
+    const getBlockRewardValue = await getBlockRewardPage();
+    const RS = {};
+    RS['allpages'] = 1;
+    RS['data'] = getBlockRewardValue;
+    RS['from'] = 1;
+    RS['pageid'] = 1;
+    RS['pagesize'] = 300;
+    RS['total'] = getBlockCountValue;
+    return RS;
+  }
+
   async function getTxCount(Height) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     return new Promise((resolve, reject) => {
@@ -4191,6 +4236,7 @@
     getBlockInforByHashFromDb,
     getBlockPage,
     getBlockPageJson,
+    getBlockRewardJson,
     getTxPage,
     getTxPageJson,
     getAllTxPageJson,
