@@ -28,7 +28,7 @@ expressApp.use(cors());
 expressApp.get('/syncing', async (req, res) => {
   //await syncing.resetTx404();
   //await syncing.deleteBlackTxsAndAddress();
-  //await syncing.calculatePeers();
+  await syncing.calculatePeers();
   //syncing.syncingTxWaitDoingAction(10);
   //await syncing.syncingBlockAndTxStatAllDates(80);
   //await syncing.syncingBlockMissing();
@@ -38,7 +38,7 @@ expressApp.get('/syncing', async (req, res) => {
   //await syncing.syncingTx(50);
   //await syncing.syncingChunksPromiseAll(10);
   //await syncing.syncingTxParseBundle(10);
-  await syncing.syncingBlockMinedTime(500);
+  //await syncing.syncingBlockMinedTime(500);
   res.json({});
 });
 

@@ -138,6 +138,21 @@
                   status INTEGER DEFAULT 0
               );
           `);
+          db.get(`SELECT COUNT(*) AS column_exists FROM pragma_table_info('peers') WHERE name = 'mining_address';`, (err, row) => {
+              if (err) {
+                  return console.error(err.message);
+              }      
+              if (row.column_exists === 0) {
+                  db.run(`ALTER TABLE peers ADD COLUMN mining_address TEXT not null;`, function(err) {
+                      if (err) {
+                          return console.error(err.message);
+                      }
+                      console.log('Column mining_address added to peers table.');
+                  });
+              } else {
+                  console.log('Column mining_address already exists in peers table.');
+              }
+          });
           db.run(`
             CREATE TABLE IF NOT EXISTS blockmissing (
                 beginHeight INTEGER PRIMARY KEY DEFAULT 0,
@@ -3049,6 +3064,21 @@
     }
   }
 
+  async function getPeerInfo(url) {
+    try {
+      const response = await axios.get(url).catch(() => {});  
+      if (response && response.status === 200) {        
+        return response.data
+      } 
+      else {
+        return
+      }
+    } 
+    catch (error) {
+      return
+    }
+  }
+
   async function calculatePeers() {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     try {
@@ -3064,8 +3094,9 @@
           await getPeersAndInsertDb(Item.ip);
         }
         else if(peerIsAvailable == 1) {
-          const updatePeerAvailable = db.prepare('update peers set status = ? where ip = ?');
-          updatePeerAvailable.run(peerIsAvailable, Item.ip);
+          const getPeerInfoValue = await getPeerInfo("http://"+Item.ip+"/info");
+          const updatePeerAvailable = db.prepare('update peers set status = ?, mining_address = ? where ip = ?');
+          updatePeerAvailable.run(peerIsAvailable, getPeerInfoValue.mining_address, Item.ip);
           updatePeerAvailable.finalize();
           await getPeersAndInsertDb(Item.ip);
         }        
@@ -3074,6 +3105,7 @@
           updatePeerAvailable.run(peerIsAvailable, Item.ip);
           updatePeerAvailable.finalize();
         }
+
       })
       const peersList = await axios.get(NodeApi + '/peers', {}).then(res=>res.data).catch(() => {});
       const HaveIpLocationPeersList = await getPeers();
