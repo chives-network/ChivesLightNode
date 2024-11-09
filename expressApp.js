@@ -38,7 +38,7 @@ expressApp.get('/syncing', async (req, res) => {
   //await syncing.syncingTx(50);
   //await syncing.syncingChunksPromiseAll(10);
   //await syncing.syncingTxParseBundle(10);
-  await syncing.syncingBlockMinedTime(50);
+  await syncing.syncingBlockMinedTime(500);
   res.json({});
 });
 
