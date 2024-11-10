@@ -3710,6 +3710,20 @@
     const getBlockHeightFromDbValue = await getBlockHeightFromDb();
     const BlockInfor = await getBlockInforByHeightFromDb(getBlockHeightFromDbValue);
     //log("BlockInfor", BlockInfor)
+    const GetAddressCount = await new Promise((resolve, reject) => {
+      if(db == null) {
+        resolve(null);
+        return;
+      }
+      db.get("SELECT COUNT(*) AS NUM from address", (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result ? result.NUM : null);
+        }
+      });
+    });
+
     const LightNodeStatus = {}
     if(BlockInfor)  {
       const ChivesLightNodeAddress = getChivesLightNodeAddress();
@@ -3728,6 +3742,7 @@
         LightNodeStatus['time'] = BlockInfor.timestamp;
         LightNodeStatus['type'] = "lightnode";
         LightNodeStatus['node_address'] = ChivesLightNodeAddress;
+        LightNodeStatus['addresses'] = GetAddressCount;
       }
       else {
         LightNodeStatus['network'] = "chivesweave.mainnet";
@@ -3742,6 +3757,7 @@
         LightNodeStatus['time'] = 0;
         LightNodeStatus['type'] = "lightnode";
         LightNodeStatus['node_address'] = "";
+        LightNodeStatus['addresses'] = 0;
       }
     }
     else {
@@ -3757,6 +3773,7 @@
       LightNodeStatus['time'] = 0;
       LightNodeStatus['type'] = "lightnode";
       LightNodeStatus['node_address'] = "";
+      LightNodeStatus['addresses'] = 0;
     }
     return LightNodeStatus;
   }
