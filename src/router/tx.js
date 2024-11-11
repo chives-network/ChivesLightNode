@@ -63,6 +63,37 @@
     }
   }
 
+  async function getTxDataThumbnailFile(req, res) {
+    const { id } = req.params;
+    switch(id) {
+      case 'recent_hash_list_diff':
+        res.status(404).send('File not found');
+        return;
+      case 'sync_buckets':
+        res.status(404).send('File not found');
+        return;
+    }
+    const getTxDataThumbnailData = await syncing.getTxDataThumbnail(id)
+    //res.setHeader('Cache-Control', 'public, max-age=3600');
+    if(getTxDataThumbnailData)   {
+      if (getTxDataThumbnailData.FileName) {
+          res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(getTxDataThumbnailData.FileName)}"`)
+          console.log("FileName--------------", getTxDataThumbnailData.FileName)
+      }
+      if (getTxDataThumbnailData.ContentType) {
+          res.setHeader('Content-Type', getTxDataThumbnailData.ContentType)
+          console.log("ContentType-----------", getTxDataThumbnailData.ContentType)
+      }
+      if (getTxDataThumbnailData.FileContent) {
+        res.status(200).send(getTxDataThumbnailData.FileContent)
+      }
+      res.end()
+    }    
+    else {
+      return;
+    }
+  }
+
   router.use(bodyParser.json({ limit: '2gb' }));
 
   router.post('/chunk', async (req, res) => {
@@ -184,7 +215,7 @@
   });
 
   router.get('/:id/thumbnail', async (req, res) => {
-    await getTxDataSupportLargeFile(req, res);
+    await getTxDataThumbnailFile(req, res);
   });
 
   router.get('/tx/:id/data', async (req, res) => {

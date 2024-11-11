@@ -1,7 +1,7 @@
   import axios from 'axios'
   import fs from 'fs'
   import zlib from 'zlib'
-  //import sharp from 'sharp'
+  import sharp from 'sharp'
   import { unbundleData } from 'arbundles'
   import Arweave from 'arweave'
   import { fileURLToPath } from 'url'
@@ -1346,7 +1346,7 @@
               BlockTimestamp[Number(BlockInfor.id)-1] = previousBlock.timestamp;
             }
           }
-          console.log("BlockInfor-------------------------", BlockInfor)
+          //console.log("BlockInfor-------------------------", BlockInfor)
           if(Number(BlockInfor.id) > 1 && BlockTimestamp[Number(BlockInfor.id)-1]) {
             const MinedTime = BlockInfor.timestamp - BlockTimestamp[Number(BlockInfor.id)-1]
             const MinedTimeValue = MinedTime > 0 ? MinedTime : 1
@@ -3950,8 +3950,11 @@
   async function convertVideoFirstScreenToImage(inputFilePath, outputFilePath) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     let command = `${__dirname}/../../app.asar.unpacked/lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe -y -i ${inputFilePath} -vframes 1 -q:v 2 ${outputFilePath}`;
-    if(isDev==true) {
+    if(isFile(`${__dirname}/../lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe`)) {
       command = `${__dirname}/../lib/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe -y -i ${inputFilePath} -vframes 1 -q:v 2 ${outputFilePath}`;
+    }
+    else if(isFile(`/usr/bin/ffmpeg`)) {
+      command = `/usr/bin/ffmpeg -y -i ${inputFilePath} -vframes 1 -q:v 2 ${outputFilePath}`;
     }
     try {
       log('convertVideoFirstScreenToImage try execSync ****** ', outputFilePath, command);
@@ -4057,15 +4060,15 @@
       const FileName = TagsMap['File-Name'] || "Unknown"
       const ContentType = TagsMap['Content-Type']
       const TxId = TagsMap['File-TxId'] ? TagsMap['File-TxId'] : OriginalTxId
-      log("TxId OriginalTxId", TxId, OriginalTxId);
+      console.log("TxId OriginalTxId", TxId, OriginalTxId);
       
       const inputFilePath = DataDir + '/files/' + TxId.substring(0, 2).toLowerCase() + '/' + TxId;
-      log("inputFilePath", inputFilePath)
+      console.log("inputFilePath", inputFilePath)
       if(isFile(inputFilePath)) {
         //Thumbnail Exist
         const compressFilePath = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
         if(isFile(compressFilePath)) {
-          log("compressFilePath", compressFilePath)
+          console.log("compressFilePath", compressFilePath)
           const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
           if(FileContent == null) {
             return null
@@ -4080,97 +4083,118 @@
         enableDir(outputFilePath)
         const fileType = getContentTypeAbbreviation(ContentType);
         const fileTypeSuffix = String(fileType).toLowerCase();
-        log("fileTypeSuffix", fileTypeSuffix)
-        if((fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg") && false) {
-            sharp(inputFilePath).jpeg({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
-                if (err) {
-                  log("getTxDataThumbnail sharp err:", TxId, err, info)
-                } else {
-                  log("getTxDataThumbnail sharp info:", info);
-                }
-            });
+        console.log("fileTypeSuffix", fileTypeSuffix)
+        if((fileTypeSuffix == "jpg" || fileTypeSuffix == "jpeg")) {
+            try {
+              const metadata = await sharp(inputFilePath).metadata();
+              const originalWidth = metadata.width;
+              if (originalWidth > 900) {
+                const info = await sharp(inputFilePath)
+                  .resize(900)
+                  .jpeg({ quality: 80 })
+                  .toFile(outputFilePath + '/' + TxId);
+                console.log("Image resized successfully:", info);
+              } else {
+                const info = await sharp(inputFilePath)
+                  .jpeg({ quality: 80 })
+                  .toFile(outputFilePath + '/' + TxId);
+                console.log("Image saved without resizing:", info);
+              }
+            } catch (err) {
+              console.error("Error processing image:", err);
+            }
         }
-        else if(fileTypeSuffix == "png" && false) {
+        else if(fileTypeSuffix == "png") {
           sharp(inputFilePath).png({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
-            log("getTxDataThumbnail sharp:", TxId, err, info)
+            console.log("getTxDataThumbnail sharp:", TxId, err, info)
           });
         }
-        else if(fileTypeSuffix == "gif" && false) {
+        else if(fileTypeSuffix == "gif") {
           sharp(inputFilePath).gif({ quality: 80 }).toFile(outputFilePath + '/' + TxId, (err, info) => {
-            log("getTxDataThumbnail sharp:", TxId, err, info)
+            console.log("getTxDataThumbnail sharp:", TxId, err, info)
           });
         }
         else if(fileTypeSuffix == "pdf")    {
           if(isFile(outputFilePath + '/' + TxId + '.png')) {
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-            return {FileName, ContentType:"image/png", FileContent};
+            const FileNameNew = FileName + ".png"
+            return {FileNameNew, ContentType:"image/png", FileContent};
           }
           else {
             const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(inputFilePath, outputFilePath + '/' + TxId);
             if(convertPdfFirstPageToImageStatus) {
               const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-              return {FileName, ContentType:"image/png", FileContent};
+              const FileNameNew = FileName + ".png"
+              return {FileNameNew, ContentType:"image/png", FileContent};
             }
-            log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
+            console.log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
           }
           //printer(inputFilePath).then(log);
-          log("outputFilePath", outputFilePath + '/' + TxId + '.png')
+          console.log("outputFilePath", outputFilePath + '/' + TxId + '.png')
         }
         else if(fileTypeSuffix == "video")    {
           if(isFile(outputFilePath + '/' + TxId + '.png')) {
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-            return {FileName, ContentType:"image/png", FileContent};
+            const FileNameNew = FileName + ".png"
+            return {FileNameNew, ContentType:"image/png", FileContent};
           }
           else {
             const convertVideoFirstScreenToImageValue = await convertVideoFirstScreenToImage(inputFilePath, outputFilePath + '/' + TxId + '.png');
             if(convertVideoFirstScreenToImageValue) {
               const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-              return {FileName, ContentType:"image/png", FileContent};
+              const FileNameNew = FileName + ".png"
+              return {FileNameNew, ContentType:"image/png", FileContent};
             }
-            log("convertVideoFirstScreenToImageValue", convertVideoFirstScreenToImageValue);
+            console.log("convertVideoFirstScreenToImageValue", convertVideoFirstScreenToImageValue);
           }
           //printer(inputFilePath).then(log);
-          log("outputFilePath", outputFilePath + '/' + TxId + '.png')
+          console.log("outputFilePath", outputFilePath + '/' + TxId + '.png')
         }
         else if(fileTypeSuffix == "docx" || fileTypeSuffix == "doc")    {
           if(isFile(outputFilePath + '/' + TxId + '.png')) {
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-            return {FileName, ContentType:"image/png", FileContent};
+            const FileNameNew = FileName + ".png"
+            return {FileNameNew, ContentType:"image/png", FileContent};
           }
           else {
             convertDocxToImage(inputFilePath, outputFilePath + '/' + TxId);
-            
             await sleep(2000);
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-            return {FileName, ContentType:"image/png", FileContent};
+            const FileNameNew = FileName + ".png"
+            return {FileNameNew, ContentType:"image/png", FileContent};
           }
         }
         else if(fileTypeSuffix == "xls" || fileTypeSuffix == "xlsx")    {
           if(isFile(outputFilePath + '/' + TxId + '.png')) {
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-            return {FileName, ContentType:"image/png", FileContent};
+            const FileNameNew = FileName + ".png"
+            return {FileNameNew, ContentType:"image/png", FileContent};
           }
           else {
             await convertXlsxToImage(inputFilePath, outputFilePath + '/' + TxId);
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-            return {FileName, ContentType:"image/png", FileContent};
+            const FileNameNew = FileName + ".png"
+            return {FileNameNew, ContentType:"image/png", FileContent};
           }
         }
         else if(fileTypeSuffix == "ppt" || fileTypeSuffix == "pptx")    {
           if(isFile(outputFilePath + '/' + TxId + '.png')) {
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-            return {FileName, ContentType:"image/png", FileContent};
+            const FileNameNew = FileName + ".png"
+            return {FileNameNew, ContentType:"image/png", FileContent};
           }
           else if(!isFile(outputFilePath + '/' + TxId + '.pdf')) {
             await convertPptxToPdf(inputFilePath, outputFilePath + '/' + TxId, fileTypeSuffix);
             const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-            return {FileName, ContentType:"image/png", FileContent};
+            const FileNameNew = FileName + ".png"
+            return {FileNameNew, ContentType:"image/png", FileContent};
           }
           else if(isFile(outputFilePath + '/' + TxId + '.pdf')) {
             const convertPdfFirstPageToImageStatus = await convertPdfFirstPageToImage(outputFilePath + '/' + TxId + '.pdf', outputFilePath + '/' + TxId);
             if(convertPdfFirstPageToImageStatus) {
               const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId + '.png', "getTxDataThumbnail", null);
-              return {FileName, ContentType:"image/png", FileContent};
+              const FileNameNew = FileName + ".png"
+              return {FileNameNew, ContentType:"image/png", FileContent};
             }
             log("convertPdfFirstPageToImageStatus", convertPdfFirstPageToImageStatus);
           }
@@ -4179,7 +4203,7 @@
         //Thumbnail Exist
         const compressFilePath2 = DataDir + "/thumbnail/" + TxId.substring(0, 2).toLowerCase() + "/" + TxId
         if(isFile(compressFilePath2)) {
-          log("compressFilePath2", compressFilePath2)
+          console.log("compressFilePath2", compressFilePath2)
           const FileContent = readFile("thumbnail/" + TxId.substring(0, 2).toLowerCase(), TxId, "getTxDataThumbnail", null);
           return {FileName, ContentType, FileContent};
         }
@@ -4194,7 +4218,7 @@
             FileContent = Buffer.from(TxInfor.data, 'base64');
         }
         else {
-            log("inputFilePath Not Exist:", inputFilePath)
+          console.log("inputFilePath Not Exist:", inputFilePath)
         }
         return {FileName, ContentType, FileContent};
       }
