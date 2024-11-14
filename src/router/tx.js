@@ -222,6 +222,10 @@
     await getTxDataSupportLargeFile(req, res);
   });
 
+  router.get('/tx/:id/:filename', async (req, res) => {
+    await getTxDataSupportLargeFile(req, res);
+  });
+
   router.get('/tx/:txid/unbundle/:pageid/:pagesize', async (req, res) => {
     const { txid, pageid, pagesize } = req.params;
     const getTxBundleItemsInUnbundle = await syncing.getTxBundleItemsInUnbundle(txid, pageid, pagesize);
