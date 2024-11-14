@@ -27,6 +27,8 @@
       const ContentType = getTxInforByIdFromDbValue && getTxInforByIdFromDbValue['content_type'] ? getTxInforByIdFromDbValue['content_type'] : "";
       res.setHeader('Cache-Control', 'public, max-age=3600');
       if (FileName) {
+          const fileSize = syncing.fileSize(FilePath);
+          res.setHeader('Content-Length', fileSize);
           res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(FileName)}"`);
       }
       if (ContentType) {

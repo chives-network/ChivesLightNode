@@ -812,6 +812,19 @@
     }
   }
 
+  function fileSize(filePath) {
+    try {
+      const stats = fs.statSync(filePath);
+      if (stats.isFile() && stats.size > 0) {
+        return stats.size;
+      } else {
+        return -1;
+      }
+    } catch (err) {
+      return -1;
+    }
+  }
+
   async function syncingTxParseBundleById(TxInfor) {
     const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
     //syncingTxPromiseAll(10);
@@ -4356,6 +4369,7 @@
     deleteLog,
     getDataDir,
     isFile,
+    fileSize,
     readFileStream,
     readFile,
     writeFile,
