@@ -3108,17 +3108,18 @@
         }
         else if(peerIsAvailable == 1) {
           const getPeerInfoValue = await getPeerInfo("http://"+Item.ip+"/info");
-          const updatePeerAvailable = db.prepare('update peers set status = ?, mining_address = ? where ip = ?');
-          updatePeerAvailable.run(peerIsAvailable, getPeerInfoValue.mining_address, Item.ip);
-          updatePeerAvailable.finalize();
-          await getPeersAndInsertDb(Item.ip);
+          if(getPeerInfoValue.mining_address)   {
+            const updatePeerAvailable = db.prepare('update peers set status = ?, mining_address = ? where ip = ?');
+            updatePeerAvailable.run(peerIsAvailable, getPeerInfoValue.mining_address, Item.ip);
+            updatePeerAvailable.finalize();
+            await getPeersAndInsertDb(Item.ip);
+          }
         }        
         else if(peerIsAvailable == 2) {
           const updatePeerAvailable = db.prepare('update peers set status = ? where ip = ?');
           updatePeerAvailable.run(peerIsAvailable, Item.ip);
           updatePeerAvailable.finalize();
         }
-
       })
       const peersList = await axios.get(NodeApi + '/peers', {}).then(res=>res.data).catch(() => {});
       const HaveIpLocationPeersList = await getPeers();
