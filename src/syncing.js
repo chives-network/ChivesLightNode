@@ -3108,9 +3108,9 @@
         }
         else if(peerIsAvailable == 1) {
           const getPeerInfoValue = await getPeerInfo("http://"+Item.ip+"/info");
-          if(getPeerInfoValue.mining_address)   {
+          if(getPeerInfoValue && getPeerInfoValue?.mining_address)   {
             const updatePeerAvailable = db.prepare('update peers set status = ?, mining_address = ? where ip = ?');
-            updatePeerAvailable.run(peerIsAvailable, getPeerInfoValue.mining_address, Item.ip);
+            updatePeerAvailable.run(peerIsAvailable, getPeerInfoValue?.mining_address, Item.ip);
             updatePeerAvailable.finalize();
             await getPeersAndInsertDb(Item.ip);
           }
