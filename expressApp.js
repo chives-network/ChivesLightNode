@@ -55,7 +55,7 @@ const AsyncBlocks = async () => {
     isSyncing1 = true;
     console.log('schedule syncingBlock Task Begin !!!', isSyncing1);
     await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
-    await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
+    await syncing.syncingBlockMinedTime(1000);
     //await syncing.syncingBlockMissing();
     await syncing.syncingTx(20);
     await syncing.syncingChunksPromiseAll(5);
@@ -80,7 +80,7 @@ const AsyncBlocksOneTime = async () => {
   const StartTime = Date.now();
   console.log('AsyncBlocksOneTime Task Begin !!!', ExecTimes);
   await syncing.syncingBlock(EveryTimeAsyncBlockRecords);
-  await syncing.syncingBlockMinedTime(EveryTimeAsyncBlockRecords);
+  await syncing.syncingBlockMinedTime(1000);
   await syncing.syncingBlockMissing();
   await syncing.syncingTx(20);
   await syncing.syncingChunksPromiseAll(5);

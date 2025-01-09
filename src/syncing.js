@@ -1364,7 +1364,7 @@
             const MinedTime = BlockInfor.timestamp - BlockTimestamp[Number(BlockInfor.id)-1]
             const MinedTimeValue = MinedTime > 0 ? MinedTime : 1
             //console.log("MinedTime-------------------------", MinedTime)
-            //console.log("MinedTimeValue-------------------------", BlockInfor.id, MinedTimeValue)
+            console.log("MinedTimeValue-------------------------", BlockInfor.id, MinedTimeValue)
             const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
             updateBlockMinedTime.run(Number(MinedTimeValue), Number(BlockInfor.id));
             updateBlockMinedTime.finalize();
