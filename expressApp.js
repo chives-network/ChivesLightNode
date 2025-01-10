@@ -70,6 +70,12 @@ const AsyncBlocks = async () => {
     if(ExecTime > 60) {
       EveryTimeAsyncBlockRecords = Math.floor(EveryTimeAsyncBlockRecords * 0.9)
     }
+    if(EveryTimeAsyncBlockRecords > 180) {
+      EveryTimeAsyncBlockRecords = 180
+    }
+    if(EveryTimeAsyncBlockRecords < 60) {
+      EveryTimeAsyncBlockRecords = 60
+    }
     console.log('ExecTime**********************', ExecTime, "Next Time EveryTimeAsyncBlockRecords", EveryTimeAsyncBlockRecords);
   }
 }
