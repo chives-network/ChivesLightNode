@@ -777,8 +777,8 @@
         insertAddress.finalize();
         //Update Address
         const AddressBalanceTarget = await axios.get(NodeApi + "/wallet/" + TxInfor.target + "/balance", {}).then((res)=>{return res.data}).catch(() => {});
-        log("TxInfor.target", TxInfor.target)
-        log("AddressBalanceTarget", AddressBalanceTarget/1000000000000)
+        console.log("TxInfor.target", TxInfor.target)
+        console.log("AddressBalanceTarget", AddressBalanceTarget/1000000000000)
         const updateAddress = db.prepare('update address set lastblock = ?, timestamp = ?, balance = ? where id = ?');
         updateAddress.run(BlockInfor.height, BlockInfor.timestamp, AddressBalanceTarget, TxInfor.target);
         updateAddress.finalize();
@@ -1780,11 +1780,11 @@
       db.get(
         "SELECT SUM(block_size / 1048576) AS block_size, " +
         "SUM(mining_time) AS mining_time, " +
-        "SUM(reward / 1000000000000) AS reward, " +
+        "SUM(reward) / 1000000000000 AS reward, " +
         "SUM(txs_length) AS txs_length, " +
         "MAX(weave_size / 1048576) AS weave_size, " +
         "MAX(cumulative_diff / 1024) AS cumulative_diff, " +
-        "SUM(reward_pool / 1000000000000) AS reward_pool, " +
+        "SUM(reward_pool) / 1000000000000 AS reward_pool, " +
         "COUNT(*) AS block_count " +
         "FROM block WHERE block_date = ?",
         [filterString(block_date)],
@@ -1797,7 +1797,7 @@
         }
       );
     });
-    //log("BlockStat", BlockStat)
+    console.log("BlockStat", block_date, BlockStat)
     if(BlockStat && BlockStat.reward) {
 
       const TxStat = await new Promise((resolve, reject) => {
@@ -2003,7 +2003,7 @@
         resolve(null);
         return;
       }
-      db.all("SELECT reward_addr as id, reward_addr, sum(reward / 1000000000000) as reward_amount, count(*) as reward_number FROM block WHERE timestamp >= strftime('%s', 'now', '-24 hours') group by reward_addr order by reward_amount desc", (err, result) => {
+      db.all("SELECT reward_addr as id, reward_addr, sum(reward) / 1000000000000 as reward_amount, count(*) as reward_number FROM block WHERE timestamp >= strftime('%s', 'now', '-24 hours') group by reward_addr order by reward_amount desc", (err, result) => {
         if (err) {
           reject(err);
         } else {

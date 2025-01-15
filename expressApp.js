@@ -30,7 +30,7 @@ expressApp.get('/syncing', async (req, res) => {
   //await syncing.deleteBlackTxsAndAddress();
   await syncing.calculatePeers();
   //syncing.syncingTxWaitDoingAction(10);
-  //await syncing.syncingBlockAndTxStatAllDates(80);
+  //await syncing.syncingBlockAndTxStatAllDates(20);
   //await syncing.syncingBlockMissing();
   //35753 43355 
   //await syncing.syncingBlockPromiseAll(30);
@@ -115,11 +115,11 @@ cron.schedule('*/10 * * * *', () => {
   syncing.deleteBlackTxsAndAddress();
   syncing.calculatePeers();
   syncing.syncingTxWaitDoingAction(10);
-  syncing.syncingBlockAndTxStatAllDates(80);
 });
 
 cron.schedule('1 1 * * *', () => {
   syncing.resetTx404();
+  syncing.syncingBlockAndTxStatAllDates(80);
   console.log('schedule syncingTxParseBundle Task Begin !!!');
   if (global.gc) {
     console.log('Manual garbage collection');
