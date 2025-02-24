@@ -3738,10 +3738,11 @@
       });
     });
 
+
     const LightNodeStatus = {}
     if(BlockInfor)  {
       const ChivesLightNodeAddress = getChivesLightNodeAddress();
-      const getPeersList  = await getPeers();
+      const getBlockCountValue = await getBlockRewardCount() ?? 0;
       let MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
       if(MinerNodeStatus && MinerNodeStatus.height)  {
         LightNodeStatus['network'] = "chivesweave.mainnet";
@@ -3752,7 +3753,7 @@
         LightNodeStatus['weave_size'] = BlockInfor.weave_size;
         LightNodeStatus['diff'] = MinerNodeStatus.diff;
         LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
-        LightNodeStatus['peers'] = getPeersList.length || 1;
+        LightNodeStatus['peers'] = getBlockCountValue;
         LightNodeStatus['time'] = BlockInfor.timestamp;
         LightNodeStatus['type'] = "lightnode";
         LightNodeStatus['node_address'] = ChivesLightNodeAddress;
