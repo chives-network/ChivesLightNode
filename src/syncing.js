@@ -13,6 +13,8 @@
   import puppeteer from 'puppeteer';
   import PDFServicesSdk  from '@adobe/pdfservices-node-sdk';
   import sqlite3 from 'sqlite3';
+  import geoip from 'geoip-lite';
+
   const sqlite3Verbose = sqlite3.verbose();
 
   const sleep = util.promisify(setTimeout);
@@ -3114,7 +3116,7 @@
             updatePeerAvailable.finalize();
             await getPeersAndInsertDb(Item.ip);
           }
-        }        
+        }
         else if(peerIsAvailable == 2) {
           const updatePeerAvailable = db.prepare('update peers set status = ? where ip = ?');
           updatePeerAvailable.run(peerIsAvailable, Item.ip);
@@ -3122,19 +3124,27 @@
         }
       })
       const peersList = await axios.get(NodeApi + '/peers', {}).then(res=>res.data).catch(() => {});
-      const HaveIpLocationPeersList = await getPeers();
       if(peersList && peersList.length > 0) {
         peersList.map(async (PeerAndPort)=>{
-          if(!HaveIpLocationPeersList.includes(PeerAndPort)) {
+          if(true) {
             const peerIsAvailable = await checkPeer("http://"+PeerAndPort+"/info")
             const PeerAndPortArray = PeerAndPort.split(':');
             const ip = PeerAndPortArray[0];
-            const url = `https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data&ip=${ip}`;
-            const IPJSON = await axios.get(url, {}).then(res=>res.data).catch(() => {});  
-            if(IPJSON && IPJSON.isp) {
+            const IPJSON = geoip.lookup(ip);
+            console.log(ip, peerIsAvailable);
+            if(IPJSON && IPJSON.country) {
               const insertPeers = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-              insertPeers.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code, 0);
+              insertPeers.run(PeerAndPort, 'isp', IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.country + ', ' + IPJSON.region + ', ' + IPJSON.city, IPJSON.area, IPJSON.country, peerIsAvailable);
               insertPeers.finalize();
+            }
+            if(peerIsAvailable == 1) {
+              const getPeerInfoValue = await getPeerInfo("http://"+PeerAndPort+"/info");
+              if(getPeerInfoValue && getPeerInfoValue?.mining_address)   {
+                const updatePeerAvailable = db.prepare('update peers set status = ?, mining_address = ? where ip = ?');
+                updatePeerAvailable.run(peerIsAvailable, getPeerInfoValue?.mining_address, PeerAndPort);
+                updatePeerAvailable.finalize();
+                await getPeersAndInsertDb(PeerAndPort);
+              }
             }
             if(peerIsAvailable == -1)  {
               const updatePeersStatus = db.prepare("update peers set status = status - 1 where ip = ? ");
@@ -3166,13 +3176,12 @@
             const peerIsAvailable = await checkPeer("http://" + PeerAndPort+"/info")
             const PeerAndPortArray = PeerAndPort.split(':');
             const ip = PeerAndPortArray[0];
-            const url = `https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data&ip=${ip}`;
-            const IPJSON = await axios.get(url, {}).then(res=>res.data).catch(() => {});  
-            if(IPJSON && IPJSON.isp)  {
-              const insertPeers = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-              insertPeers.run(PeerAndPort, IPJSON.isp, IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.location, IPJSON.area_code, IPJSON.country_code);
+            const IPJSON = geoip.lookup(ip);
+            console.log(ip, peerIsAvailable);
+            if(IPJSON && IPJSON.country)  {
+              const insertPeers = db.prepare('INSERT OR REPLACE INTO peers (ip, isp, country, region, city, location, area_code, country_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+              insertPeers.run(PeerAndPort, 'isp', IPJSON.country, IPJSON.region, IPJSON.city, IPJSON.country + ', ' + IPJSON.region + ', ' + IPJSON.city, IPJSON.area, IPJSON.country, peerIsAvailable);
               insertPeers.finalize();
-              log("getPeersAndInsertDb", PeerAndPort)
             }
             if(peerIsAvailable == -1)  {
               const updatePeersStatus = db.prepare("update peers set status = status - 1 where ip = ?");
