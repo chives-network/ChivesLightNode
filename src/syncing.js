@@ -137,6 +137,7 @@
                   location TEXT not null,
                   area_code TEXT not null,
                   country_code TEXT not null,
+                  mining_address TEXT,
                   status INTEGER DEFAULT 0
               );
           `);
@@ -4297,6 +4298,15 @@
     }
   };
 
+  async function getTime() {
+    try {
+        const response = await axios.get("http://"+Item.ip+"/time");
+        console.log(`Unix Timestamp: ${response.data}`);
+    } catch (error) {
+        console.error('Error fetching time:', error);
+    }
+  };
+
   export default {
     initChivesLightNode,
     initChivesLightNodeSql,
@@ -4390,5 +4400,6 @@
     mkdirForData,
     deleteBlackTxsAndAddress,
     restrictToLocalhost,
-    closeDb
+    closeDb,
+    getTime
   };
