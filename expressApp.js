@@ -25,6 +25,10 @@ const expressApp = express();
 
 expressApp.use(cors());
 
+expressApp.get('/time', (req, res) => {
+    res.send(`${Math.floor(Date.now() / 1000)}`);
+});
+
 expressApp.get('/syncing', async (req, res) => {
   //await syncing.resetTx404();
   //await syncing.deleteBlackTxsAndAddress();
