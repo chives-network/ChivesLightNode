@@ -39,12 +39,12 @@
     const currentUserDirectory = dirname(currentDirectory) + "/ChivesweaveData";
     enableDir(currentUserDirectory)
     console.log("Node Storage Directory:", currentUserDirectory)
-    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory})
+    await initChivesLightNodeSetting({"NodeApi1":"http://121.132.32.166:1985","NodeApi2":"http://121.132.32.166:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory})
   }
   else if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] && isDirectorySync(process.argv[3]))  {
     setChivesLightNodeAddress(process.argv[2])
     enableDir(process.argv[3])
-    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":process.argv[3]})
+    await initChivesLightNodeSetting({"NodeApi1":"http://121.132.32.166:1985","NodeApi2":"http://121.132.32.166:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":process.argv[3]})
   }
   else {
     // Get current directory path
@@ -52,7 +52,7 @@
     const currentUserDirectory = dirname(currentDirectory) + "/ChivesweaveData";
     enableDir(currentUserDirectory)
     console.log("Node Storage Directory:", currentUserDirectory)
-    await initChivesLightNodeSetting({"NodeApi1":"http://218.237.82.150:1985","NodeApi2":"http://218.237.82.150:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory});
+    await initChivesLightNodeSetting({"NodeApi1":"http://121.132.32.166:1985","NodeApi2":"http://121.132.32.166:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory});
   }
   console.log("Begin to download data from peer, please wait ......")
   
@@ -85,11 +85,11 @@
     else if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi3 && await checkPeer(ChivesLightNodeSetting.NodeApi3) > 0) {
       NodeApi = ChivesLightNodeSetting.NodeApi3
     }
-    else if( await checkPeer("http://218.237.82.150:1985") > 0 ) {
-      NodeApi = "http://218.237.82.150:1985"
+    else if( await checkPeer("http://121.132.32.166:1985") > 0 ) {
+      NodeApi = "http://121.132.32.166:1985"
     }
-    else if( await checkPeer("http://218.237.82.150:1987") > 0 ) {
-      NodeApi = "http://218.237.82.150:1987"
+    else if( await checkPeer("http://121.132.32.166:1987") > 0 ) {
+      NodeApi = "http://121.132.32.166:1987"
     }
     else if( await checkPeer("http://175.116.98.71:1985") > 0 ) {
       NodeApi = "http://175.116.98.71:1985"
@@ -98,7 +98,7 @@
       NodeApi = "http://218.237.82.145:1985"
     }
     else {
-      NodeApi = "http://218.237.82.150:1985"
+      NodeApi = "http://121.132.32.166:1985"
     }
 
     const DataDir = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeStorageDirectory ? ChivesLightNodeSetting.NodeStorageDirectory : "D:\\";
@@ -130,31 +130,17 @@
           db.run(`
               CREATE TABLE IF NOT EXISTS peers (
                   ip TEXT PRIMARY KEY,
-                  isp TEXT not null,
-                  country TEXT not null,
-                  region TEXT not null,
-                  city TEXT not null,
-                  location TEXT not null,
-                  area_code TEXT not null,
-                  country_code TEXT not null,
-                  status INTEGER DEFAULT 0
+                  isp TEXT not null default '',
+                  country TEXT not null default '',
+                  region TEXT not null default '',
+                  city TEXT not null default '',
+                  location TEXT not null default '',
+                  area_code TEXT not null default '',
+                  country_code TEXT not null default '',
+                  status INTEGER DEFAULT 0,
+                  mining_address TEXT not null default ''
               );
           `);
-          db.get(`SELECT COUNT(*) AS column_exists FROM pragma_table_info('peers') WHERE name = 'mining_address';`, (err, row) => {
-              if (err) {
-                  return console.error(err.message);
-              }      
-              if (row.column_exists === 0) {
-                  db.run(`ALTER TABLE peers ADD COLUMN mining_address TEXT not null;`, function(err) {
-                      if (err) {
-                          return console.error(err.message);
-                      }
-                      console.log('Column mining_address added to peers table.');
-                  });
-              } else {
-                  console.log('Column mining_address already exists in peers table.');
-              }
-          });
           db.run(`
             CREATE TABLE IF NOT EXISTS blockmissing (
                 beginHeight INTEGER PRIMARY KEY DEFAULT 0,
@@ -171,7 +157,7 @@
                   received INTEGER DEFAULT 0,        
                   lastblock INTEGER,
                   timestamp INTEGER,
-                  profile TEXT not null,
+                  profile TEXT not null default '',
                   chivesDrive INTEGER DEFAULT 0,
                   chivesEmail INTEGER DEFAULT 0,            
                   chivesBlog INTEGER DEFAULT 0,
@@ -182,8 +168,8 @@
                   chivesLightNodeRegisterHeight INTEGER DEFAULT 0,
                   chivesLightNodeStatus INTEGER DEFAULT 0,
                   agent INTEGER DEFAULT 0,        
-                  referee TEXT not null,
-                  last_tx_action TEXT not null
+                  referee TEXT not null default '',
+                  last_tx_action TEXT not null default ''
               );
           `);
           db.run(`
