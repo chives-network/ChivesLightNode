@@ -29,7 +29,7 @@
     2 sudo dpkg -i chives-light-node_0.1.8_amd64.deb
     3 chives-light-node
     4 install finished, and then select storage dir and start Chivesweave Light Node.
-    5 Chivesweave Light Node use the 1985 port and same to mining node's port, so can not running on the mining machine.
+    5 Chivesweave Light Node use the 1986 port and same to mining node's port, so can not running on the mining machine.
 
 ## How to install Chivesweave Light Node(CLI Model) on Windows or Ubuntu?
     git clone https://github.com/chives-network/ChivesLightNode

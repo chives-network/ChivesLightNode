@@ -39,12 +39,12 @@
     const currentUserDirectory = dirname(currentDirectory) + "/ChivesweaveData";
     enableDir(currentUserDirectory)
     console.log("Node Storage Directory:", currentUserDirectory)
-    await initChivesLightNodeSetting({"NodeApi1":"http://121.132.32.166:1985","NodeApi2":"http://121.132.32.166:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory})
+    await initChivesLightNodeSetting({"NodeApi1":"http://175.213.101.160:1985","NodeApi2":"175.213.101.160:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory})
   }
   else if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] && isDirectorySync(process.argv[3]))  {
     setChivesLightNodeAddress(process.argv[2])
     enableDir(process.argv[3])
-    await initChivesLightNodeSetting({"NodeApi1":"http://121.132.32.166:1985","NodeApi2":"http://121.132.32.166:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":process.argv[3]})
+    await initChivesLightNodeSetting({"NodeApi1":"http://175.213.101.160:1985","NodeApi2":"175.213.101.160:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":process.argv[3]})
   }
   else {
     // Get current directory path
@@ -52,7 +52,7 @@
     const currentUserDirectory = dirname(currentDirectory) + "/ChivesweaveData";
     enableDir(currentUserDirectory)
     console.log("Node Storage Directory:", currentUserDirectory)
-    await initChivesLightNodeSetting({"NodeApi1":"http://121.132.32.166:1985","NodeApi2":"http://121.132.32.166:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory});
+    await initChivesLightNodeSetting({"NodeApi1":"http://175.213.101.160:1985","NodeApi2":"175.213.101.160:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory});
   }
   console.log("Begin to download data from peer, please wait ......")
   
@@ -85,20 +85,20 @@
     else if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi3 && await checkPeer(ChivesLightNodeSetting.NodeApi3) > 0) {
       NodeApi = ChivesLightNodeSetting.NodeApi3
     }
-    else if( await checkPeer("http://121.132.32.166:1985") > 0 ) {
-      NodeApi = "http://121.132.32.166:1985"
+    else if( await checkPeer("http://175.213.101.160:1985") > 0 ) {
+      NodeApi = "http://175.213.101.160:1985"
     }
-    else if( await checkPeer("http://121.132.32.166:1987") > 0 ) {
-      NodeApi = "http://121.132.32.166:1987"
+    else if( await checkPeer("175.213.101.160:1987") > 0 ) {
+      NodeApi = "175.213.101.160:1987"
     }
     else if( await checkPeer("http://175.116.98.71:1985") > 0 ) {
       NodeApi = "http://175.116.98.71:1985"
     }
-    else if( await checkPeer("http://218.237.82.145:1985") > 0 ) {
-      NodeApi = "http://218.237.82.145:1985"
+    else if( await checkPeer("http://175.213.101.23:1985/") > 0 ) {
+      NodeApi = "http://175.213.101.23:1985/"
     }
     else {
-      NodeApi = "http://121.132.32.166:1985"
+      NodeApi = "http://175.213.101.160:1985"
     }
 
     const DataDir = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeStorageDirectory ? ChivesLightNodeSetting.NodeStorageDirectory : "D:\\";
