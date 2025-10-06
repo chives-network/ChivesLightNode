@@ -118,6 +118,11 @@
     if(db == null) {
       db = new sqlite3Verbose.Database(DataDir + '/chiveslightnode.db');
     }
+
+    fs.mkdir(DataDir + '/blocks', { recursive: true }, (err) => {});
+    fs.mkdir(DataDir + '/txs', { recursive: true }, (err) => {});
+    fs.mkdir(DataDir + '/files', { recursive: true }, (err) => {});
+    fs.mkdir(DataDir + '/thumbnail', { recursive: true }, (err) => {});
     
     return { NodeApi, DataDir, arweave, db }
 
