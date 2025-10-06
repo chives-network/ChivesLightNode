@@ -435,7 +435,7 @@
     });
     const LightNodeStatus = {}
     const MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
-    LightNodeStatus['network'] = "chivesweave.mainnet";
+    LightNodeStatus['network'] = "chivesweave.mainnet.1";
     LightNodeStatus['height'] = MinerNodeStatus?.height;
     LightNodeStatus['blocks'] = getBlockHeightFromDbValue;
     LightNodeStatus['NotSyncingTxCount'] = NotSyncingTxCount;
@@ -3745,9 +3745,9 @@
       const getBlockCountValue = await getBlockRewardCount() ?? 0;
       let MinerNodeStatus = await axios.get(NodeApi + '/info', {}).then(res=>res.data).catch(() => {});
       if(MinerNodeStatus && MinerNodeStatus.height)  {
-        LightNodeStatus['network'] = "chivesweave.mainnet";
-        LightNodeStatus['version'] = 5;
-        LightNodeStatus['release'] = 67;
+        LightNodeStatus['network'] = MinerNodeStatus.network;
+        LightNodeStatus['version'] = MinerNodeStatus.version;
+        LightNodeStatus['release'] = MinerNodeStatus.release;
         LightNodeStatus['height'] = MinerNodeStatus.height;
         LightNodeStatus['current'] = MinerNodeStatus.current;
         LightNodeStatus['weave_size'] = BlockInfor.weave_size;
@@ -3760,9 +3760,9 @@
         LightNodeStatus['addresses'] = GetAddressCount;
       }
       else {
-        LightNodeStatus['network'] = "chivesweave.mainnet";
+        LightNodeStatus['network'] = "chivesweave.mainnet.1";
         LightNodeStatus['version'] = 5;
-        LightNodeStatus['release'] = 67;
+        LightNodeStatus['release'] = 68;
         LightNodeStatus['height'] = 0;
         LightNodeStatus['current'] = '';
         LightNodeStatus['diff'] = '';
@@ -3776,9 +3776,9 @@
       }
     }
     else {
-      LightNodeStatus['network'] = "chivesweave.mainnet";
+      LightNodeStatus['network'] = "chivesweave.mainnet.1";
       LightNodeStatus['version'] = 5;
-      LightNodeStatus['release'] = 67;
+      LightNodeStatus['release'] = 68;
       LightNodeStatus['height'] = 0;
       LightNodeStatus['current'] = '';
       LightNodeStatus['diff'] = '';
