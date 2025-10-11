@@ -24,6 +24,7 @@
 
   //Only for Dev
 
+
   //import isDev from 'electron-is-dev';
   const isDev = false;
   let ChivesLightNodeSetting = null
@@ -39,12 +40,12 @@
     const currentUserDirectory = dirname(currentDirectory) + "/ChivesweaveData";
     enableDir(currentUserDirectory)
     console.log("Node Storage Directory:", currentUserDirectory)
-    await initChivesLightNodeSetting({"NodeApi1":"http://175.213.101.160:1985","NodeApi2":"175.213.101.160:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory})
+    await initChivesLightNodeSetting({"NodeApi1":"http://175.213.101.23:1985/","NodeApi2":"http://175.213.101.23:1985/","NodeApi3":"http://175.213.101.23:1985/","NodeStorageDirectory":currentUserDirectory})
   }
   else if(process.argv && process.argv[2] && process.argv[2].length == 43 && process.argv[3] && isDirectorySync(process.argv[3]))  {
     setChivesLightNodeAddress(process.argv[2])
     enableDir(process.argv[3])
-    await initChivesLightNodeSetting({"NodeApi1":"http://175.213.101.160:1985","NodeApi2":"175.213.101.160:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":process.argv[3]})
+    await initChivesLightNodeSetting({"NodeApi1":"http://175.213.101.23:1985/","NodeApi2":"http://175.213.101.23:1985/","NodeApi3":"http://175.213.101.23:1985/","NodeStorageDirectory":process.argv[3]})
   }
   else {
     // Get current directory path
@@ -52,7 +53,7 @@
     const currentUserDirectory = dirname(currentDirectory) + "/ChivesweaveData";
     enableDir(currentUserDirectory)
     console.log("Node Storage Directory:", currentUserDirectory)
-    await initChivesLightNodeSetting({"NodeApi1":"http://175.213.101.160:1985","NodeApi2":"175.213.101.160:1987","NodeApi3":"http://175.116.98.71:1985","NodeStorageDirectory":currentUserDirectory});
+    await initChivesLightNodeSetting({"NodeApi1":"http://175.213.101.23:1985/","NodeApi2":"http://175.213.101.23:1985/","NodeApi3":"http://175.213.101.23:1985/","NodeStorageDirectory":currentUserDirectory});
   }
   console.log("Begin to download data from peer, please wait ......")
   
@@ -85,20 +86,20 @@
     else if( ChivesLightNodeSetting && ChivesLightNodeSetting.NodeApi3 && await checkPeer(ChivesLightNodeSetting.NodeApi3) > 0) {
       NodeApi = ChivesLightNodeSetting.NodeApi3
     }
-    else if( await checkPeer("http://175.213.101.160:1985") > 0 ) {
-      NodeApi = "http://175.213.101.160:1985"
+    else if( await checkPeer("http://175.213.101.23:1985/") > 0 ) {
+      NodeApi = "http://175.213.101.23:1985/"
     }
-    else if( await checkPeer("175.213.101.160:1987") > 0 ) {
-      NodeApi = "175.213.101.160:1987"
+    else if( await checkPeer("http://175.213.101.23:1985/") > 0 ) {
+      NodeApi = "http://175.213.101.23:1985/"
     }
-    else if( await checkPeer("http://175.116.98.71:1985") > 0 ) {
-      NodeApi = "http://175.116.98.71:1985"
+    else if( await checkPeer("http://175.213.101.23:1985/") > 0 ) {
+      NodeApi = "http://175.213.101.23:1985/"
     }
     else if( await checkPeer("http://175.213.101.23:1985/") > 0 ) {
       NodeApi = "http://175.213.101.23:1985/"
     }
     else {
-      NodeApi = "http://175.213.101.160:1985"
+      NodeApi = "http://175.213.101.23:1985/"
     }
 
     const DataDir = ChivesLightNodeSetting && ChivesLightNodeSetting.NodeStorageDirectory ? ChivesLightNodeSetting.NodeStorageDirectory : "D:\\";
@@ -1176,16 +1177,18 @@
     try {
         const arrayBuffer = await fetch(NodeApi + '/' + TxId).then(res => res.arrayBuffer()).catch(() => {})
         //Write Chunks File
-        //log("syncingTxChunksById arrayBuffer:", TxId, arrayBuffer)
+        log("syncingTxChunksById arrayBuffer download 1179:", TxId, arrayBuffer, NodeApi + '/' + TxId)
         if(arrayBuffer && arrayBuffer.byteLength && arrayBuffer.byteLength > 0) {
             const FileBuffer = Buffer.from(arrayBuffer);
             data_root_status = 200
             const FileContentString = FileBuffer.toString('utf-8')
             if(arrayBuffer.byteLength<10000 && FileContentString.includes("This page cannot be found, yet.")) {
-              //log("arrayBuffer.byteLength--------------------------------------", arrayBuffer.byteLength)
+              log("arrayBuffer.byteLength--------------------------------------", arrayBuffer.byteLength)
+              log("syncingTxChunksById Error 1186:", data_root_status, TxId)
             }
             else {
               writeFile('files/' + TxId.substring(0, 2).toLowerCase(), TxId, FileBuffer, "syncingTxChunksById")
+              log("syncingTxChunksById Success 1190:", data_root_status, TxId)
             }
         }
         else {
@@ -1200,11 +1203,11 @@
               const TagValue = Buffer.from(Tag.value, 'base64').toString('utf-8');
               TagsMap[TagName] = TagValue;
             })
-            log("syncingTxChunksById Error:", data_root_status, TxId, TagsMap['Content-Type'], TagsMap['File-Name'])
+            log("syncingTxChunksById Error 1205:", data_root_status, TxId, TagsMap['Content-Type'], TagsMap['File-Name'])
         }
     } 
     catch (error) {
-        log("syncingTxChunksById Error:", error)
+        log("syncingTxChunksById Error 1209:", error)
         data_root_status = 404
     }
     //Update Chunks Status
@@ -1357,7 +1360,7 @@
             const MinedTime = BlockInfor.timestamp - BlockTimestamp[Number(BlockInfor.id)-1]
             const MinedTimeValue = MinedTime > 0 ? MinedTime : 1
             //console.log("MinedTime-------------------------", MinedTime)
-            console.log("MinedTimeValue-------------------------", BlockInfor.id, MinedTimeValue)
+            //console.log("MinedTimeValue-------------------------", BlockInfor.id, MinedTimeValue)
             const updateBlockMinedTime = db.prepare('update block set mining_time = ? where id = ?');
             updateBlockMinedTime.run(Number(MinedTimeValue), Number(BlockInfor.id));
             updateBlockMinedTime.finalize();
@@ -2398,6 +2401,27 @@
         }
       });
     });
+  }
+  
+  async function updateAllAddressesBalance() {
+    const { NodeApi, DataDir, arweave, db } = await initChivesLightNode()
+    const getAddressCountValue = await getAllAddressCount();
+    const getAddressPageRecords = await getAllAddressPage(0, getAddressCountValue);
+    const updateAddress = db.prepare('update address set balance = ? where id = ?');
+    for (const addressRecord of getAddressPageRecords) {
+      const AddressFilter = filterString(addressRecord.id);     
+      try {
+        const addressBalance = await axios.get(NodeApi + '/wallet/' + AddressFilter + '/balance', {}).then(res=>res.data).catch(() => {});
+        if(addressBalance && addressBalance>0) {
+          updateAddress.run(addressBalance, AddressFilter);
+          console.log("AddressFilter", AddressFilter, "addressBalance", addressBalance)
+        }
+      } 
+      catch (err) {
+        console.error(`❌ 获取 ${AddressFilter} 余额失败:`, err.message);
+      }
+    }
+    updateAddress.finalize();
   }
 
   async function getAllAddressPageJson(pageid, pagesize) {
@@ -4313,6 +4337,7 @@
     syncingTxChunksById,
     syncingTxWaitDoingAction,
     resetTx404,
+    updateAllAddressesBalance,
     getTxsNotSyncing,
     getTxsHaveChunks,
     contentTypeToFileType,

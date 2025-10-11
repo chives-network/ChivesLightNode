@@ -26,19 +26,20 @@ const expressApp = express();
 expressApp.use(cors());
 
 expressApp.get('/syncing', async (req, res) => {
-  //await syncing.resetTx404();
-  //await syncing.deleteBlackTxsAndAddress();
+  await syncing.updateAllAddressesBalance();
+  await syncing.resetTx404();
+  await syncing.deleteBlackTxsAndAddress();
   await syncing.calculatePeers();
-  //syncing.syncingTxWaitDoingAction(10);
-  //await syncing.syncingBlockAndTxStatAllDates(20);
-  //await syncing.syncingBlockMissing();
+  syncing.syncingTxWaitDoingAction(10);
+  await syncing.syncingBlockAndTxStatAllDates(20);
+  await syncing.syncingBlockMissing();
   //35753 43355 
-  //await syncing.syncingBlockPromiseAll(30);
-  //await syncing.syncingBlock(50);
-  //await syncing.syncingTx(50);
-  //await syncing.syncingChunksPromiseAll(10);
-  //await syncing.syncingTxParseBundle(10);
-  //await syncing.syncingBlockMinedTime(500);
+  await syncing.syncingBlockPromiseAll(30);
+  await syncing.syncingBlock(50);
+  await syncing.syncingTx(50);
+  await syncing.syncingChunksPromiseAll(10);
+  await syncing.syncingTxParseBundle(10);
+  await syncing.syncingBlockMinedTime(500);
   res.json({});
 });
 
@@ -120,6 +121,7 @@ cron.schedule('*/10 * * * *', () => {
 cron.schedule('1 1 * * *', () => {
   syncing.resetTx404();
   syncing.syncingBlockAndTxStatAllDates(80);
+  syncing.updateAllAddressesBalance();
   console.log('schedule syncingTxParseBundle Task Begin !!!');
   if (global.gc) {
     console.log('Manual garbage collection');
