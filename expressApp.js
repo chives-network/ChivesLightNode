@@ -116,6 +116,7 @@ cron.schedule('*/10 * * * *', () => {
   syncing.deleteBlackTxsAndAddress();
   syncing.calculatePeers();
   syncing.syncingTxWaitDoingAction(10);
+  syncing.updateAllAddressesBalance();
 });
 
 cron.schedule('1 1 * * *', () => {
